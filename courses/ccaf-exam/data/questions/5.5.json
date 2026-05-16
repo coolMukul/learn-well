@@ -1,0 +1,882 @@
+[
+  {
+    "question": "A document extraction pipeline reports 97% aggregate accuracy on its validation set. What's the most important reason this number alone is insufficient to justify switching off human review?",
+    "options": [
+      "Aggregate accuracy is an average; it can hide a small document-type segment running at 60% accuracy.",
+      "97% accuracy violates the cap on how confident a single number should be.",
+      "Validation-set accuracy is always lower than production accuracy in extraction pipelines.",
+      "Aggregate accuracy can only be computed once the model is fully fine-tuned."
+    ],
+    "explanations": [
+      "Correct — averages hide the worst-performing slice when that slice is small in volume; a tiny segment at 60% disappears into a 97% headline.",
+      "There is no such cap; the issue is segment masking, not the magnitude of the number.",
+      "There is no general 'validation lower than production' rule; the issue is segment masking inside the aggregate itself.",
+      "Aggregate accuracy is a metric over labels; it has nothing to do with fine-tuning, which is also out of scope for this topic."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "pre",
+    "qid": "e330de5d-3c9d-41f7-bd4f-f953b8bf15a8"
+  },
+  {
+    "question": "What is stratified random sampling for ongoing error-rate measurement in an extraction pipeline?",
+    "options": [
+      "Sampling extractions uniformly across all incoming documents.",
+      "Sampling only the extractions where the model returned the highest confidence.",
+      "Partitioning extractions into strata (e.g., document type × field) and sampling within each stratum so every segment gets coverage.",
+      "Sampling only the extractions a human reviewer has already flagged as likely wrong."
+    ],
+    "explanations": [
+      "That's uniform random sampling; it under-samples rare segments and is exactly what stratified sampling exists to fix.",
+      "That biases away from low-confidence cases entirely and isn't 'stratified' — it's threshold-based selection.",
+      "Correct — strata mirror the dimensions you care about so rare/high-risk segments get coverage proportional to risk, not raw volume.",
+      "That's review-driven; sampling for ongoing measurement must be random within strata, not driven by reviewer suspicion."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "pre",
+    "qid": "6f8e5aa9-1717-4e37-b6e4-634afeaa2185"
+  },
+  {
+    "question": "What does it mean for a model's field-level confidence score to be 'calibrated'?",
+    "options": [
+      "The model has been fine-tuned on the production data distribution.",
+      "The confidence score has been normalised to fall between 0 and 1.",
+      "The score is computed using log probabilities rather than raw outputs.",
+      "Cases where the model reports confidence X are actually correct approximately X% of the time, verified on labelled ground truth."
+    ],
+    "explanations": [
+      "Fine-tuning is out of scope; calibration is about the relationship between reported confidence and observed accuracy.",
+      "Normalisation is a numeric range, not a statistical-accuracy property; calibration is the latter.",
+      "Log-prob computation is an implementation detail; it doesn't make the score calibrated.",
+      "Correct — calibration means the score's claimed probability matches its empirical accuracy on labelled validation data, per segment."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "pre",
+    "qid": "78685c83-1285-4fc0-9ca5-f1ec79068d0c"
+  },
+  {
+    "question": "Before automating a high-accuracy extraction step, what unit should you validate accuracy on?",
+    "options": [
+      "Aggregate accuracy across the entire validation set.",
+      "Each (document type, field) cell against a per-cell threshold.",
+      "Each individual document, holistically.",
+      "Each extraction prompt template revision."
+    ],
+    "explanations": [
+      "Aggregate is precisely what the topic warns you not to automate on; it hides segment failure.",
+      "Correct — segment-level validation by document type and field is the rule; only cells that pass on their own should be auto-shipped.",
+      "Per-document validation isn't the unit — failures concentrate in specific (doc type, field) cells, not in 'whole documents.'",
+      "Tracking prompt revisions is an engineering practice, not a segment-accuracy validation unit."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "pre",
+    "qid": "368b23ee-e9a6-4372-a28f-890ac1f90f30"
+  },
+  {
+    "question": "Which extraction should be routed to human review?",
+    "options": [
+      "Any extraction the model returns at all, by default.",
+      "Only extractions where calibrated confidence is below threshold.",
+      "An extraction where calibrated confidence is below threshold OR fields that should reconcile contradict each other.",
+      "Only extractions where the document is longer than the model's context window."
+    ],
+    "explanations": [
+      "That's 'review everything' — it defeats automation and isn't the routing rule.",
+      "Confidence alone is insufficient: a model can be confidently wrong on each individual field of a self-contradictory document.",
+      "Correct — the production rule is route on low calibrated confidence OR internal contradiction; auto-ship only when both are clean.",
+      "Document length isn't the routing signal; calibrated confidence and contradictions are."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "pre",
+    "qid": "b8058905-638e-4ea0-a410-7cc7eb41cd32"
+  },
+  {
+    "question": "Why is uniform random sampling a poor choice for measuring error rates across a multi-document-type extraction pipeline?",
+    "options": [
+      "It produces too much data for a human team to review.",
+      "It is mathematically biased because random sampling cannot be unbiased.",
+      "It cannot be combined with confidence-based filtering.",
+      "It under-samples rare document segments — exactly the segments most likely to be regressing."
+    ],
+    "explanations": [
+      "Volume is a budget question, not the structural issue; the structural issue is segment under-coverage.",
+      "Uniform random sampling is unbiased in the statistical sense; the issue is power on rare strata, not bias.",
+      "It can be combined with confidence filtering; that's not the reason it's inadequate.",
+      "Correct — a 2%-volume segment will rarely land in a uniform sample, so you have no power to detect its error rate."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "pre",
+    "qid": "8de8377c-20f9-43f9-b1c0-588cc3c183b7"
+  },
+  {
+    "question": "A team uses raw model self-reported confidence to decide which extractions to auto-ship. What's the core problem?",
+    "options": [
+      "Raw confidence numbers can't be serialised in JSON.",
+      "Self-reported model confidence is uncalibrated until validated against labelled data — '0.95' may correspond to 70% real accuracy on a given segment.",
+      "Self-reported model confidence depends on the model temperature setting, which the team cannot control.",
+      "Raw confidence is always conservative; using it leads to too much human review."
+    ],
+    "explanations": [
+      "Serialisation is irrelevant; the issue is the score's relationship to actual accuracy.",
+      "Correct — without calibration on a labelled validation set, the number is decorative; high reported confidence does not mean high accuracy.",
+      "Temperature is an implementation detail and not the calibration story.",
+      "Raw self-reported confidence is famously over-confident, not over-conservative; the failure mode is the opposite."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "pre",
+    "qid": "243bae31-129c-44e7-8de7-0b09dd9f290b"
+  },
+  {
+    "question": "An extraction pipeline returns four fields, each at high model confidence. The line items sum to $1,200 but the extracted footer total is $1,250. What should the routing layer do?",
+    "options": [
+      "Auto-ship — every individual field has high confidence.",
+      "Route to human review — internal contradictions across fields override individual confidence.",
+      "Drop the extraction silently and re-run the model.",
+      "Ship only the line items and discard the footer total."
+    ],
+    "explanations": [
+      "Per-field confidence misses cross-field contradictions; that's exactly the failure mode contradiction-routing exists to catch.",
+      "Correct — when fields that should reconcile disagree, the extraction goes to human review regardless of per-field confidence.",
+      "Silent retry hides a real ambiguity in the source document; the right move is to put a human on it.",
+      "Cherry-picking which fields to ship from a contradictory document silently produces wrong downstream data."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "pre",
+    "qid": "fe03ee40-9021-4981-93c7-c182fe114792"
+  },
+  {
+    "question": "Where should confidence calibration be computed?",
+    "options": [
+      "Globally, across all extractions, regardless of document type or field.",
+      "Only on the largest document type, because that's where the most data is.",
+      "Per (document type, field) cell, because the same raw confidence value can mean different real accuracies in different cells.",
+      "Only on the rarest document type, because that's where errors concentrate."
+    ],
+    "explanations": [
+      "A global calibration averages over heterogeneous segments — exactly the masking problem aggregate accuracy has.",
+      "Calibrating only on the dominant segment ignores the segments most likely to be silently wrong.",
+      "Correct — calibration is segment-specific; raw 0.95 may mean 96% in one cell and 64% in another, so calibration must be per-cell.",
+      "Rare doc types alone don't give you a calibration story for the rest of the pipeline; calibration must cover every cell you intend to route on."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "pre",
+    "qid": "8f9ce275-dac1-40f3-ac61-cb4d82eec21d"
+  },
+  {
+    "question": "After automating high-confidence extractions, why should you keep an ongoing stratified human-review sample running?",
+    "options": [
+      "To detect production drift — new document templates, OCR changes, vendor format shifts — that can regress specific segments silently.",
+      "To re-train the underlying foundation model on the latest data.",
+      "To satisfy a regulatory mandate that humans review every extraction.",
+      "Because random sampling produces less data than full review."
+    ],
+    "explanations": [
+      "Correct — populations shift in production, and stratified sampling is the cheapest way to keep eyes on every segment over time.",
+      "Re-training the foundation model is out of scope and not the purpose of ongoing sampling.",
+      "There is no such universal mandate; ongoing sampling exists for drift detection, not blanket review.",
+      "Sample size is a separate budget concern; the reason to keep sampling is drift detection."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "pre",
+    "qid": "47d9c581-06a8-4cde-a5ff-1c542c7fb4e2"
+  },
+  {
+    "question": "An invoice extraction pipeline reports 96.9% aggregate field accuracy. A breakdown by document type shows clean PDF invoices at 99% (95% of volume) and scanned-fax invoices at 60% (5% of volume). The team proposes switching off human review based on the aggregate. What's the right response?",
+    "options": [
+      "Approve — 96.9% comfortably exceeds typical 95% automation thresholds.",
+      "Approve, but raise the aggregate threshold to 98% before re-evaluating.",
+      "Reject — the aggregate hides the 60%-accurate scanned-fax segment; automate only segments that pass the bar on their own.",
+      "Approve only for the scanned-fax segment, since that's where errors concentrate."
+    ],
+    "explanations": [
+      "This is the canonical wrong move the topic warns against — automating on the aggregate hides the bad segment.",
+      "Tightening the aggregate threshold doesn't fix segment masking; the bad segment still hides at any aggregate level.",
+      "Correct — segment-level validation drives the automation decision; the scanned-fax segment stays in human review while clean PDFs auto-ship.",
+      "Automating the worst segment is the opposite of the right move; that segment is the one that needs human review."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "426b1dfd-1182-474f-956e-3499c0139d04"
+  },
+  {
+    "question": "A team's daily volume is 10,000 extractions, including 200 amendments-to-MSA. They sample 1% uniformly for human review (100 docs/day). Why is this insufficient for measuring amendment-segment error rate?",
+    "options": [
+      "Uniform 1% sampling reviews about 2 amendments per day — too few to detect a regression in that segment.",
+      "Uniform 1% sampling under-counts the dominant segment, not the rare one.",
+      "Uniform sampling is forbidden in production extraction pipelines.",
+      "Amendments don't need to be sampled; they're the easy segment."
+    ],
+    "explanations": [
+      "Correct — only ~2 amendments per day land in the sample; that's no statistical power to detect even a large regression.",
+      "It does the opposite — uniform sampling over-represents dominant segments, not under-counts them.",
+      "There's no rule against uniform sampling; the issue is power on rare strata, not legality.",
+      "Amendments are typically the harder segment in contracts pipelines and need over-sampling, not less."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "c859ef9c-58bd-45c4-9f11-4d57d74fc8b7"
+  },
+  {
+    "question": "A model returns raw self-reported confidence 0.95 on amendment effective-date extractions. A labelled validation check shows that 0.95-raw cases are right only 64% of the time on this segment. What does the routing layer do?",
+    "options": [
+      "Build a calibration map for the (amendment, effective-date) cell and route on the calibrated probability, not the raw 0.95.",
+      "Trust the raw 0.95 — model self-reports are the canonical confidence source.",
+      "Assume the validation set is wrong and ignore the discrepancy.",
+      "Switch to a different model with better natural confidence calibration."
+    ],
+    "explanations": [
+      "Correct — calibration is exactly the fix when raw confidence diverges from real accuracy; route on the calibrated number, per cell.",
+      "Raw self-reported confidence is uncalibrated by default; trusting it is the failure mode the topic warns against.",
+      "The validation set is the ground truth you calibrate against; ignoring it means you have no evidence at all.",
+      "Switching models is over-engineered when the existing model can be calibrated; you'd still need to calibrate the new model anyway."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "efc06326-2246-4f10-ab0c-cb887e062c1f"
+  },
+  {
+    "question": "A team is choosing between two routing rules. Rule A: route to human if calibrated confidence < 0.95. Rule B: route to human if calibrated confidence < 0.95 OR there's an internal contradiction across fields that should reconcile. Which is correct, and why?",
+    "options": [
+      "Rule A — a model that's confident on every field is by definition not contradicting itself.",
+      "Rule B — a model can be confidently wrong on each individual field of a self-contradictory document; the OR catches that case.",
+      "Rule A — adding contradictions to the rule increases the human queue without benefit.",
+      "Rule B — but only because Rule A produces too much auto-shipped volume in absolute numbers."
+    ],
+    "explanations": [
+      "Per-field confidence and cross-field contradictions are different signals; high per-field confidence does not preclude global inconsistency.",
+      "Correct — contradictions are an independent signal; auto-shipping only when both signals are clean is the production rule.",
+      "Contradictions catch a real failure mode (high-confidence-but-self-inconsistent extractions); they are the benefit, not noise.",
+      "The justification isn't volume — it's that contradictions catch a failure mode confidence alone misses."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "f7bdcca8-79c4-42e8-aee3-b842683ae24b"
+  },
+  {
+    "question": "A 5-doc-type × 22-field pipeline reports 98% aggregate accuracy. A per-cell breakdown reveals that 14 cells are above 99%, 2 cells are at 92–94%, and 1 cell is at 71%. What is the right rollout?",
+    "options": [
+      "Auto-ship every cell since the aggregate clears 95%.",
+      "Auto-ship none until every cell is at 99%.",
+      "Auto-ship the 14 strong cells; leave the 3 weaker cells in human review.",
+      "Auto-ship the strongest 2 cells only and review the rest."
+    ],
+    "explanations": [
+      "That's automating on the aggregate — the canonical wrong move.",
+      "Holding everything until 100% of cells hit 99% blocks legitimate automation; mixed-mode rollout exists for exactly this reason.",
+      "Correct — segment-level rollout: cells that pass their threshold auto-ship; cells that fail stay reviewed.",
+      "Over-conservative; many cells comfortably pass the bar and should auto-ship to free up reviewer capacity for the failing cells."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "cbef5e9f-e6e1-46f8-ab01-8b2268f18f29"
+  },
+  {
+    "question": "A team allocates its 100-doc-per-day human review budget by document-type strata: 30 to amendments (200 daily volume), 40 to MSAs (1,000 volume), 30 to invoices (8,800 volume). Critics call this 'unfair' because invoices are the majority. Is the allocation defensible?",
+    "options": [
+      "No — sampling should be proportional to volume so the dominant segment gets the most review.",
+      "No — random sampling cannot be allocated by hand without breaking statistical validity.",
+      "Yes — but only if each stratum is sampled with the same percentage.",
+      "Yes — stratified sampling allocates by risk, not by raw volume; rare/high-risk segments are deliberately over-sampled."
+    ],
+    "explanations": [
+      "Volume-proportional allocation is uniform sampling in disguise; it leaves rare segments under-powered.",
+      "You can absolutely allocate sample budget by stratum and remain randomly sampled within each stratum; that's the definition of stratified random sampling.",
+      "Equal-percentage sampling is just uniform sampling; equal-power-per-stratum is what stratification provides.",
+      "Correct — over-sampling rare/high-risk strata is the whole point of stratification; you trade volume coverage for statistical power on segments that matter."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "e9a938d6-ec3d-439c-9f52-002f48d091fb"
+  },
+  {
+    "question": "A pipeline auto-ships fields when raw model confidence ≥ 0.9, with no segment-level validation. Production complaints reveal that amendments-to-MSA auto-ship at high error rates. What's the smallest-scope correct fix?",
+    "options": [
+      "Switch to a smaller, more conservative model across the entire pipeline.",
+      "Calibrate confidence per (document type, field) cell on labelled data; set per-cell thresholds; only auto-ship cells that pass.",
+      "Lower the global confidence threshold from 0.9 to 0.8 to widen human review.",
+      "Disable auto-ship entirely and have humans review every extraction."
+    ],
+    "explanations": [
+      "Model swap is over-scope; the issue is calibration and segment-level thresholds, not model capacity.",
+      "Correct — per-cell calibration plus per-cell thresholds is the targeted fix that addresses the actual failure mode.",
+      "A lower global threshold floods human review with cases that are fine in other segments while still mis-routing the broken segment.",
+      "Defeats the whole point of automation; the right answer is segment-aware automation, not blanket review."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "516053ed-a752-4a5d-b91f-dde9fda77fef"
+  },
+  {
+    "question": "After three weeks of stable production, the stratified review sample shows that NDA effective-date accuracy has dropped from 99% to 88%. Other segments are stable. What is the most likely diagnosis to investigate first?",
+    "options": [
+      "The aggregate accuracy metric has drifted upward.",
+      "Production drift in the NDA segment specifically — a new template, OCR change, or vendor format shift.",
+      "The model's underlying training data has degraded.",
+      "Random noise in the stratified sample; ignore it for now."
+    ],
+    "explanations": [
+      "Aggregate accuracy is exactly what stratified-by-segment monitoring is meant to bypass; aggregate movement isn't the diagnostic.",
+      "Correct — segment-specific regression after stable performance is the textbook signal of a localised production drift, which is why ongoing stratified sampling exists.",
+      "Foundation-model training is static; the model didn't get worse on its own — the input distribution shifted.",
+      "An 11-point drop in a stratified sample is a strong signal, not noise; ignoring it defeats the purpose of monitoring."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "4311b005-946d-43c6-850c-fbeb2447658e"
+  },
+  {
+    "question": "A reviewer asks: 'We have a labelled validation set, model self-reported confidence per field, and per-cell accuracy numbers. What's the calibration step?'",
+    "options": [
+      "Bucket validation cases by reported confidence per (doc type, field), compute observed accuracy in each bucket, and build a map from raw to calibrated probability per cell.",
+      "Average the model's confidence with the per-cell accuracy to produce a blended score.",
+      "Discard the model's confidence and use per-cell accuracy directly as the routing signal.",
+      "Use the per-cell accuracy as a hard threshold and ignore confidence entirely."
+    ],
+    "explanations": [
+      "Correct — calibration buckets per cell, computes empirical accuracy per bucket, and maps raw → calibrated; that map drives routing.",
+      "Averaging two non-comparable quantities doesn't produce a calibrated probability; it produces nonsense.",
+      "Per-cell accuracy is a single number per cell; you lose the ability to differentiate within-cell which extractions are riskier.",
+      "Ignoring confidence flattens routing — every extraction in a cell would be treated identically, which defeats per-extraction routing entirely."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "e21775a9-0d6b-4b00-892e-6777e0518089"
+  },
+  {
+    "question": "An extraction returns four fields, all at calibrated confidence 0.99, but two of those fields are mutually inconsistent (extracted parties don't match the signature block). The team's rule auto-ships when calibrated confidence ≥ 0.95. What ships?",
+    "options": [
+      "All four fields auto-ship — confidence comfortably exceeds the threshold.",
+      "Nothing auto-ships — the contradiction routes the entire extraction to human review.",
+      "The two consistent fields auto-ship; the two inconsistent ones go to review.",
+      "All four fields auto-ship with a contradiction warning attached for downstream consumers."
+    ],
+    "explanations": [
+      "Confidence-only routing misses contradictions; that's the failure mode the OR-rule exists to catch.",
+      "Correct — when fields that should reconcile contradict each other, the extraction goes to human review regardless of confidence.",
+      "Cherry-picking which fields to ship from a contradictory extraction silently produces inconsistent downstream data.",
+      "Pushing contradictions downstream as 'warnings' delegates the problem to consumers who lack reviewer context to resolve it."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "92d1fad0-5af0-49d2-9cb9-1adf2e3ddc8f"
+  },
+  {
+    "question": "A team operates one global confidence threshold of 0.95 across all (doc type, field) cells. An audit shows two failure modes: (a) NDA cells at 0.95 are right 99% of the time, so review is wasted; (b) amendment cells at 0.95 are right 70% of the time, so wrong extractions auto-ship. What's the structural fix?",
+    "options": [
+      "Raise the global threshold to 0.99 to cover the worst cell.",
+      "Lower the global threshold to 0.85 to catch more amendment errors.",
+      "Drop the global threshold; calibrate per cell and set per-cell thresholds.",
+      "Use the global threshold but add contradiction routing on top."
+    ],
+    "explanations": [
+      "Raising the global threshold over-reviews safe cells like NDA without fixing the calibration mismatch on amendments.",
+      "Lowering the global threshold floods reviewers on safe cells while still mis-routing the unsafe ones.",
+      "Correct — calibration is segment-specific; one global threshold is structurally wrong, and per-cell thresholds are the fix.",
+      "Contradiction routing is an additional layer, not a substitute for per-cell calibrated thresholds."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "ca74881e-cc4a-4600-af15-5814d550e464"
+  },
+  {
+    "question": "A pipeline ships extractions to a downstream system. After automation, what's the role of the ongoing stratified human review sample?",
+    "options": [
+      "To act as the primary auto-ship gate for every extraction.",
+      "To detect production drift — new templates, OCR shifts, vendor changes — before they regress segments silently.",
+      "To replace the labelled validation set used for calibration.",
+      "To re-train the model in real time."
+    ],
+    "explanations": [
+      "Auto-ship runs on calibrated confidence + contradictions; the sample is for monitoring, not gating.",
+      "Correct — populations shift over time, and stratified sampling keeps eyes on every segment so drift surfaces in days, not months.",
+      "The labelled validation set is built and maintained separately; the stratified sample is for ongoing monitoring, not calibration replacement.",
+      "Real-time re-training is out of scope and not the role of ongoing review."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "e4fefbdc-a813-4fcb-9810-c1f6d0842870"
+  },
+  {
+    "question": "A reviewer-time budget allows 100 reviews/day. Which of these allocations represents stratified random sampling of 10,000 daily extractions across 4 doc types (NDAs 6,000, MSAs 2,000, invoices 1,800, amendments 200)?",
+    "options": [
+      "100 reviews allocated uniformly across documents, regardless of doc type.",
+      "60 NDA / 20 MSA / 18 invoice / 2 amendment reviews — proportional to volume.",
+      "25 reviews per doc type — equal allocation regardless of risk or volume.",
+      "An allocation that over-samples high-risk strata (e.g., 25 NDA / 25 MSA / 20 invoice / 30 amendment) so each stratum has enough reviews to detect a regression."
+    ],
+    "explanations": [
+      "Uniform sampling is the structure stratification corrects; this isn't stratified.",
+      "Volume-proportional allocation is uniform sampling on the count side and leaves the amendment stratum at 2 reviews/day — under-powered.",
+      "Equal-per-stratum can be a defensible heuristic but isn't 'stratified random sampling' in the statistical sense unless tied to risk; the canonical answer is risk-weighted.",
+      "Correct — stratified random sampling allocates budget across strata so each stratum gets statistical power, deliberately over-sampling rare/high-risk segments."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "60bd2f6c-a32e-4ea1-a345-a9282b0af655"
+  },
+  {
+    "question": "A team notices their auto-ship rate is 84%, with 16% routed to human review. Leadership asks if they should tune the calibration to 'auto-ship 95% to cut review costs.' What's the principled response?",
+    "options": [
+      "Raise the calibrated-confidence thresholds globally to push more cases above the auto-ship bar.",
+      "Auto-ship rate is an output of the routing rule, not a target — pushing it up by relaxing thresholds will auto-ship more wrong extractions.",
+      "Switch from calibrated to raw confidence; raw is more permissive.",
+      "Disable contradiction routing to free up the cases it currently sends to review."
+    ],
+    "explanations": [
+      "Raising thresholds globally pushes risky segments into auto-ship; the right unit of decision is per-cell, not global.",
+      "Correct — auto-ship volume is a consequence of the rule. Tuning the rule to hit a target auto-ship rate inverts the logic and ships more errors.",
+      "Raw confidence is uncalibrated; switching to it for permissiveness re-introduces exactly the failure mode calibration solved.",
+      "Contradiction routing exists because confidence alone misses cross-field inconsistency; disabling it ships known-broken extractions."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "f0d1053a-18a0-4e64-8d20-972bd7e35122"
+  },
+  {
+    "question": "A team writes: 'Aggregate accuracy is 98.2% on the validation set. We propose auto-shipping all extractions with raw model confidence ≥ 0.9.' List the failures in this sentence.",
+    "options": [
+      "It uses an aggregate, it routes on raw (uncalibrated) confidence, and it doesn't validate per (doc type, field) cell.",
+      "It uses 98.2% instead of 99% as the bar; everything else is sound.",
+      "It uses raw confidence; the aggregate and per-cell concerns are not real failures.",
+      "Nothing is wrong; this is the standard automation pattern."
+    ],
+    "explanations": [
+      "Correct — three independent failures: aggregate-not-segment, raw-not-calibrated confidence, and missing per-cell validation. All three are tested in this topic.",
+      "The threshold magnitude isn't the issue; the structural issues are aggregate masking, uncalibrated confidence, and absent per-cell validation.",
+      "All three are real and independent failures the topic warns against.",
+      "This is the canonical wrong pattern the topic exists to flag."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "aad9358c-f099-44e8-a013-0cae6f04bffa"
+  },
+  {
+    "question": "An extraction system reports calibrated confidence 0.97 on a field — calibration was performed on data that's 6 months old. Production has since shifted to a new vendor template. What concern does this raise?",
+    "options": [
+      "Calibration ages: distribution shift breaks the calibration map, so 0.97 calibrated may no longer correspond to 97% real accuracy on the new templates.",
+      "Calibration is permanent once computed; this is fine.",
+      "Confidence scores degrade over time independent of input distribution.",
+      "The model's training data is stale; calibration is unaffected."
+    ],
+    "explanations": [
+      "Correct — calibration is computed on a labelled set; if the population shifts, the map can decouple from reality, which is the drift problem ongoing stratified sampling exists to detect.",
+      "Calibration is empirical on a snapshot; nothing about it is permanent across distribution shifts.",
+      "Confidence scores don't 'age' on their own — what ages is the relationship between the score and accuracy when inputs shift.",
+      "Foundation-model training is unrelated; the issue is the input distribution shifting away from the calibration set."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "801744b1-74e5-4c13-9225-5ccb505c2704"
+  },
+  {
+    "question": "An auto-ship pipeline relies on calibrated confidence ≥ 0.97 per cell, with no contradiction check. The downstream system flags an integrity bug: extracted line items don't sum to the extracted total in 2% of auto-shipped invoices. What's the minimal correct architectural fix?",
+    "options": [
+      "Raise the per-cell calibrated-confidence threshold to 0.99.",
+      "Add internal-contradiction routing: extractions whose fields fail to reconcile go to human review regardless of confidence.",
+      "Drop calibration entirely and re-route everything to humans.",
+      "Replace the calibrated confidence with raw confidence to widen the review queue."
+    ],
+    "explanations": [
+      "Raising the threshold doesn't catch high-confidence-but-self-inconsistent extractions; that's the gap contradictions fill.",
+      "Correct — contradictions are the second routing signal precisely for this failure mode; the OR-rule (low confidence OR contradiction) closes the gap.",
+      "Reverting to full human review defeats the automation goal; adding contradiction routing is the targeted fix.",
+      "Raw confidence is uncalibrated; switching to it is a regression, not a fix."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "5b7cfc7d-920c-4722-a7bf-9a6cd884db3a"
+  },
+  {
+    "question": "A team reports: 'We sample 1% uniformly for review and our error rate is 1.2%.' Which segment-specific error rates is this number actually evidence about?",
+    "options": [
+      "All segments equally; uniform sampling guarantees per-segment estimates.",
+      "Only the dominant segments; rare segments are nearly absent from the sample, so their error rates are essentially unmeasured.",
+      "Only the rare segments; uniform sampling oversamples rare events.",
+      "None — uniform sampling cannot estimate any error rate."
+    ],
+    "explanations": [
+      "Uniform sampling gives an aggregate estimate; per-segment estimates require enough sample in each segment, which uniform sampling doesn't guarantee.",
+      "Correct — the 1.2% is a volume-weighted aggregate; rare segments contribute almost no data points, so their per-segment error rates are statistically uninformed.",
+      "Uniform sampling under-samples rare events relative to risk; it doesn't oversample them.",
+      "Uniform sampling can estimate the aggregate; the failure is that the aggregate masks segments."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "aac2e9e8-3605-4232-b7be-7fb7e3c51007"
+  },
+  {
+    "question": "A reviewer challenges: 'If we calibrate per (doc type, field), don't we overfit to the validation set?' What's the right framing?",
+    "options": [
+      "Yes — per-cell calibration is overfitting; only global calibration is statistically sound.",
+      "Calibration is by definition empirical on a held-out labelled set; overfitting is mitigated by adequate per-cell sample size, not by collapsing the granularity.",
+      "Per-cell calibration is fine but only on the training set, not on validation.",
+      "Validation sets cannot be used for calibration; only production data can."
+    ],
+    "explanations": [
+      "Global calibration is what under-fits — it averages over heterogeneous segments. Granularity is the right axis; sample size per cell is the variance concern.",
+      "Correct — calibration needs enough labelled data per cell; the answer to thin cells is more labels, not coarser calibration that re-introduces aggregate masking.",
+      "Calibration is computed on a held-out validation set, never on the training set used to fit the model — that would be a fundamental statistical error.",
+      "Production data is unlabelled by definition; you can't calibrate without ground truth, which is what a labelled validation set provides."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "87648165-a7e7-47fd-a9c3-bed7fa71dd64"
+  },
+  {
+    "question": "An extraction returns: line_item_total 0.99 calibrated, footer_total 0.99 calibrated, but line_item_total = $1,200 and footer_total = $1,250. A junior engineer says 'Both fields are at 0.99, ship them.' What's the precise error in their reasoning?",
+    "options": [
+      "0.99 is too low a threshold; they should require 0.999.",
+      "0.99 calibrated confidence is impossible in a real system.",
+      "Per-field calibration is independent of cross-field consistency — two correctly-calibrated 0.99 fields can still encode a contradictory document, which is exactly what contradiction routing catches.",
+      "Confidence scores must agree exactly across reconcilable fields, and 0.99 vs 0.99 doesn't agree."
+    ],
+    "explanations": [
+      "Threshold magnitude is unrelated; the issue is that confidence and contradictions are independent signals.",
+      "0.99 calibrated confidence is achievable on well-calibrated cells; impossibility isn't the issue.",
+      "Correct — calibration speaks to per-field accuracy probabilities; it does not entail mutual consistency, which requires the contradiction check.",
+      "Confidence scores aren't required to numerically agree — they're per-field probabilities. The contradiction is between the extracted values, not the scores."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "3a4ee60d-6f78-44fc-b189-e57779b17f77"
+  },
+  {
+    "question": "Which of these production stories is the most accurate description of what 'aggregate accuracy hides segment failure' looks like in practice?",
+    "options": [
+      "A pipeline at 99.5% aggregate accuracy has uniform per-cell accuracy at 99–99.7%; everything is fine.",
+      "A pipeline at 96.9% aggregate accuracy has 95% of volume in clean PDFs at 99% accuracy and 5% of volume in scanned faxes at 60% accuracy — the scanned-fax segment is the silent risk.",
+      "A pipeline at 50% aggregate accuracy has uniform 50% per-cell accuracy; the model is broken everywhere.",
+      "A pipeline at 80% aggregate accuracy has uniform 80% per-cell accuracy; no segment is masked."
+    ],
+    "explanations": [
+      "Uniform per-cell accuracy means no masking is occurring; this isn't an example of the failure mode.",
+      "Correct — high aggregate plus a small, hard, low-accuracy segment is the textbook masking pattern; the headline number rounds up while a real segment runs at 60%.",
+      "Uniform 50% accuracy is just uniformly bad performance; nothing is being masked.",
+      "Uniform 80% means there's no masking — every segment matches the aggregate."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "b03904ad-e162-480c-be08-a84cbb8439da"
+  },
+  {
+    "question": "A team wants to express the routing rule formally. Which is correct?",
+    "options": [
+      "auto_ship if (calibrated_confidence ≥ threshold) OR (no internal contradictions).",
+      "auto_ship if (raw_confidence ≥ threshold) AND (no internal contradictions).",
+      "auto_ship if (calibrated_confidence ≥ threshold) AND (no internal contradictions).",
+      "auto_ship if (calibrated_confidence ≥ threshold), regardless of contradictions."
+    ],
+    "explanations": [
+      "OR makes the auto-ship gate weaker (any one clean signal would auto-ship); the production rule is AND on the auto-ship side.",
+      "Raw confidence is uncalibrated; routing on it re-introduces the calibration failure mode the rule is meant to prevent.",
+      "Correct — both signals must be clean: high calibrated confidence AND no contradictions; the queue gets the complement (low confidence OR contradiction).",
+      "Ignoring contradictions misses the failure mode where each field is high-confidence but the document disagrees with itself."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "7c492926-2249-4395-9a98-7ea65fbbe5f5"
+  },
+  {
+    "question": "A pipeline reports 99.1% aggregate accuracy, with the worst per-cell at 98.5%. The team proposes turning off all human review. What's the best response?",
+    "options": [
+      "Turn off all human review — every per-cell is above any reasonable bar.",
+      "Turn off review for cells above the per-cell bar, but keep an ongoing stratified sample running to detect drift.",
+      "Keep full human review on every extraction indefinitely; automation is too risky.",
+      "Turn off review only for the highest-volume cell."
+    ],
+    "explanations": [
+      "Eliminating review entirely loses your drift signal; production populations shift, and you'll learn about regressions only from downstream complaints.",
+      "Correct — automate cells that pass per-cell bars, but keep a stratified review sample so drift surfaces early; this is the steady-state production pattern.",
+      "Full review forever defeats the automation goal in a pipeline whose per-cell accuracy passes the bar; the right move is automate-plus-monitor.",
+      "Cherry-picking by volume re-introduces aggregate-style thinking; the per-cell bar is the right gate, plus drift monitoring."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "9523a559-0d67-4c3a-8233-5bcb9cbbb75e"
+  },
+  {
+    "question": "Why are aggregate metrics 'mathematically' biased toward the dominant segment, in a way that segment-level metrics aren't?",
+    "options": [
+      "Because the aggregate is a volume-weighted average; the dominant segment's value pulls the aggregate toward itself, while a small low-accuracy segment's contribution is multiplied by its small weight.",
+      "Because aggregate accuracy uses a logarithm that exponentially down-weights rare segments.",
+      "Because the model fundamentally favours common document types in its outputs.",
+      "Because validation sets always over-represent rare documents, distorting the aggregate."
+    ],
+    "explanations": [
+      "Correct — this is the arithmetic of weighted averages: an aggregate of 95%×99% + 5%×60% rounds up to 96.95%, hiding the 60% segment in the small weight.",
+      "There is no logarithm; the masking is straightforward weighted averaging.",
+      "Model behaviour isn't the cause of metric masking; the metric arithmetic is.",
+      "Validation sets typically reflect production distribution; the masking happens regardless of how the validation set is composed."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "fd703f81-f759-4f30-af9e-97a0945a38cb"
+  },
+  {
+    "question": "A reviewer asks: 'If raw model confidence is unreliable, why bother having the model output it at all?' What's the right answer?",
+    "options": [
+      "Raw confidence is the input to calibration; without it there's nothing to calibrate, and calibrated confidence drives routing.",
+      "Raw confidence is purely decorative and serves no purpose.",
+      "Raw confidence is used directly for billing and pricing.",
+      "Raw confidence is needed for fine-tuning the model."
+    ],
+    "explanations": [
+      "Correct — raw confidence is the substrate calibration is built on; you need a per-extraction signal to bucket on, and calibration produces the actually-trustworthy probability from it.",
+      "It isn't decorative when used as the input to a calibration pipeline; it's decorative only if used directly as a routing threshold.",
+      "Pricing and billing are out of scope and unrelated to calibration.",
+      "Fine-tuning is out of scope; calibration is the in-scope use of raw confidence."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "68433c51-c353-4efc-9370-c055644d6066"
+  },
+  {
+    "question": "A confused engineer says: 'We're using stratified random sampling — we sample 1% of every doc type uniformly within that doc type.' What's the subtle issue?",
+    "options": [
+      "Sampling 1% per doc type is mathematically impossible.",
+      "Sampling 1% per doc type is correctly stratified and there's no issue.",
+      "Stratified sampling requires sampling exactly 0.5% per stratum.",
+      "Sampling 1% per doc type still under-samples a 200-doc rare segment (only 2 reviews/day) — the budget needs to be allocated by risk, not by uniform percentage."
+    ],
+    "explanations": [
+      "It is mathematically possible; the issue is statistical power on rare strata.",
+      "Equal-percentage stratification is uniform sampling rebadged; it doesn't fix the rare-segment under-sampling problem.",
+      "There's no canonical percentage; stratification allocates budget by risk to give each stratum statistical power.",
+      "Correct — uniform percentage per stratum still leaves rare strata under-powered; stratification's value comes from over-sampling high-risk/rare segments, not from equal percentages."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "8eb06f7e-66e5-4fd2-abb3-b3e713e198c6"
+  },
+  {
+    "question": "A team trains a downstream classifier to flag extractions for human review and replaces calibrated-confidence routing with classifier output. What's the most important pre-deployment check this topic emphasises?",
+    "options": [
+      "That the classifier's outputs are themselves validated per (document type, field) cell — otherwise you've just moved the segment-masking problem to a new model.",
+      "That the classifier uses the same model architecture as the extraction model.",
+      "That the classifier runs faster than calibrated-confidence routing.",
+      "That the classifier produces scores between 0 and 1."
+    ],
+    "explanations": [
+      "Correct — any routing signal, whether confidence-based or classifier-based, must be validated per cell; segment-level evaluation is the underlying principle, and a classifier doesn't exempt you from it.",
+      "Architecture matching is not the principle; per-cell validation is.",
+      "Latency isn't the criterion the topic emphasises; segment-level validation is.",
+      "Output range is a numeric detail; per-cell validation is the substantive check."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "494b1e85-0968-4723-a134-7e4ccc64efc6"
+  },
+  {
+    "question": "A confident-sounding stakeholder claims: 'Our model says 95% confidence on this extraction, so the extraction is 95% likely to be correct.' Under what conditions is this claim actually true?",
+    "options": [
+      "It's true by definition for any modern LLM.",
+      "It's true only when 95% raw confidence has been empirically calibrated — on a labelled validation set, on this specific (doc type, field) cell — to ~95% real accuracy.",
+      "It's true whenever the extraction passes a JSON-schema check.",
+      "It's never true; confidence and accuracy are unrelated."
+    ],
+    "explanations": [
+      "Modern LLMs are not calibrated by default; raw confidence often diverges sharply from real accuracy on hard segments.",
+      "Correct — the claim is sound only on a calibrated, segment-specific basis. Without that, '95%' is a self-report, not a probability.",
+      "JSON-schema validation checks structure, not content correctness, and has no bearing on the calibration of confidence.",
+      "Confidence and accuracy are correlated and become statistically meaningful once calibrated; 'never true' is too strong."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "ea3fe231-4150-4c53-a393-5d5118fa1642"
+  },
+  {
+    "question": "A team deploys with full per-cell validation and per-cell calibrated thresholds, and runs a stratified review sample. After 4 weeks, no per-cell metric has drifted. Leadership asks: 'Can we reduce the stratified sample size since accuracy is stable?' What's the principled trade-off?",
+    "options": [
+      "Yes — stable accuracy means the sample is no longer needed.",
+      "Reducing sample size reduces the statistical power to detect future regressions; the trade-off is review-cost vs early-detection latency, and is a budget choice, not a metric choice.",
+      "No — sample size is fixed by regulation and cannot be reduced.",
+      "No — sample size must always equal 100% of incoming volume to be meaningful."
+    ],
+    "explanations": [
+      "Stability now doesn't mean stability forever; the sample exists to catch regressions early.",
+      "Correct — reducing the sample raises the latency to detect a regression, so it's a cost-vs-detection-latency trade-off teams make explicitly, segment by segment.",
+      "There's no general regulation governing sample size; this is a design decision driven by risk.",
+      "100% review is full human review, the opposite of automation; the sample exists precisely so review is partial."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "bdcb1eb2-607d-4912-8b5b-dbaf8c51ee01"
+  },
+  {
+    "question": "Which combination of practices, taken together, defines the production-grade extraction-review architecture this topic prescribes?",
+    "options": [
+      "Aggregate validation; raw confidence routing; ad-hoc human review on user complaints.",
+      "Per-cell validation; raw confidence routing; uniform random sampling for monitoring.",
+      "Aggregate validation; calibrated confidence routing; no ongoing review post-deployment.",
+      "Per-cell validation before automating; per-cell calibrated confidence thresholds; routing on calibrated confidence OR contradictions; ongoing stratified review for drift."
+    ],
+    "explanations": [
+      "Three failure modes — aggregate masking, uncalibrated routing, complaint-driven review (no proactive sampling).",
+      "Mixes a correct piece (per-cell validation) with two wrong ones (raw confidence, uniform sampling).",
+      "Mixes a wrong piece (aggregate validation) and missing ongoing review with a correct one (calibrated routing); leaves drift undetected.",
+      "Correct — this is the full prescription: segment-level validation, calibrated per-cell thresholds, OR-routing on confidence and contradictions, and stratified ongoing monitoring. Each piece protects the others."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.5"
+    ],
+    "phase": "post",
+    "qid": "c74bfa8d-9f59-4dc4-8863-d632ea8c969c"
+  }
+]

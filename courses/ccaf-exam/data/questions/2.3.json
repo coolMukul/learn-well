@@ -1,0 +1,882 @@
+[
+  {
+    "question": "A coordinator agent currently exposes 18 tools to a single specialist subagent. The team observes that the subagent often picks generic tools when more specific ones would fit, and sometimes picks the wrong tool altogether. What is the most likely cause according to the Task 2.3 guidance?",
+    "options": [
+      "The model temperature is too high; lower it to make tool picks more deterministic.",
+      "Tool overload: 18 tools is well past the 4-5 comfortable target. As the tool list grows, decision complexity rises and description overlap weakens disambiguation, so selection reliability drops.",
+      "The tool descriptions are missing JSON schemas for their inputs.",
+      "The agent is missing a `tool_choice: \"any\"` setting on its calls."
+    ],
+    "explanations": [
+      "Wrong — temperature affects sampling diversity but doesn't explain the structural overlap issue when many similar tools share keywords. Tool overload is independent of temperature.",
+      "Correct — the excerpt explicitly cites 18 vs 4-5 as the canonical overload example. The fix is to split the work across role-scoped subagents with smaller toolboxes, not to tweak parameters.",
+      "Wrong — missing schemas hurt input validity, not selection across tools. The selection-reliability degradation in the stem is the tool-overload signature.",
+      "Wrong — `\"any\"` only forbids free-form text replies; it doesn't help the model pick correctly among 18 overlapping tools. The problem is the toolbox shape."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "pre",
+    "qid": "6985bc52-4ca8-43b7-a375-947dee28bd3e"
+  },
+  {
+    "question": "In a multi-agent research system, the synthesis subagent has been given access to `web_search` for occasional fact-checking. The team finds it routinely emits `web_search` calls mid-synthesis, duplicating work the search subagent already did. What does this exemplify?",
+    "options": [
+      "Cross-specialization misuse: the synthesis agent is calling tools outside its role, and the toolbox signal is overriding the system prompt's role definition.",
+      "A bug in the model's tool-selection layer; file a support ticket.",
+      "Insufficient few-shot examples in the synthesis prompt.",
+      "A `tool_choice` misconfiguration that should be set to `\"auto\"`."
+    ],
+    "explanations": [
+      "Correct — this is the canonical Task 2.3 failure mode. When a tool route exists, the model takes it; the deterministic fix is to remove `web_search` from the synthesis toolbox and route rare needs through the coordinator (or add a constrained `verify_fact` for high-frequency needs).",
+      "Wrong — the model is behaving as designed: given a tool, it sometimes uses it. The architectural choice (giving the tool at all) is the bug.",
+      "Wrong — few-shot examples reduce frequency probabilistically but don't remove the route. The structural fix is removing the tool.",
+      "Wrong — `\"auto\"` is the default; the issue is which tools are in the toolbox, not the choice mode."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "pre",
+    "qid": "d77640ac-a195-4c38-b393-6539a14e464a"
+  },
+  {
+    "question": "Which statement about `tool_choice: \"any\"` is correct?",
+    "options": [
+      "It pins the model to a single, named tool you specify in the request.",
+      "It is the default mode for every Anthropic API request.",
+      "It guarantees the model will call some tool on this turn (instead of returning a free-form text reply); the model still chooses which tool.",
+      "It allows the model to call multiple tools in parallel within a single turn."
+    ],
+    "explanations": [
+      "Wrong — that describes forced selection (`{\"type\": \"tool\", \"name\": \"...\"}`). `\"any\"` doesn't pin a specific tool.",
+      "Wrong — `\"auto\"` is the default. `\"any\"` is an opt-in mode that forbids text-only replies.",
+      "Correct — `\"any\"` requires a tool call but leaves the choice to the model. It's the right setting when a free-form text reply would be invalid for the workflow.",
+      "Wrong — parallel tool calls are a separate capability and not what `\"any\"` controls. `\"any\"` only forbids the no-tool-call path."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "pre",
+    "qid": "d45981bb-285e-4ed9-8003-b0a8d64ca02d"
+  },
+  {
+    "question": "An extraction pipeline must always run `extract_metadata` before any enrichment tool runs. The team is currently relying on the system prompt to remind the model. Occasionally the model skips metadata and tries to enrich raw text. What is the most direct fix using `tool_choice`?",
+    "options": [
+      "Set `tool_choice: \"any\"` so the model is forced to call some tool first.",
+      "Set `tool_choice: \"auto\"` and add a few-shot example showing `extract_metadata` going first.",
+      "Set `tool_choice: {\"type\": \"tool\", \"name\": \"extract_metadata\"}` on the first turn to force that tool, then switch to `\"auto\"` on subsequent turns.",
+      "Remove all enrichment tools from the agent's toolbox."
+    ],
+    "explanations": [
+      "Wrong — `\"any\"` forbids free-form text but doesn't pin which tool. The model might still pick an enrichment tool first.",
+      "Wrong — that's probabilistic. The stem says metadata sometimes gets skipped; few-shot reduces but doesn't eliminate the failure rate.",
+      "Correct — forced tool selection guarantees `extract_metadata` is called on turn 1, then releasing to `\"auto\"` lets the model continue normally for enrichment and final reply. This is exactly the pattern the excerpt names.",
+      "Wrong — removing enrichment tools breaks the rest of the pipeline. The constraint is ordering, not capability."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "pre",
+    "qid": "c1c1b53d-5e2e-47a6-8652-3419ac5b1bb5"
+  },
+  {
+    "question": "A document-analysis subagent currently has a generic `fetch_url(url)` tool. It frequently fetches Twitter threads, Stack Overflow answers, and broken HTML and tries to analyze them. Which Task 2.3 pattern best addresses this?",
+    "options": [
+      "Add a system-prompt rule: 'Only fetch URLs that point to documents.'",
+      "Replace `fetch_url` with a constrained alternative like `load_document(url)` that validates the URL points to a supported document type and returns parsed structure.",
+      "Wrap `fetch_url` in a `try/except` that retries on errors.",
+      "Lower the model temperature so it picks `fetch_url` less often."
+    ],
+    "explanations": [
+      "Wrong — prompt rules give probabilistic compliance; the generic tool's surface still invites off-task fetches. Constraint must live in the tool contract.",
+      "Correct — this is the excerpt's canonical example: replace generic tools with constrained alternatives. The narrower contract bounds failure modes and the description signals the intended use.",
+      "Wrong — retries don't change which URLs are fetched; they just paper over failures of the off-task fetches.",
+      "Wrong — temperature doesn't change the tool's surface. The model will still occasionally pick `fetch_url` and pass an off-task URL."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "pre",
+    "qid": "2b9c6664-b868-4f14-a889-94d36aad7992"
+  },
+  {
+    "question": "Which approach matches the 'scoped tool access with limited cross-role tools' principle from the excerpt?",
+    "options": [
+      "Give every subagent the same union toolbox so any agent can handle any sub-task without coordinator hops.",
+      "Strip every subagent down to a single tool and route everything through the coordinator.",
+      "Give each subagent only the tools its role needs, plus a small number of tightly constrained cross-role tools (e.g., `verify_fact`) for genuinely high-frequency needs; route rare cross-role needs through the coordinator.",
+      "Generate a fresh toolbox per turn based on the model's current intent."
+    ],
+    "explanations": [
+      "Wrong — that's the union-toolbox anti-pattern that produces tool overload and cross-specialization misuse.",
+      "Wrong — too narrow; high-frequency cross-role needs would force coordinator hops on most turns, wasting round-trips.",
+      "Correct — this is the excerpt's exact prescription: role-scoped toolboxes with measured cross-role additions for high-frequency needs and coordinator routing for rare ones.",
+      "Wrong — runtime tool synthesis isn't the Task 2.3 pattern, and dynamic toolboxes mid-session would destabilize selection."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "pre",
+    "qid": "e870786d-1397-47af-8846-2d6676d38ee4"
+  },
+  {
+    "question": "A team configures `tool_choice: {\"type\": \"tool\", \"name\": \"summarize\"}` for the entire session of an agent that should produce both intermediate analysis tool calls and a final summary. What will go wrong?",
+    "options": [
+      "Nothing — forced selection is the safest default for production systems.",
+      "The agent will loop or stall: every turn it can only call `summarize`, so it cannot call analysis tools or return a final reply. Forced selection should be applied per-turn, then released.",
+      "The agent will return free-form text replies because forced selection requires `\"any\"` to be enabled.",
+      "The agent will randomly switch to other tools because forced selection is only a hint."
+    ],
+    "explanations": [
+      "Wrong — forced selection is a per-turn lever, not a session-wide default. Leaving it on cripples the agent.",
+      "Correct — forced `tool_choice` pins every turn to `summarize`; analysis tools are unreachable and there's no path to a final reply. Release to `\"auto\"` after the forced turn.",
+      "Wrong — forced selection forbids free-form replies; that's not the failure mode here. The failure is being stuck on one tool.",
+      "Wrong — forced selection is a hard constraint, not a hint. The model will obey but will be trapped."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "pre",
+    "qid": "25fe2426-8586-462e-8d18-635759b6ac7d"
+  },
+  {
+    "question": "A team is debating whether to use forced `tool_choice` or a `PreToolUse` hook to enforce 'never issue refunds over $500.' Which is the right mechanism?",
+    "options": [
+      "Forced `tool_choice` on `escalate_to_human` for every turn.",
+      "Forced `tool_choice` on `process_refund` to make sure refunds always go through.",
+      "A `PreToolUse` hook on `process_refund` that denies the call when amount > $500 and redirects via the deny reason. Forced `tool_choice` is for ordering and structured-output guarantees, not policy enforcement.",
+      "Add the rule to the system prompt and set `tool_choice: \"any\"`."
+    ],
+    "explanations": [
+      "Wrong — pinning every turn to `escalate_to_human` traps the agent and prevents it from handling under-$500 refunds normally.",
+      "Wrong — that forces every turn to call `process_refund`, the opposite of what's wanted; it doesn't check amount.",
+      "Correct — policy compliance with a guarantee requirement is a `PreToolUse` hook (Task 1.5). Forced `tool_choice` doesn't reason about inputs; it just calls the named tool unconditionally.",
+      "Wrong — system-prompt rules are probabilistic; `\"any\"` only blocks text replies. Neither gives the policy guarantee."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "pre",
+    "qid": "b94372bf-d241-41f4-989a-6eece3e38c9f"
+  },
+  {
+    "question": "Which of these is the strongest signal that an agent has too many tools (tool overload)?",
+    "options": [
+      "Tool calls take longer to execute on average.",
+      "The model's output tokens drop because it spends more compute on tool selection.",
+      "The agent always returns free-form text instead of calling tools.",
+      "The agent's selection accuracy degrades — it picks generic tools when specific ones would fit, or picks the wrong tool entirely; failures correlate with description-overlap among tools."
+    ],
+    "explanations": [
+      "Wrong — execution latency depends on the tool implementations, not the selection problem. Overload is a selection issue, not a runtime one.",
+      "Wrong — that's not how selection complexity manifests in output. The visible symptom is wrong picks.",
+      "Wrong — that's a `tool_choice` issue (use `\"any\"` to forbid text-only replies), not a tool-overload symptom.",
+      "Correct — the canonical overload symptom is degraded selection reliability driven by description overlap and decision complexity. The excerpt cites 4-5 vs 18 as the contrast."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "pre",
+    "qid": "938b31c7-176b-4d06-b91c-632af48225f9"
+  },
+  {
+    "question": "An agent is required to always invoke a tool (never return a free-form text reply) but should be allowed to choose which tool. Which `tool_choice` setting fits?",
+    "options": [
+      "`tool_choice: \"auto\"`",
+      "`tool_choice: \"any\"`",
+      "`tool_choice: {\"type\": \"tool\", \"name\": \"<some-default-tool>\"}`",
+      "`tool_choice: \"none\"`"
+    ],
+    "explanations": [
+      "Wrong — `\"auto\"` lets the model return text. The requirement is no free-form reply.",
+      "Correct — `\"any\"` guarantees a tool call while preserving the model's freedom to pick which tool. That's exactly the stated requirement.",
+      "Wrong — forced selection pins to one tool, removing the model's choice. The requirement keeps the choice.",
+      "Wrong — `\"none\"` forbids tool calls entirely, the opposite of the requirement."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "pre",
+    "qid": "779ebe9e-e5a7-498c-ba44-2f543b0dd250"
+  },
+  {
+    "question": "A research coordinator delegates to a synthesis subagent that previously had `{web_search, news_search, summarize, verify_fact, cite, format_report, load_document, extract_metadata}` (8 tools). After scoping, the synthesis toolbox should be reduced. Which scoped toolbox best matches the Task 2.3 prescription, given verification is needed on most synthesis turns?",
+    "options": [
+      "`{web_search, summarize, cite}` — keep web_search so the agent can verify facts directly.",
+      "`{summarize, format_report, web_search, news_search}` — replace synthesis-specific tools with broader research tools.",
+      "Empty toolbox — the synthesis agent should rely entirely on its system prompt and the conversation history.",
+      "`{verify_fact, cite}` — remove all search/document tools; `verify_fact` is the constrained cross-role tool for the high-frequency verification need; rare extra needs go through the coordinator."
+    ],
+    "explanations": [
+      "Wrong — keeping `web_search` is the cross-specialization-misuse setup the excerpt warns against. The agent will drift back into search.",
+      "Wrong — adding `web_search` and `news_search` to synthesis is the cross-specialization anti-pattern; it would re-introduce drift.",
+      "Wrong — synthesis still needs at least `cite` and ideally `verify_fact`; an empty toolbox over-restricts and forces coordinator hops on every turn.",
+      "Correct — synthesis-role tools (`cite`) plus a single constrained cross-role tool (`verify_fact`) for the measured high-frequency need. Rare exceptions go through the coordinator. This matches the excerpt verbatim."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "91593c86-501b-445d-9afe-49928daae3fd"
+  },
+  {
+    "question": "In the Scenario 6 extraction pipeline, the team wants `extract_metadata` to run on turn 1 and the rest of the pipeline (`enrich_addresses`, `validate_totals`, `summarize`) to flow naturally afterward. Which `tool_choice` configuration sequence is correct?",
+    "options": [
+      "All turns: `tool_choice: \"any\"`.",
+      "All turns: `tool_choice: {\"type\": \"tool\", \"name\": \"extract_metadata\"}`.",
+      "Turn 1: `tool_choice: {\"type\": \"tool\", \"name\": \"extract_metadata\"}`. Turns 2+: `tool_choice: \"auto\"`.",
+      "Turn 1: `\"auto\"`. Turn 2: forced `extract_metadata`. Turn 3+: `\"auto\"`."
+    ],
+    "explanations": [
+      "Wrong — `\"any\"` doesn't pin which tool. The model could still pick an enrichment tool on turn 1, missing the metadata step.",
+      "Wrong — forcing `extract_metadata` on every turn traps the agent on metadata; it never reaches enrichment or returns a final reply.",
+      "Correct — this is the excerpt's named pattern: force the must-be-first tool on turn 1, then release to `\"auto\"` for the rest. Guarantees the ordering without trapping the agent.",
+      "Wrong — forcing on turn 2 means the model could skip metadata on turn 1, defeating the ordering guarantee. The forced turn must be turn 1."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "f331e0c8-614a-4d78-8a17-f2dbe48e7891"
+  },
+  {
+    "question": "When should you choose forced `tool_choice` over a `PreToolUse` hook to enforce a constraint?",
+    "options": [
+      "When the constraint is 'tool X must be called first this turn.' Forced selection is simpler and lives in the request, vs. a hook that would deny out-of-order calls. Use a hook when the constraint is about denying or modifying calls based on input shape or session state.",
+      "Always — `PreToolUse` hooks are deprecated in favor of `tool_choice`.",
+      "Never — `PreToolUse` hooks always cover what forced `tool_choice` does.",
+      "When you need to deny tool calls based on amount thresholds (e.g., refund > $500)."
+    ],
+    "explanations": [
+      "Correct — forced `tool_choice` is the right per-turn lever for must-call-X-first ordering. `PreToolUse` hooks are right for input-conditional denials/modifications and policy compliance. Both are deterministic; the constraint shape decides which to use.",
+      "Wrong — neither is deprecated; they solve different problems.",
+      "Wrong — they have overlapping but distinct uses; forced `tool_choice` is the simpler choice for plain ordering, while hooks handle conditional logic.",
+      "Wrong — that's exactly the case where a hook is needed (input-conditional denial). Forced `tool_choice` can't inspect inputs to decide whether to deny."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "0af4cb87-88b1-4cde-998a-6f9afa1fec40"
+  },
+  {
+    "question": "A code-review subagent has tools `{Grep, Glob, Read, Edit, Bash, Write, web_search, send_slack_message, jira_create_issue, github_open_pr, lookup_employee_directory, calendar_book}`. Reviews are slow and the agent occasionally posts to Slack mid-review or opens unrelated Jira issues. What is the best Task 2.3 fix?",
+    "options": [
+      "Add few-shot examples showing only code-review tool calls and add `tool_choice: \"any\"`.",
+      "Lower the temperature so the agent picks fewer off-role tools.",
+      "Reduce the toolbox to the role-scoped set `{Grep, Glob, Read, Edit, Bash, Write}` and remove the off-role tools (`send_slack_message`, `jira_create_issue`, `github_open_pr`, `lookup_employee_directory`, `calendar_book`); route any cross-role need through the coordinator.",
+      "Add stronger system-prompt rules forbidding the off-role tools, but keep them in the toolbox in case they're needed."
+    ],
+    "explanations": [
+      "Wrong — few-shot reduces but doesn't eliminate cross-specialization drift, and `\"any\"` doesn't restrict which tool. The structural problem is the toolbox shape.",
+      "Wrong — temperature doesn't change which tools exist in the toolbox. The drift route persists at any temperature.",
+      "Correct — the agent has both tool overload (12 tools) and cross-specialization misuse (Slack, Jira, calendar). Scoping to the code-review role is the structural fix per the excerpt.",
+      "Wrong — keeping off-role tools 'in case' is the anti-pattern. While the route exists, the model will eventually take it; prompts can only discourage probabilistically."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "bbb02b92-a347-4714-866b-cdab5a2b6a03"
+  },
+  {
+    "question": "Two architects debate: Architect A wants to add a new `web_search` tool to a synthesis agent because synthesis sometimes needs verification. Architect B argues against. Which argument best supports B?",
+    "options": [
+      "Adding tools always slows execution.",
+      "Synthesis agents should never call tools at all.",
+      "Tool descriptions cannot exceed 256 characters, so one more tool will overflow.",
+      "`web_search` is a generic tool with broad surface area, and adding it to the synthesis role creates a cross-specialization drift route. Prefer a constrained `verify_fact` tool scoped to already-collected sources, or route through the coordinator for rare needs."
+    ],
+    "explanations": [
+      "Wrong — execution time isn't the architectural concern; selection drift is.",
+      "Wrong — synthesis can call tools (e.g., `cite`, `format_report`); the issue is which tools, not whether tools.",
+      "Wrong — there is no such hard limit, and the real issue is role scoping, not description length.",
+      "Correct — Task 2.3 prescribes constrained alternatives over generic tools and warns against cross-specialization misuse. A scoped `verify_fact` keeps the role intact; `web_search` invites drift."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "627d0b08-8094-4c8e-a71a-d56159fceb9e"
+  },
+  {
+    "question": "An agent currently uses `tool_choice: \"auto\"` and occasionally returns a free-form text reply when the downstream system requires a structured tool call (any tool — the choice can vary). What's the minimal change?",
+    "options": [
+      "Switch to forced `tool_choice` pinning a default tool, even though the right tool varies per turn.",
+      "Switch to `tool_choice: \"any\"` so the model is required to call some tool but still picks which one.",
+      "Add a `PreToolUse` hook that denies the empty-text response.",
+      "Switch to `tool_choice: \"none\"` and ask the model to describe which tool to call."
+    ],
+    "explanations": [
+      "Wrong — pinning the wrong tool produces incorrect behaviour. `\"any\"` is the right level of constraint when the choice should remain with the model.",
+      "Correct — `\"any\"` exactly matches the requirement: forbid free-form text replies while preserving the model's choice of which tool to invoke. Minimal, targeted change.",
+      "Wrong — `PreToolUse` fires on tool calls, not on text replies; it can't catch the no-tool-call case.",
+      "Wrong — `\"none\"` forbids tool calls altogether, which is the opposite of what's wanted."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "70b15428-6089-42fd-a3e1-f136df836cc4"
+  },
+  {
+    "question": "Which scenario best illustrates the principle 'a constrained alternative beats a generic tool'?",
+    "options": [
+      "Replacing `process_refund` with `process_refund_under_500` and `process_refund_over_500` to split flows.",
+      "Replacing `Read` with a custom `read_with_logging` that wraps the call with telemetry.",
+      "Replacing `fetch_url` with `load_document` that validates the URL points to a supported document type and returns parsed structure, eliminating off-task fetches of arbitrary web content.",
+      "Replacing `extract_metadata` with `extract_metadata_v2` that adds a new optional field."
+    ],
+    "explanations": [
+      "Wrong — that's a domain-specific split, not the generic-vs-constrained pattern. Both halves still apply to refunds; neither is a 'generic' tool.",
+      "Wrong — that adds telemetry without changing the contract or surface area; the tool is just as generic as before.",
+      "Correct — this is the excerpt's named example. `fetch_url` is a generic tool; `load_document` is a constrained alternative with a narrower contract that prevents off-task uses by design.",
+      "Wrong — that's a versioning change with the same contract shape, not a constrained alternative replacing a generic tool."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "74f140dd-9f71-4640-ac0a-8e821f313df0"
+  },
+  {
+    "question": "A coordinator uses `tool_choice: {\"type\": \"tool\", \"name\": \"plan_research\"}` on the first turn of every research request, then releases to `\"auto\"`. The team observes that the coordinator sometimes returns the plan itself as the final answer instead of dispatching subagents. What's the most likely cause?",
+    "options": [
+      "Forced `tool_choice` is buggy and should be replaced with `\"any\"`.",
+      "The forced first-turn call works correctly, but on subsequent `\"auto\"` turns the coordinator's prompt and toolbox don't make dispatch the obvious next action — i.e., the structural fix is in role/prompt design, not in `tool_choice`. Forced selection only guarantees the first step; it can't enforce what comes next.",
+      "The coordinator needs `tool_choice` set to the dispatch tool on every subsequent turn.",
+      "The agent needs more system-prompt instructions about returning plans."
+    ],
+    "explanations": [
+      "Wrong — forced `tool_choice` is not buggy. The first-turn behaviour is correct.",
+      "Correct — forced `tool_choice` is a per-turn guarantee for one tool. The excerpt names this exact pattern (force first, auto after) and the limitation: subsequent steps are model-decided. If those decisions are wrong, fix the prompt/toolbox, not the `tool_choice` mode.",
+      "Wrong — pinning every turn to a dispatch tool would prevent the coordinator from ever returning a final aggregated answer; same trap as session-wide forced selection.",
+      "Wrong — partially right (prompt design helps), but the deeper diagnosis is that forced `tool_choice` can't enforce post-first-turn behaviour by design. Recognizing the limitation is the answer."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "10182fef-01b5-49b5-a528-229761d23db8"
+  },
+  {
+    "question": "A team adds a cross-role tool to a specialized agent every time someone notices a workflow friction point. After six months the agent has 14 tools, half of them cross-role. What is most likely happening, per Task 2.3?",
+    "options": [
+      "The agent is now more capable and reliable due to the broader toolbox.",
+      "Nothing — 14 tools is well below the overload threshold.",
+      "The team should add a few-shot example for each cross-role tool to maintain selection accuracy.",
+      "The agent is approaching tool overload and accumulating cross-specialization drift routes. The excerpt warns against opportunistic cross-role additions; cross-role tools should be added deliberately for measured high-frequency needs, with rare needs routed through the coordinator."
+    ],
+    "explanations": [
+      "Wrong — the excerpt explicitly says broader toolboxes degrade selection reliability beyond the 4-5 comfortable target.",
+      "Wrong — 14 tools is past the 4-5 target the excerpt cites; the trajectory is what matters. Half cross-role compounds the issue.",
+      "Wrong — few-shot doesn't fix structural overload or remove drift routes. The fix is to scope the toolbox.",
+      "Correct — opportunistic cross-role accumulation is an anti-pattern. Each addition is a new drift route; together they push the agent into overload and cross-specialization misuse. The remedy is to prune and route rare needs through the coordinator."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "9f93cc60-c3c4-4b52-acc1-5475e9a154d7"
+  },
+  {
+    "question": "When `tool_choice: \"any\"` is the right pick over forced selection of a specific tool, which condition is the deciding factor?",
+    "options": [
+      "Cost — `\"any\"` is cheaper per request than forced selection.",
+      "Forced selection is deprecated and `\"any\"` is the modern replacement.",
+      "The choice of which tool to call should remain with the model on this turn, but a free-form text reply would be invalid for the workflow. `\"any\"` constrains the response shape (must be a tool call) without pinning the tool.",
+      "`\"any\"` allows multiple parallel tool calls while forced selection allows only one."
+    ],
+    "explanations": [
+      "Wrong — pricing isn't the architectural deciding factor here, and there's no inherent cost difference between the modes.",
+      "Wrong — both modes are current and serve different purposes.",
+      "Correct — the deciding factor is whether the tool choice itself should be the model's. If yes, `\"any\"` is right; if no (a specific tool must run), use forced selection. Both forbid the free-form-text path, but they differ on who picks the tool.",
+      "Wrong — parallel tool calls aren't governed by the `\"any\"` vs forced distinction; that's a separate capability."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "06b467c2-9e2c-4a55-b9e5-43b6b5e12d57"
+  },
+  {
+    "question": "A subagent currently has 7 tools and the team is observing selection drift — generic tools chosen when narrower ones would fit. Some argue 7 is below the overload threshold since the excerpt cites 18 vs 4–5 as the canonical contrast. Which framing best matches Task 2.3?",
+    "options": [
+      "The 4–5 target is a soft guideline, not a hard line. Selection reliability degrades gradually as the toolbox grows and as descriptions overlap; 7 tools with overlapping surfaces is enough to manifest drift, and the structural fix is the same — scope to the role and prune overlap.",
+      "Seven is well below the threshold; the drift is caused by something else (model temperature, prompt phrasing). Tool count is fine until 18.",
+      "Selection drift below 10 tools is purely a `tool_choice` problem; switch to `\"any\"` to fix it.",
+      "The exam treats 18 as the only overloaded count; for fewer tools, accept the drift as a model bug."
+    ],
+    "explanations": [
+      "Correct — the excerpt presents 4–5 vs 18 as a comfort-zone vs overload contrast, not a binary cutoff. Drift can emerge well below 18 when descriptions overlap, and the remedy is structural: tighter scoping and clearer descriptions, not parameter tweaks.",
+      "Wrong — temperature and prompt phrasing don't create overlapping description signals. The structural cause is the toolbox, and the cure is structural too.",
+      "Wrong — `\"any\"` constrains response shape (must call some tool) but doesn't help the model pick correctly among overlapping tools. It addresses a different failure mode.",
+      "Wrong — the excerpt frames 4–5 as the comfort target. Overload is gradual; you don't wait for 18 to act."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "0f3a423a-c1f1-42a4-a8d9-721696c205b6"
+  },
+  {
+    "question": "A research-system designer chooses between two configurations for the synthesis subagent. Config A: `{cite, format_report}` only — every verification routes through the coordinator. Config B: `{cite, format_report, verify_fact}` where `verify_fact(claim, source_id)` is constrained to already-collected sources. The team measures verification need on roughly 80% of synthesis turns. Per Task 2.3, which fits?",
+    "options": [
+      "Config A — every cross-role tool is a drift route, and routing through the coordinator is always safer.",
+      "Either; latency is the only difference and depends on infrastructure.",
+      "Config B — the excerpt prescribes a small number of tightly constrained cross-role tools for high-frequency needs, with rare needs routed through the coordinator. 80% qualifies as high-frequency, and `verify_fact` is the constrained alternative (not generic `web_search`).",
+      "Config B, but only if `verify_fact` accepts arbitrary URLs so it can fetch any external source."
+    ],
+    "explanations": [
+      "Wrong — coordinator hops on 80% of turns is exactly the inefficiency the excerpt names as the reason to add a constrained cross-role tool.",
+      "Wrong — the excerpt frames this as a structural choice, not an infra one. The decision criterion is need frequency and shape.",
+      "Correct — this is the canonical Task 2.3 pattern: high-frequency cross-role needs justify a single constrained scoped tool; rare needs route through the coordinator. `verify_fact` scoped to already-collected sources is the right shape.",
+      "Wrong — accepting arbitrary URLs makes `verify_fact` a re-skinned `web_search`, restoring the cross-specialization drift route the excerpt warns against."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "ded16672-ae45-4ac6-b930-c3105899f311"
+  },
+  {
+    "question": "A team configures `tool_choice: {\"type\": \"tool\", \"name\": \"process_payment\"}` for every turn of a payment-flow agent so 'payments always go through.' What is the most direct failure?",
+    "options": [
+      "`process_payment` will fail because forced selection bypasses the model's input-validation step.",
+      "The agent is trapped — every turn it can only call `process_payment`. It cannot validate inputs, request missing details, or return a final receipt. Forced `tool_choice` is a per-turn lever for ordering, not a session-wide policy gate.",
+      "The model will silently fall back to free-form text replies once it detects the trap.",
+      "The model will randomly pick other tools because forced selection is a hint at temperature > 0."
+    ],
+    "explanations": [
+      "Wrong — forced selection doesn't bypass anything in the call path; it pins which tool is invoked. The bug is structural, not implementation-level.",
+      "Correct — session-wide forced `tool_choice` is the same trap the excerpt warns about for any pinned-every-turn config: no validation, no other tool calls, no final reply. For unconditional payment guarantees you need a different mechanism (e.g., a `PreToolUse` hook gating other tool calls or a deterministic non-LLM step).",
+      "Wrong — forced selection forbids free-form text replies. The model is forced to attempt the pinned tool every turn.",
+      "Wrong — forced selection is a hard constraint, not a hint. The model obeys deterministically and gets stuck."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "884a1367-9366-4371-b832-50d8236baeea"
+  },
+  {
+    "question": "A tool description currently reads: 'Loads a document from a URL.' The team rewrites it to: 'Loads a PDF or DOCX from a validated URL. DO NOT use for HTML pages, social-media posts, or arbitrary web content — use `constrained_search` for those.' Per Task 2.3 (and 2.1), which is most accurate?",
+    "options": [
+      "The longer description is worse — extra text inflates the prompt and hurts selection.",
+      "The longer description doesn't change behaviour because models ignore 'DO NOT' clauses.",
+      "The longer description is fine, but the only Task 2.3 fix is removing the tool — descriptions don't matter.",
+      "The longer description tightens the contract and reduces overlap with sibling tools, sharpening the model's selection signal in a multi-tool toolbox. The structural choice — replacing a generic tool with a constrained one — is the broader Task 2.3 prescription, and the description tightens that contract verbally."
+    ],
+    "explanations": [
+      "Wrong — sharper boundaries help selection more than they cost in tokens. Vague descriptions overlap and confuse selection; tight ones disambiguate.",
+      "Wrong — 'DO NOT' clauses do affect selection probabilistically. They are not a hard constraint, but they shift the disambiguation signal.",
+      "Wrong — Task 2.3 explicitly cites constrained alternatives, and a tighter description is part of how a constrained alternative is communicated to the model. Task 2.1 reinforces this.",
+      "Correct — clear boundaries reduce the overlap that drives overload symptoms. Combined with the structural choice of a constrained alternative (Task 2.3), the description is how the contract is conveyed to the LLM."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "ca56236c-34ac-47b5-87c6-d24050be7279"
+  },
+  {
+    "question": "A team integrates an MCP server that registers 15 tools, but their workflow only ever needs 4 of them for the agent in question. Per Task 2.3, what's the right configuration?",
+    "options": [
+      "Register all 15 tools — MCP servers are designed for full registration and 15 is fine.",
+      "Set `tool_choice: \"any\"` so the agent is forced to call some tool from the 15.",
+      "Restrict the agent's available tools to the 4 actually needed (allow-list) so the toolbox stays role-scoped, even though all 15 are technically available from the MCP server. The 11 unused tools add selection noise without contributing to this role.",
+      "Lower the model temperature to compensate for the larger toolbox."
+    ],
+    "explanations": [
+      "Wrong — exposure is a per-agent decision, not a per-server one. Registering 15 tools to an agent that needs 4 reproduces the overload symptom.",
+      "Wrong — `\"any\"` requires a tool call but doesn't reduce the selection field. The agent still picks among 15 with the same overlap pressure.",
+      "Correct — Task 2.3 is about *agent toolbox shape*, not server-side registration. Allow-listing the 4 relevant tools keeps selection reliability in the comfort zone.",
+      "Wrong — temperature doesn't change the toolbox surface. Selection complexity rises with tool count regardless of sampling parameters."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "e2413c0b-fc68-4336-94fc-06505f7b4975"
+  },
+  {
+    "question": "A coordinator decides whether to grant a synthesis subagent a new cross-role tool `verify_fact` or keep routing rare verification needs through itself. Per Task 2.3, the deciding criterion is...",
+    "options": [
+      "The frequency and shape of the cross-role need: high-frequency, uniformly-shaped needs justify a single tightly constrained scoped tool; rare or varying-shape needs go through the coordinator (one extra hop is acceptable).",
+      "The size of the response payload — large responses must go through the coordinator, small ones through the subagent.",
+      "Whether the cross-role tool is implemented in the same language as the agent runtime.",
+      "Whether the team has bandwidth to maintain another tool."
+    ],
+    "explanations": [
+      "Correct — the excerpt's criterion is *high-frequency need with constrained shape* for scoped cross-role tools, and coordinator routing for rare or varying-shape needs. This is the architectural decision rule.",
+      "Wrong — payload size is irrelevant to the role-scoping decision. Both paths handle any response shape.",
+      "Wrong — implementation language is unrelated to the architectural concern. The decision is about toolbox shape, not language compatibility.",
+      "Wrong — maintainability matters operationally but isn't the architectural criterion the excerpt describes."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "eea2bcea-4574-49b8-91c2-f4068762bdff"
+  },
+  {
+    "question": "A team uses forced `tool_choice` to ensure `extract_invoice_fields` is called on turn 1, but they observe the model occasionally produces malformed JSON in the tool's args. Some argue forced `tool_choice` should also guarantee arg validity. Which is correct?",
+    "options": [
+      "Yes — forced selection includes structured arg-generation guarantees; the malformed args are an SDK bug.",
+      "No — forced `tool_choice` only guarantees *which* tool is called, not the *quality* of its args. Arg shape is governed by the tool's input JSON schema (Task 4.3) and the prompt; arg quality is improved by tightening the schema, refining the prompt, and adding retry-with-error-feedback (Task 4.4) — not by changing `tool_choice`.",
+      "Yes — forced selection blocks the call when args are malformed.",
+      "The model only produces malformed args under high temperature; lowering temperature solves it."
+    ],
+    "explanations": [
+      "Wrong — there is no SDK guarantee on arg quality from `tool_choice`. The mode controls *which* tool is called, not arg validity.",
+      "Correct — `tool_choice` is one lever (which tool); arg validity is a different lever (schema + prompt + retry). Conflating them leads teams to chase the wrong fix.",
+      "Wrong — forced selection makes the call; arg validation is the tool's responsibility (or a `PreToolUse` hook). The mode itself doesn't gate args.",
+      "Wrong — arg quality has more sources than temperature: schema clarity, prompt examples, and feedback loops. Temperature is one knob; structural fixes are stronger."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "bed7ad9b-3c40-4a31-b881-a09c4988a79e"
+  },
+  {
+    "question": "A single-tool agent has toolbox = `{summarize}`. The team asks whether `tool_choice: \"any\"` and `tool_choice: {\"type\": \"tool\", \"name\": \"summarize\"}` are equivalent. Which is most accurate?",
+    "options": [
+      "They are not equivalent — `\"any\"` allows the model to call zero tools.",
+      "They are always equivalent regardless of toolbox size; pick whichever is shorter to type.",
+      "They are equivalent only when the model is fine-tuned for tool use.",
+      "They produce the same observable behaviour today (one tool exists; both force a call to it), but the semantics diverge as soon as the toolbox grows: `\"any\"` then leaves the choice to the model, while forced selection still pins the named tool. Pick by intent — 'must call this exact tool' (forced) versus 'must call any tool' (`\"any\"`)."
+    ],
+    "explanations": [
+      "Wrong — `\"any\"` requires a tool call (no free-form text). With one tool, that tool is the only option, and the model must call it.",
+      "Wrong — equivalence is conditional on the toolbox size. With multiple tools, the modes diverge fundamentally.",
+      "Wrong — fine-tuning isn't relevant to the semantic distinction. The two modes are different by design.",
+      "Correct — the right choice is by *intent*. If the contract is 'must call this exact tool,' use forced; if it's 'must call any tool from the toolbox,' use `\"any\"`. Today's coincidence (one tool) doesn't survive a toolbox change."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "94298e75-7a65-4ac4-b425-c041e96e0d22"
+  },
+  {
+    "question": "Six months after introducing `verify_fact` as a constrained cross-role tool for the synthesis subagent, the team finds it now accepts arbitrary URLs, plain-text claims without source pointers, and ad-hoc workflow flags. Cross-specialization drift symptoms have returned. Per Task 2.3, what happened and how should it be fixed?",
+    "options": [
+      "The model is calling `verify_fact` more often because the prompt drifted; refresh the system prompt.",
+      "Nothing is wrong — broader tools become more useful over time as needs evolve.",
+      "`verify_fact` has slowly *generalized* — drifting from a constrained alternative back into a generic tool. The contract widened, the description widened, and the disambiguation signal blurred. Restore the Task 2.3 prescription by tightening the contract: scope inputs to (claim, source_id) only, reject arbitrary URLs, and either spin off a separate constrained tool for new shapes or route them through the coordinator.",
+      "Add few-shot examples showing the correct usage of `verify_fact`."
+    ],
+    "explanations": [
+      "Wrong — the prompt isn't the cause; the tool's contract is. Even a perfect prompt can't undo a generic tool surface that invites the drift.",
+      "Wrong — broader tools regain the generic-tool problems the excerpt warns against. Generality re-introduces overlap and drift routes.",
+      "Correct — the named anti-pattern is constrained tools that gradually generalize. The fix mirrors the original prescription: tighten the contract, narrow the description, separate or route emerging needs.",
+      "Wrong — examples discourage drift probabilistically but don't remove the route. The structural fix is contract tightening, not prompt patching."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "be2fab7b-0adb-4d0d-a4d7-402e6e43f518"
+  },
+  {
+    "question": "An architect proposes sharing a single `lookup_customer(customer_id)` tool across the support agent, billing agent, and shipping agent — citing dedup and cache-warming benefits. Per Task 2.3, what is the best critique?",
+    "options": [
+      "Shared cross-role tools are acceptable when they are tightly scoped and serve a high-frequency, uniformly-shaped need across each role — `lookup_customer(customer_id)` returning a stable shape probably qualifies. The critique to apply: ensure the tool's contract doesn't widen to fit each consumer's edge cases, since contract creep leads back to a generic tool and cross-specialization drift.",
+      "Shared tools are forbidden by Task 2.3; every role must have its own copy.",
+      "Caching and dedup are not architectural concerns at this layer; the architect is misapplying database-tier reasoning.",
+      "The architect should use forced `tool_choice` to keep behaviour consistent across the three roles."
+    ],
+    "explanations": [
+      "Correct — Task 2.3 allows scoped cross-role tools when the need is high-frequency and uniformly shaped. The risk is contract creep over time, which is the same anti-pattern as `verify_fact` generalizing into a generic tool. Sharing is fine *with discipline*.",
+      "Wrong — Task 2.3 doesn't forbid sharing. It prescribes role-scoped toolboxes plus measured cross-role tools; a tightly scoped shared utility fits.",
+      "Wrong — the architect's reasoning isn't misplaced; it just isn't the whole picture. The architectural concern is contract shape, not tier mixing.",
+      "Wrong — forced `tool_choice` is for ordering and structured-output, not for keeping a tool's contract consistent across consumers. That's a contract-design problem."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "9b6fdf59-fc9d-43a0-aa51-c73e4677603e"
+  },
+  {
+    "question": "A research subagent has 4 tools — `{search, load_document, summarize, verify_fact}` — and selection accuracy is fine. The team wants to add `cite_source(claim_id, source_id)`, a tightly constrained 5th tool serving a high-frequency need on most synthesis turns. Pick the most defensible reading of Task 2.3 for this decision.",
+    "options": [
+      "The 4–5 figure in the excerpt is a strict upper bound; 5 tools sits at the edge and the next addition will degrade selection. Route citation through the coordinator instead.",
+      "The \"4–5\" target is the comfort zone, not a strict cap; adding a tightly constrained 5th tool to serve a high-frequency, role-aligned need is exactly the prescription. The risk to monitor is contract overlap with `verify_fact`, not the count itself.",
+      "Both 4 and 5 tools are within comfort, so count is irrelevant — but adding `cite_source` is wrong because every additional tool causes drift.",
+      "The decision can't be made yet; collect 30 days of selection-accuracy metrics before adding any tool."
+    ],
+    "explanations": [
+      "Wrong — the excerpt frames 4–5 as a comfort target. The structural fix when scaling beyond is scope-and-prune, not a hard refusal at the boundary. Coordinator routing is for *rare* needs, not high-frequency ones.",
+      "Correct — the relevant question is whether the new tool is constrained, role-aligned, and serves a high-frequency need. All three hold. The watchpoint is `verify_fact`/`cite_source` description overlap (Task 2.1), not that 5 tools breaks a rule.",
+      "Wrong — the excerpt explicitly allows constrained role-aligned and constrained cross-role additions. \"Every tool causes drift\" is too absolute to be the right frame.",
+      "Wrong — over-engineering. The architectural call can be made from first principles now and revisited if drift appears."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "ccb367d1-af5b-4d6f-bfe6-5397deaf0d3f"
+  },
+  {
+    "question": "An extraction pipeline configures: turn 1 = `tool_choice: {\"type\": \"tool\", \"name\": \"extract_metadata\"}`; turn 2 = `tool_choice: \"any\"`; turn 3+ = `tool_choice: \"auto\"`. The team believes turn 2's `\"any\"` ensures all enrichment tools (`enrich_addresses`, `validate_totals`) run before the final reply. What subtle flaw exists?",
+    "options": [
+      "There is no flaw — this is the canonical force-then-release pattern.",
+      "Turn 2 should also be forced; `\"any\"` lets the model pick a tool that isn't an enrichment step.",
+      "`\"any\"` on turn 2 will trap the agent because no specific tool is allowed.",
+      "`\"any\"` on turn 2 only forbids free-form replies; it does not enforce that *all* enrichment tools run before a reply. The model can call one enrichment, then on turn 3 (now `\"auto\"`) skip the rest and reply. Multi-step ordering needs a `PreToolUse` hook or sequenced forced selection per step — not a single `\"any\"` turn."
+    ],
+    "explanations": [
+      "Wrong — the canonical pattern is *force-first-then-auto*, not *force, then any, then auto*. The middle `\"any\"` here is doing less work than the team thinks.",
+      "Wrong — forcing turn 2 to a specific enrichment tool over-constrains and also doesn't generalize when there are multiple enrichments.",
+      "Wrong — `\"any\"` allows tool calls; it doesn't forbid them. The trap-on-forced-selection-every-turn is a different anti-pattern.",
+      "Correct — `\"any\"` is a *response-shape* constraint (no prose), not a *step-coverage* guarantee. Multi-step coverage is an orchestration concern that needs a hook or per-step forced selection (or, more honestly, a code-side state machine)."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "12d0c1e4-5fc6-4763-9ce3-e7e5daa29e10"
+  },
+  {
+    "question": "A document subagent has tools `{Grep, Glob, Read, load_document, extract_metadata, summarize_doc, verify_fact, cite}` — 8 tools total. Symptoms: (a) it sometimes calls `Grep` with URLs as if they were file paths; (b) `cite` runs against raw web URLs not produced by `load_document`; (c) `verify_fact` invoked before any claims have been collected. Per Task 2.3, the *single most important* root cause is...",
+    "options": [
+      "Tool overload: 8 tools exceeds the 4–5 comfort zone, so reduce the count.",
+      "Description overlap: `Grep` and `load_document` both mention \"find content,\" so disambiguation is weak.",
+      "The toolbox mixes three role specializations — code-search built-ins (`Grep`, `Glob`, `Read`), document tools, and synthesis tools (`verify_fact`, `cite`). The agent's role is unclear and the model picks tools from the wrong specialization. The fix is scoping the toolbox to the document role and removing the others.",
+      "The model temperature is too high; lower it to make tool picks more deterministic."
+    ],
+    "explanations": [
+      "Wrong — tool count is part of the picture but the *qualitative* problem is which tools are mixed in. Reducing to 5 tools by removing arbitrary ones (e.g., dropping `Glob`) wouldn't fix the symptoms; the cross-role mix would still drive misuse.",
+      "Wrong — overlap is plausible but unverified, and the symptoms (running `cite` on raw URLs, `verify_fact` before claims exist) point to *role confusion*, not keyword overlap.",
+      "Correct — the textbook cross-specialization-misuse pattern is tools from different roles in one toolbox. The agent doesn't know whether it's a code-searcher, a document loader, or a synthesizer; the toolbox shape dictates the role, and right now the role is fuzzy. Scoping to the document role is the structural fix.",
+      "Wrong — temperature doesn't change the toolbox surface or role. The drift route persists at any temperature."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "6cd1dea4-d340-4d85-a1f1-cc208a61993d"
+  },
+  {
+    "question": "A team has two tools: `analyze_content(input)` — \"Analyzes content and returns insights.\" — and `extract_web_results(url)` — \"Fetches a web page and extracts the main article body, returning structured fields (title, author, date, body_text). Validates URL is HTTP(S); rejects non-HTML.\" The model often picks `analyze_content` even when `extract_web_results` is appropriate. What's the priority Task 2.3 fix?",
+    "options": [
+      "Add `tool_choice: \"auto\"` (the default) so the model can pick freely.",
+      "Rename `analyze_content` to a specific name (e.g., `extract_summary_from_text`) AND tighten its description so its scope doesn't overlap with `extract_web_results`. The model picks based on description; vague tools win when their scope-language overlaps with specific ones, and the fix is contract clarity per the excerpt's renaming/re-scoping prescription.",
+      "Remove `extract_web_results` and rely on `analyze_content` for everything.",
+      "Set `tool_choice: {\"type\": \"tool\", \"name\": \"extract_web_results\"}` whenever a URL is detected in the user input."
+    ],
+    "explanations": [
+      "Wrong — `\"auto\"` is the default; that's the current state. The selection problem is structural (contract clarity), not mode-related.",
+      "Correct — this is the excerpt's named pattern (`analyze_content → extract_web_results`): rename and re-scope generic tools so each contract is specific and non-overlapping. Tightening `analyze_content`'s description is the priority fix that closes the disambiguation gap.",
+      "Wrong — removing the constrained tool re-introduces `analyze_content` as the catch-all; that's the original symptom amplified. The excerpt prefers constrained alternatives over generic tools.",
+      "Wrong — input-based switching of `tool_choice` is brittle (URL detection isn't always upstream code, and the constraint conflates orchestration with selection). Forced selection is for ordering and structured-output, not for runtime tool routing based on input shape."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "2c3619e4-de31-434e-ae0c-c5be5e48a2bd"
+  },
+  {
+    "question": "A team must enforce: \"the agent must never call `delete_user` unless the caller's role context is admin, AND must always log successful deletions.\" Which approach gives the strongest, most architecturally correct guarantee?",
+    "options": [
+      "Set `tool_choice: {\"type\": \"tool\", \"name\": \"log_action\"}` first, then `\"auto\"` for the deletion turn — guarantees the log step.",
+      "Use `tool_choice: \"any\"` and trust the system prompt to enforce role checks.",
+      "Layer (A) with a `PreToolUse` hook for belt-and-suspenders — even if A is broken, more layers can't hurt.",
+      "Use a `PreToolUse` hook (Task 1.5) that inspects the role context and denies `delete_user` when role != admin, plus a `PostToolUse` hook that logs successful deletions. `tool_choice` modes don't reason about caller identity — they only control which tool runs and whether some tool runs."
+    ],
+    "explanations": [
+      "Wrong — forcing `log_action` first doesn't check the role, and on the next `\"auto\"` turn deletion can still happen regardless of role. Logging before deletion also logs *attempted* deletions that haven't happened yet — wrong shape.",
+      "Wrong — `\"any\"` is a response-shape constraint, not a policy gate; system-prompt rules give probabilistic compliance, not the deterministic guarantee the requirement demands.",
+      "Wrong — adding more layers to a broken design isn't \"belt-and-suspenders\"; A doesn't enforce the role check at all, and the compounding configuration makes the system harder to reason about. Just use the right mechanism (D).",
+      "Correct — Task 2.3 / Task 1.5 boundary: forced `tool_choice` is for *ordering* and *response shape*; hooks are for *input-conditional* enforcement and policy compliance. Role-conditional denial requires inspecting inputs, which is what `PreToolUse` does. `PostToolUse` for logging on success is the matching half."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "0e50bb56-eff0-4b8d-a14e-ce5e1cf648c0"
+  },
+  {
+    "question": "An agent has 4 tools (within the 4–5 comfort zone). It still shows selection drift — picking generic among them. Tool descriptions are individually clear; `tool_choice` is `\"auto\"`. Per Task 2.3, the most likely remaining cause is...",
+    "options": [
+      "The 4–5 comfort target is essentially a myth; agents drift at any tool count.",
+      "The system prompt is too long and the model is losing tool descriptions in the middle (lost-in-the-middle).",
+      "Two of the 4 tools have *overlapping scopes* despite individually clear descriptions — e.g., `search_web` and `lookup_industry_db` both legitimately fit \"find external information,\" forcing a near-coin-flip pick. The fix is renaming/re-scoping (Task 2.1) so descriptions don't overlap, or merging if the underlying functionality genuinely overlaps.",
+      "Model temperature is too high."
+    ],
+    "explanations": [
+      "Wrong — below the comfort zone, drift from count alone is unusual; \"any number drifts\" overstates the case and dismisses the structural diagnostic.",
+      "Wrong — lost-in-the-middle (Task 5.1) is real but typically manifests in long conversation histories, not in a small toolbox. The stem doesn't cite a long prompt.",
+      "Correct — *individually* clear descriptions can still describe overlapping scopes. Two tools that both legitimately answer the same intent force the model into ambiguous selection. Task 2.1's renaming/re-scoping is the fix; if the underlying functionality also overlaps, merging is honest.",
+      "Wrong — temperature doesn't change the structural ambiguity. Lowering it makes the same wrong pick more deterministic, not more correct."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "abf04163-d3e9-4c02-b48b-7c08982ffa71"
+  },
+  {
+    "question": "A team configures a payment flow: turn 1 = forced `validate_input`; turn 2 = forced `process_payment`; turn 3 = forced `send_confirmation`. They claim this guarantees the 3-step procedure. What is the strongest critique?",
+    "options": [
+      "Forced `tool_choice` per turn is fine for ordering, but: (i) any failure on turn 1 still proceeds to turn 2 with no error path; (ii) the model has no way to express \"I need clarification\" or \"the user said cancel\"; (iii) this is procedural orchestration that should be code-driven (a deterministic state machine), not LLM-driven. Forced selection is a per-turn lever, not a substitute for explicit control flow.",
+      "This is the canonical force-then-release pattern — no critique.",
+      "Turn 2 should be `\"auto\"` so the model can pick `process_payment` itself.",
+      "Turn 1 should be `\"any\"` to allow the model to pick `validate_input` or another validator."
+    ],
+    "explanations": [
+      "Correct — chained forced selection across N turns simulates a state machine, but badly: there's no error-branch handling, no cancellation path, no inspection of intermediate results before deciding the next step. When the steps are deterministic (validate → pay → confirm), the right architecture is code calling the LLM only where reasoning is needed (e.g., \"draft the confirmation message\"). LLMs are not reliable schedulers.",
+      "Wrong — *force-then-release* is one forced turn, then `\"auto\"`. *Forced every turn for three turns* is a different (and worse) pattern. The excerpt warns against pinning every turn.",
+      "Wrong — `\"auto\"` on turn 2 means the model might skip payment entirely; that defeats the ordering guarantee, and isn't the strongest critique either way.",
+      "Wrong — `\"any\"` doesn't pin `validate_input`; the model could pick a different tool. The critique here isn't about turn 1's mode; it's about the architecture as a whole."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "3c76b1b3-02f8-4fec-aa07-3411ffa7485d"
+  },
+  {
+    "question": "A team has `lookup_user_by_email(email)` and `lookup_user_by_phone(phone)` and is adding lookup-by-username. Should they: (A) add a third narrow tool `lookup_user_by_username(username)`; or (B) merge to `lookup_user(field_type, value)` with a typed selector? Per Task 2.3 reasoning, the right call is...",
+    "options": [
+      "Always merge to one tool — toolbox compactness wins; three tools is a needless inflation.",
+      "Always add a third narrow tool — selection signal wins; the model picks correctly when contracts are narrow.",
+      "It depends on whether the field type carries *behavioural divergence*: identical return shape, identical upstream service, identical error pattern → one merged tool with a typed selector keeps the toolbox compact (matters as it grows); different upstream services, return shapes, or error patterns → three narrow tools have cleaner selection signals and clearer contracts.",
+      "Use forced `tool_choice` on the appropriate variant per request and keep both."
+    ],
+    "explanations": [
+      "Wrong — selection clarity matters when behaviour diverges. Universal merging hides legitimate differences behind a typed flag and bloats the contract.",
+      "Wrong — three narrow tools is the right answer *only* when the underlying behaviour differs; otherwise it adds tool count without selection benefit.",
+      "Correct — toolbox shape decisions track behavioural divergence. The honest framing is contract-driven: do the variants share contract shape, or not? The answer dictates merge-or-split.",
+      "Wrong — forced `tool_choice` is for ordering and structured-output, not for picking among equivalent variants per request. Choosing a tool based on input shape is an orchestration concern, not a `tool_choice` mode."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "159e4cb6-6009-4c20-acbd-130f3c90d16d"
+  },
+  {
+    "question": "An agent has 12 tools but every tool has perfectly disjoint descriptions and use cases (zero overlap). Per Task 2.3's framing, what would happen to selection accuracy?",
+    "options": [
+      "Selection would be unchanged from a 4–5 tool agent — tool count alone is a proxy for overlap, and zero overlap means no problem.",
+      "Selection would still degrade relative to a 4–5 tool baseline — even with disjoint descriptions, decision complexity rises with count (more attention spent reading descriptions, larger working set of \"considered options\"), so reliability drops. The drop is *less severe* than with overlapping descriptions, but non-zero.",
+      "Selection would *improve* because more tools means more options for any task.",
+      "Selection would be perfect because the descriptions are disjoint."
+    ],
+    "explanations": [
+      "Wrong — overlap is a major driver but not the only one. Decision complexity scales with count itself, even given perfect disjointness.",
+      "Correct — the excerpt cites both factors: count and overlap. Disjoint descriptions reduce the overlap factor (the bigger one) but not the count/attention factor. Reliability is better than the 18-overlapping-tools case but worse than the 4–5 baseline.",
+      "Wrong — more options doesn't translate to higher accuracy; the selection decision becomes harder, not easier.",
+      "Wrong — perfect descriptions don't compensate for the attention cost of holding 12 specifications in working context."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "cf2da645-fa56-46f8-8a5e-d3721c4b7cdc"
+  },
+  {
+    "question": "A team needs the synthesis subagent to *never* call `web_search`. They debate: (A) remove `web_search` from the synthesis subagent's toolbox; (B) `tool_choice` forced to `verify_fact` every turn; (C) a `PreToolUse` hook that denies `web_search` calls from this subagent; (D) a system-prompt rule. Per Task 2.3's prescription, which is the *strongest and most architecturally aligned* guarantee?",
+    "options": [
+      "Remove `web_search` from the subagent's toolbox. The toolbox *is* the role contract — if the route doesn't exist, the model can't take it. This is the cleanest Task 2.3 fix and avoids needing input-conditional logic at all.",
+      "`tool_choice` forced to `verify_fact` every turn — pins the model to the right tool.",
+      "`PreToolUse` hook denying `web_search` — also a hard guarantee. Architecturally heavier than removing the tool, but acceptable.",
+      "System-prompt rule: \"Never call web_search.\""
+    ],
+    "explanations": [
+      "Correct — Task 2.3's prescription is to *scope the toolbox to the role*. Removing the tool eliminates the route entirely; no hook overhead, no per-turn config, no probabilistic compliance. The hook (C) is the right fallback when the tool *must* exist for some context but be denied here — but in this stem nothing says `web_search` is needed. Default to the toolbox scope.",
+      "Wrong — pins every turn to `verify_fact`, traps the agent, and doesn't actually \"never call web_search\" so much as \"only call verify_fact.\" Different guarantee, different failure mode (loop on verify_fact).",
+      "Wrong (close call) — a hook is also a hard guarantee, but it's the right answer when the tool must remain registered for other contexts. The simpler architecture-aligned fix when no other context needs it is to scope the toolbox; the excerpt prefers role-scoping over hook-enforcement when both work.",
+      "Wrong — system-prompt rules give probabilistic compliance. The model will eventually take a tool route that exists in its toolbox; prose can only discourage."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.3"
+    ],
+    "phase": "post",
+    "qid": "148433c1-9c20-4d5b-9829-11818caae858"
+  }
+]

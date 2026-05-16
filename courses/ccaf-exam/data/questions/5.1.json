@@ -1,0 +1,882 @@
+[
+  {
+    "question": "Which kind of detail is MOST degraded by progressive summarization of a long support conversation?",
+    "options": [
+      "Precise numbers, dates, IDs, and customer-quoted expectations",
+      "The agent's tool-call decisions and their order",
+      "The system prompt and tool schemas",
+      "Greetings and pleasantries between the customer and agent"
+    ],
+    "explanations": [
+      "Correct. Summarization compresses token-dense precision (amounts, ISO dates, order numbers, customer-quoted expectations) into vague paraphrases like 'the customer mentioned a deadline.'",
+      "Tool-call decisions are not part of the summarized chat history in this question's framing; they're part of structural records.",
+      "System prompt and tool schemas are static and not produced by summarization.",
+      "Pleasantries are exactly what a summarizer removes — losing them is the intended outcome, not the problem."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "pre",
+    "qid": "7933f63d-3c50-4d92-ba4a-85176ebf899a"
+  },
+  {
+    "question": "What does the 'lost in the middle' effect describe?",
+    "options": [
+      "Tool calls failing when the harness drops middle messages",
+      "Information in the middle of a long input being recalled less reliably than information at the beginning or end",
+      "Summaries omitting the first and last turns of a conversation",
+      "The model running out of tokens partway through generation"
+    ],
+    "explanations": [
+      "It's a model recall behaviour, not a harness or transport failure.",
+      "Correct. Long inputs are recalled most reliably at head and tail; middle content is more often missed or paraphrased away.",
+      "The effect concerns the middle, not the edges, of long inputs.",
+      "Token exhaustion is a different failure (max_tokens), not lost-in-the-middle."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "pre",
+    "qid": "1296e810-4ad8-479c-acc1-80429cd6b4ec"
+  },
+  {
+    "question": "Why are verbose tool outputs (40+ fields when 5 are relevant) disproportionately expensive in an agentic loop?",
+    "options": [
+      "They cause the harness to retry the tool call automatically",
+      "They cost more per request because each field is billed separately",
+      "They sit in message history every subsequent turn, multiplying token cost and diluting attention",
+      "They prevent Claude from emitting `stop_reason: \"end_turn\"`"
+    ],
+    "explanations": [
+      "Verbose results don't trigger automatic retries.",
+      "Pricing is per token, not per field; fields don't have separate billing.",
+      "Correct. Once accumulated, the verbose payload is re-sent every turn — multi-turn cumulative cost plus attention dilution onto irrelevant fields.",
+      "Stop_reason is not affected by tool result size."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "pre",
+    "qid": "e13ac1a3-5e19-40a8-b5a9-d6a947bb3699"
+  },
+  {
+    "question": "What is a 'persistent case facts block'?",
+    "options": [
+      "A tool that Claude calls to retrieve customer details",
+      "A logging table written to disk after each conversation",
+      "A summary written by Claude at the end of every turn",
+      "A structured panel of transactional facts injected into every prompt outside the summarized history"
+    ],
+    "explanations": [
+      "Tools are called dynamically; the case-facts block is static text injected each turn.",
+      "Disk logging is observability, not in-context preservation.",
+      "End-of-turn summaries are part of the summarized stream — exactly what the case-facts block bypasses.",
+      "Correct. It's a structured panel of precise transactional facts (IDs, amounts, dates, expectations) injected each turn outside the summarized stream."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "pre",
+    "qid": "e1b63a4a-5f77-409b-b5f1-aaee591dda0f"
+  },
+  {
+    "question": "When should verbose tool outputs be trimmed?",
+    "options": [
+      "Before they enter the message history — at the tool wrapper or result-shaping step",
+      "Only when the conversation exceeds the context window",
+      "Never — the model needs every field for accurate reasoning",
+      "After context summarization runs, so we know which fields the summarizer kept"
+    ],
+    "explanations": [
+      "Correct. Trim at the boundary so only the relevant fields ever accumulate in history.",
+      "By the time you hit the window, the bloat has already cost many turns of cumulative tokens.",
+      "Most fields are irrelevant; keeping all of them harms the model rather than helping.",
+      "Too late — the bloat has already cost iterations of attention dilution."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "pre",
+    "qid": "efa2f90c-2519-4d5e-afbf-9506d6342ca8"
+  },
+  {
+    "question": "Position-aware ordering recommends placing what at the START of an aggregated input?",
+    "options": [
+      "Methodology, caveats, and supporting detail",
+      "Key findings / decisions / action items",
+      "Tool schemas",
+      "Chronological raw transcripts"
+    ],
+    "explanations": [
+      "Methodology is supporting material; it belongs behind explicit headers, not at the head where attention is highest.",
+      "Correct. Key findings go first because the head and tail of long inputs are recalled most reliably.",
+      "Tool schemas live in the system prompt or tool definitions, not in the aggregated input head.",
+      "Chronological prose buries the conclusion in the middle — the failure mode position-aware ordering avoids."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "pre",
+    "qid": "a7375f06-8848-44fd-a43b-37f90830a716"
+  },
+  {
+    "question": "Does increasing the context window fix the lost-in-the-middle effect?",
+    "options": [
+      "Only on Opus-class models",
+      "Yes — a larger window gives the model more room to recall everything",
+      "No — the effect is positional, not size-driven; a bigger window can make it worse because the middle gets longer",
+      "Only if you also increase max_tokens proportionally"
+    ],
+    "explanations": [
+      "The effect is a general behaviour, not model-specific in a way that defeats the principle.",
+      "Larger windows do not eliminate the positional bias — they enlarge the recalled-poorly middle.",
+      "Correct. The fix is structural (position-aware ordering, case-facts block), not size.",
+      "Output budget is unrelated to input recall position."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "pre",
+    "qid": "8ea90801-0a32-4724-8559-4cf0eea81c53"
+  },
+  {
+    "question": "When trimming a tool result for context efficiency, what MUST be preserved?",
+    "options": [
+      "Only the assistant's prior reasoning text",
+      "Nothing — the entire block can be dropped as long as a system message replaces it",
+      "All 40 original fields, just compressed to a shorter prose summary",
+      "The `tool_result` block itself and its `tool_use_id` correlation"
+    ],
+    "explanations": [
+      "Assistant reasoning isn't part of the tool result block.",
+      "Dropping the block breaks the tool_use/tool_result invariant — Claude re-issues calls or hallucinates.",
+      "The point is to drop irrelevant fields; keeping all 40 defeats the purpose.",
+      "Correct. Trim the *content* of the result; never remove the block, because every `tool_use` needs a matching `tool_result` correlated by `tool_use_id`."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "pre",
+    "qid": "63b3aea5-b5ac-424c-9f47-b220ab02eae5"
+  },
+  {
+    "question": "What kind of metadata should subagents include in structured outputs to support downstream synthesis?",
+    "options": [
+      "Only the final answer, with no metadata",
+      "Dates, source locations, relevance scores, and methodological context",
+      "Raw JSON dumps of every intermediate tool call",
+      "The full chain-of-thought reasoning trace"
+    ],
+    "explanations": [
+      "Bare answers force downstream agents to mine prose or re-run work — the antithesis of position-aware structured outputs.",
+      "Correct. Metadata (dates, sources, scores, methodology) lets the caller assemble accurate context without re-deriving anything.",
+      "Raw tool dumps re-introduce exactly the bloat trimming was designed to avoid.",
+      "Verbose reasoning chains crowd out the actionable findings — Topic 5.1 explicitly recommends structured key facts over reasoning prose."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "pre",
+    "qid": "fb7376c5-7c62-4878-9da8-d656ec2dcb3d"
+  },
+  {
+    "question": "A multi-issue support session needs to track facts for several open tickets simultaneously. What's the recommended pattern?",
+    "options": [
+      "Spawn a new fresh agent for every ticket and discard the others",
+      "One global summary per conversation that mixes all tickets together",
+      "A separate structured case-facts block per ticket, each injected outside the summarized history",
+      "Wait for the user to repeat the facts each turn"
+    ],
+    "explanations": [
+      "Discarding sibling tickets loses needed cross-issue context and isn't the recommended pattern.",
+      "Mixing tickets in one summary is exactly the conflation that loses precision.",
+      "Correct. Topic 5.1 calls for structured issue data extracted into a separate context layer for multi-issue sessions.",
+      "Relying on the user to repeat themselves is poor UX and unreliable."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "pre",
+    "qid": "cac80e4a-1727-4166-9ad8-526024d79b3f"
+  },
+  {
+    "question": "A 25-turn support session ends with the agent issuing a refund of 'approximately $250 as store credit.' The customer originally said '$247.50, refunded to my original card.' Which structural fix would have prevented this?",
+    "options": [
+      "Have the agent re-read the entire conversation each turn",
+      "Switch to a larger context window",
+      "Pin a persistent case-facts block (amount, mechanism, customer expectation) injected each turn outside the summarized history",
+      "Add more verbose system instructions about being precise"
+    ],
+    "explanations": [
+      "Re-reading the entire conversation defeats summarization's purpose and is unreliable.",
+      "A bigger window doesn't stop the summarizer from flattening precision — it gives more room for the same flattening.",
+      "Correct. The deterministic fix is to keep precise facts out of the summarized stream entirely via a pinned case-facts block.",
+      "Vague instructions can't compete with summarizer compression of precise tokens."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "ad08bfaa-582d-460b-87f4-e32818288dc5"
+  },
+  {
+    "question": "A `lookup_order` tool returns 42 fields; the agent only ever uses 5 (id, total, status, return_eligible, payment_method). Where is the BEST place to drop the unused fields?",
+    "options": [
+      "In a post-hoc compaction step after the conversation hits the window",
+      "In the tool wrapper / result-shaping step, before the result enters message history",
+      "In the summarizer that runs every 10 turns",
+      "Nowhere — keep all fields for accurate reasoning"
+    ],
+    "explanations": [
+      "Compaction at window-fill is too late; bloat has already cost many turns of attention dilution.",
+      "Correct. Trim at the boundary so only the trimmed payload accumulates.",
+      "Summarizers run on dialogue, not on tool result blocks; relying on them risks breaking tool_use_id linkage.",
+      "Most fields are unused — keeping them is the precise problem the topic addresses."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "4f26ecb7-7c84-4e28-b6b1-25a85727289e"
+  },
+  {
+    "question": "A research subagent returns a 4,000-token chronological report ending with the conclusion. After three more turns, the calling agent ignores the conclusion. What's the most likely cause?",
+    "options": [
+      "Lost-in-the-middle: the conclusion drifted into the middle of the caller's context as turns accumulated",
+      "Stop_reason was misread as `end_turn`",
+      "The tool_use_id correlation broke",
+      "The subagent didn't include enough detail"
+    ],
+    "explanations": [
+      "Correct. Chronological ordering buries the conclusion; once turns accumulate, it sits in the low-recall middle of the caller's window.",
+      "Stop_reason isn't related to recall of subagent content.",
+      "Tool_use_id mismatch produces tool re-issuance, not 'ignored conclusion' behaviour.",
+      "More detail would worsen the situation, not fix it."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "fbc9ccdf-d5ac-4ca7-9f19-4c6e4e7ad3a2"
+  },
+  {
+    "question": "Which of the following becomes STRUCTURALLY IMPOSSIBLE when a persistent case-facts block (with amount, mechanism, customer expectation) is injected each turn outside summarized history?",
+    "options": [
+      "The agent reaching the iteration cap",
+      "Network errors during a tool call",
+      "The agent calling the wrong tool",
+      "The summarizer flattening the customer's quoted dollar amount and expectation into vague prose"
+    ],
+    "explanations": [
+      "Iteration caps are unrelated to summarization.",
+      "Network errors are infrastructure-level, unrelated to context preservation.",
+      "Tool selection isn't governed by the case-facts block.",
+      "Correct. Because the precise facts live outside the summarized stream, summarization can't touch them — the failure mode becomes structurally impossible."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "368c470a-05b7-4699-bdc4-d1c3ba0a68d6"
+  },
+  {
+    "question": "You're designing a subagent contract to feed structured findings into a downstream synthesizer. Which pattern best supports accurate downstream context?",
+    "options": [
+      "Return free-form prose with the conclusion at the end",
+      "Return structured outputs with key findings up top plus metadata (dates, source locations, relevance scores)",
+      "Return only the chain-of-thought reasoning",
+      "Return one giant JSON dump of every intermediate tool result"
+    ],
+    "explanations": [
+      "Prose with end-buried conclusions is the lost-in-the-middle setup the topic warns against.",
+      "Correct. Structured key findings + metadata at the head is the position-aware contract Topic 5.1 recommends for subagent outputs.",
+      "Chain-of-thought is verbose and crowds out the actionable findings.",
+      "Raw tool dumps re-introduce the very bloat trimming was meant to avoid."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "4a8efe64-32cf-4c50-a0db-c40c2c74e273"
+  },
+  {
+    "question": "A team's compaction step runs at 80% of context window and rewrites both dialogue summary AND tool result content. What's the risk?",
+    "options": [
+      "It will increase max_tokens automatically",
+      "Faster context shrink with no downside",
+      "Rewriting tool result content can break the tool_use_id linkage and force Claude to re-issue calls or hallucinate outcomes",
+      "It will accidentally call extra tools"
+    ],
+    "explanations": [
+      "Compaction has no effect on max_tokens settings.",
+      "There's a real correctness risk to rewriting tool result blocks late.",
+      "Correct. Each `tool_use` needs its matching `tool_result` block (correlated by `tool_use_id`); altering or removing past results breaks the invariant.",
+      "Compaction doesn't itself trigger new tool calls."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "e66bdf51-ce2b-42fc-b684-42a77586de0a"
+  },
+  {
+    "question": "Which of these symptoms most strongly suggests progressive summarization (rather than lost-in-the-middle) is the cause?",
+    "options": [
+      "The customer's exact dollar amount and quoted phrasing have been replaced by vague paraphrases like 'a refund and a deadline'",
+      "The agent re-issues the same tool call twice in a row",
+      "Stop_reason is `max_tokens`",
+      "A fact that originally appeared in turn 12 of 30 is recalled fine, but a fact from turn 15 is dropped"
+    ],
+    "explanations": [
+      "Correct. Smoothing precise tokens into vague paraphrases is the canonical progressive-summarization symptom.",
+      "Repeated tool calls usually indicate missing tool_result blocks, not summarization.",
+      "Max_tokens is generation truncation, unrelated to summarization.",
+      "Mid-conversation positional drop-out is the lost-in-the-middle signature, not summarization."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "66a49e7f-af4e-438d-9994-989fc4c8aa9f"
+  },
+  {
+    "question": "Which is the MOST appropriate fix for 'the agent confidently states a deadline but loses the precise ISO date'?",
+    "options": [
+      "Switch to a smaller model",
+      "Increase max_tokens",
+      "Lower the model's temperature",
+      "Pin the date in a structured case-facts block injected each turn outside the summarized history"
+    ],
+    "explanations": [
+      "Smaller models don't preserve precision better.",
+      "Output budget doesn't influence input recall of dates.",
+      "Temperature affects sampling stochasticity, not summarization compression.",
+      "Correct. Precise dates belong in the persistent case-facts block, exempt from summarization."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "f4c82451-f9d1-4c6e-a722-98bebb21d98e"
+  },
+  {
+    "question": "What's the cleanest 'architecture' (vs 'patch') way to ensure tool results stay small in context?",
+    "options": [
+      "Add a wrapper layer that filters fields after each call",
+      "Define the tool's output schema to expose only the fields the agent uses, so the trimmed shape is the canonical shape",
+      "Run a summarizer over each tool result before appending",
+      "Compress the JSON whitespace"
+    ],
+    "explanations": [
+      "A wrapper is a fix; the topic frames the schema-level approach as the architecture.",
+      "Correct. Making the tool itself return only the fields the agent uses turns trimming into a structural property, not a per-call patch.",
+      "Summarizing tool results risks breaking tool_use_id linkage and losing structured detail.",
+      "Whitespace compression yields negligible savings vs dropping unused fields entirely."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "a10de2b9-9941-4230-9fac-74fa053a79d3"
+  },
+  {
+    "question": "Two facts are equally critical: the customer's address change (turn 12) and the customer's refund amount (turn 3). The agent recalls the amount but ships to the old address. Most likely diagnosis?",
+    "options": [
+      "Stop_reason was `tool_use` instead of `end_turn`",
+      "Progressive summarization specifically dropped the address",
+      "Lost-in-the-middle: turn 12 sat in the low-recall middle of a long context while turn 3 benefited from head-position recall",
+      "The harness silently substituted a different shipping tool"
+    ],
+    "explanations": [
+      "Stop_reason values describe loop control, not fact recall.",
+      "Summarization wouldn't selectively spare turn 3 over turn 12 by position alone.",
+      "Correct. The asymmetry — early fact recalled, middle fact dropped — is the signature of positional lost-in-the-middle.",
+      "Tool substitution is unrelated to recall positions."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "a0a7cb7e-0dcd-475b-b17c-1f3498406baf"
+  },
+  {
+    "question": "Which combination represents Topic 5.1's THREE deterministic fixes for context preservation in long agentic conversations?",
+    "options": [
+      "More tools, fewer tools, and prompt caching",
+      "Extra system prompts, longer summaries, and chain-of-thought",
+      "Bigger context window, smaller model, lower temperature",
+      "Persistent case-facts block, trimmed tool outputs, position-aware ordering"
+    ],
+    "explanations": [
+      "Tool count doesn't address summarization or positional recall.",
+      "Longer summaries and CoT add noise rather than preserving precision.",
+      "None of these address the failure modes; bigger windows even worsen lost-in-the-middle.",
+      "Correct. These are the three exam-tested structural fixes the topic centres on."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "9a4106c1-b67d-4dfe-892d-f7e91faba094"
+  },
+  {
+    "question": "An engineer proposes 'append a footer to every prompt repeating the customer's exact name.' Why is the case-facts block more useful than this?",
+    "options": [
+      "A structured case-facts block carries multiple precise facts (IDs, amounts, dates, expectations, root cause) — a single-fact footer addresses only one dimension of the failure",
+      "Footers consume more tokens than blocks",
+      "The model only reads the start of the prompt",
+      "Footers are not allowed by the API"
+    ],
+    "explanations": [
+      "Correct. The whole point is preserving the *full set* of precise transactional facts; a name-only footer would still let the amount and date be flattened.",
+      "Token cost is similar; that's not the differentiator.",
+      "Lost-in-the-middle says head and tail are both recalled; this answer's framing is wrong.",
+      "Footers are perfectly allowed; the issue is coverage, not legality."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "da3103df-7b09-4399-920a-46d196b82125"
+  },
+  {
+    "question": "Why is 'use a smarter summarizer prompt' an unsatisfactory fix for the precision-loss problem?",
+    "options": [
+      "Smarter summarizers cost more tokens than they save",
+      "Summarizer prompts are read-only",
+      "Summarization compresses by design — even a perfect summarizer trades precision for brevity, so the structural fix is to keep precise facts out of the summarized stream",
+      "Summarizers always run last in the loop"
+    ],
+    "explanations": [
+      "Cost may matter, but the structural argument is about the technique itself, not economics.",
+      "Summarizer prompts are fully editable; legality isn't the issue.",
+      "Correct. The compression is intrinsic to the technique; only excluding precise facts from summarization is deterministic.",
+      "Order isn't the determining factor."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "b8b2e3b6-dff5-4f25-98fe-8dc9cc15a776"
+  },
+  {
+    "question": "Which symptom indicates a 'tool_result was dropped to save tokens' bug rather than a summarization or positional bug?",
+    "options": [
+      "Customer-quoted amounts paraphrased into vague language",
+      "Claude re-issues the same tool call it already invoked, or hallucinates an outcome",
+      "Conclusions buried in the middle of subagent reports",
+      "The agent confidently states an approximate date"
+    ],
+    "explanations": [
+      "Vague paraphrasing is a summarization signature.",
+      "Correct. Without a matching `tool_result` for a prior `tool_use`, Claude has no record of the call and re-issues it (or hallucinates a result).",
+      "Buried conclusions are a positional/ordering issue.",
+      "Approximate dates are a summarization symptom."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "5465573d-cc39-4157-a078-f4c1be56cad8"
+  },
+  {
+    "question": "Where in the prompt should the case-facts block typically sit to maximise reliable recall?",
+    "options": [
+      "At the very end of the user message, after a long quoted email",
+      "Encoded inside a tool schema description",
+      "Buried in the middle of the conversation history",
+      "In a fixed position outside the summarized history — typically right after the system prompt or just before the latest user turn"
+    ],
+    "explanations": [
+      "Tail-with-long-prefix risks pushing earlier content into the middle and is fragile.",
+      "Tool schemas aren't the right home for per-conversation transactional facts.",
+      "The middle is the low-recall position; that's the failure mode you're trying to escape.",
+      "Correct. Fixed-position injection (head-or-near-tail) lands the facts in a recalled position every turn."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "2a7bfaf4-37c6-419f-82f5-b06e59a4f5e0"
+  },
+  {
+    "question": "A team trims tool results post-hoc by editing prior `tool_result` blocks at turn 15. What invariant might they accidentally violate?",
+    "options": [
+      "Every `tool_use` in history must have a matching `tool_result` correlated by `tool_use_id`",
+      "Max_tokens must equal half the input length",
+      "Stop_reason must always be `end_turn`",
+      "The system prompt size limit"
+    ],
+    "explanations": [
+      "Correct. Late edits or removals of `tool_result` content can break the tool_use_id correlation, forcing re-issuance or hallucination.",
+      "There's no such ratio invariant.",
+      "Stop_reason `tool_use` is normal; this isn't a violated rule.",
+      "System prompt size isn't violated by editing later turns."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "04af7dd4-1714-41d9-8691-6274b23f2a75"
+  },
+  {
+    "question": "A 30-turn coding session loses track of the exact acceptance criteria the user stated in turn 2. Which adaptation of Topic 5.1 patterns to a coding agent best prevents this?",
+    "options": [
+      "Switch to chain-of-thought prompting",
+      "Re-read every file each turn",
+      "Pin a 'task contract + acceptance criteria' block injected each turn outside the summarized history",
+      "Increase the context window"
+    ],
+    "explanations": [
+      "Chain-of-thought adds prose; it doesn't preserve precise stated criteria across turns.",
+      "Re-reading files doesn't recover dialogue facts.",
+      "Correct. The case-facts pattern generalizes — coding agents pin a structured task contract / acceptance criteria block.",
+      "Bigger windows don't address summarization smoothing of stated criteria."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "dca782db-1768-40a9-b62e-313888162201"
+  },
+  {
+    "question": "After progressive summarization compresses the chat, the agent forgets the customer's stated preference between 'refund' and 'replacement.' Best DETERMINISTIC fix?",
+    "options": [
+      "Ask the customer to restate the preference each turn",
+      "Pin the stated preference in the case-facts block injected outside summarized history",
+      "Set a higher temperature",
+      "Use a streaming response"
+    ],
+    "explanations": [
+      "Asking the customer to repeat themselves is poor UX and not deterministic.",
+      "Correct. The preference is a customer-stated expectation — exactly the kind of fact the case-facts block must carry.",
+      "Temperature is unrelated.",
+      "Streaming doesn't change input recall."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "c91469ff-b890-4201-935f-9477a99ba1a5"
+  },
+  {
+    "question": "Which reordering best mitigates lost-in-the-middle for a long aggregated input that includes findings, methodology, and raw evidence?",
+    "options": [
+      "Raw evidence first, sorted alphabetically",
+      "All sections concatenated as plain prose with no headers",
+      "Methodology → raw evidence → findings",
+      "Findings (head) → methodology and evidence under explicit headers → recent dialogue (tail)"
+    ],
+    "explanations": [
+      "Alphabetical evidence isn't a recall-friendly structure.",
+      "Plain prose without headers maximises lost-in-the-middle exposure.",
+      "Burying findings at the end mid-context is the failure mode.",
+      "Correct. Position-aware ordering: head-position findings, structured middle, recency tail."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "a8fc9d61-d294-4154-bfce-057942bb38d4"
+  },
+  {
+    "question": "Which is the BEST one-line description of the case-facts pattern's value?",
+    "options": [
+      "It exempts critical transactional facts from summarization-induced compression and positional drift by injecting them in a fixed position every turn",
+      "It reduces API latency",
+      "It increases the maximum number of tools the agent can call",
+      "It eliminates the need for tools"
+    ],
+    "explanations": [
+      "Correct. Two failure modes (summarization smoothing, positional drift) are simultaneously bypassed by the fixed, outside-the-summary injection.",
+      "Latency isn't the goal.",
+      "Tool count isn't affected.",
+      "Tools are still required for backend integration."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "29a7e2fd-1afc-4fa3-9616-f4e37493af13"
+  },
+  {
+    "question": "An engineer reports: 'lost-in-the-middle is killing us — we're going to upgrade from a 200K to a 1M context window.' What's wrong with this plan?",
+    "options": [
+      "1M windows always cost the same as 200K",
+      "1M windows force you to use streaming",
+      "1M windows aren't available on any model",
+      "The lost-in-the-middle effect is positional, not size-driven; a larger window can make the middle (and the failure) larger, not smaller. The fix is moving facts out of the middle (case-facts block, position-aware ordering), not enlarging the container."
+    ],
+    "explanations": [
+      "Pricing isn't the structural objection.",
+      "Window size doesn't force streaming.",
+      "Long-context models exist; availability isn't the objection.",
+      "Correct. This is the canonical anti-trap — diagnosis as a size problem instead of a structural/positional one."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "3a960b8d-823c-462a-b3dd-c5d5b58dc1ab"
+  },
+  {
+    "question": "A team observes: 'the summary preserves the dollar amount most of the time — we'll just rerun the summarizer if we lose it.' Why is this the wrong mental model?",
+    "options": [
+      "Summarizers can't handle numbers at all",
+      "The fix is supposed to be DETERMINISTIC — pinning the amount in a case-facts block outside the summary makes loss structurally impossible, instead of relying on best-effort summarizer behaviour you can only audit after the fact",
+      "Rerunning the summarizer corrupts the system prompt",
+      "Summarizers consume max_tokens of the response"
+    ],
+    "explanations": [
+      "Summarizers can include numbers — the issue is they may also smooth them.",
+      "Correct. Topic 5.1 explicitly contrasts best-effort summarization with the deterministic case-facts fix; relying on the summarizer is the worse choice.",
+      "Summarization doesn't corrupt system prompts.",
+      "Summarization isn't governed by the response budget."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "d50a089b-e989-49e4-b6c6-061399617ef1"
+  },
+  {
+    "question": "Two engineers debate: A) 'tool results should be trimmed by the summarizer when context fills up' vs B) 'tool results should be returned in their trimmed shape from the tool itself.' Which is correct and why?",
+    "options": [
+      "B — trimming at the tool boundary keeps only relevant fields in history every turn, preserves tool_use_id correlation, and turns trimming into a structural property rather than a fragile late-stage patch",
+      "Both are equivalent in practice",
+      "Neither — tool results should never be trimmed",
+      "A — summarizers have full visibility into which fields are needed"
+    ],
+    "explanations": [
+      "Correct. Schema-level trimming is the architecture; summarizer-level trimming is a fragile late patch.",
+      "They differ on token cost across turns and on the risk of breaking tool_use_id correlation.",
+      "Verbose tool dumps are the precise problem the topic exists to fix.",
+      "Summarizers don't necessarily know the future use of fields and may break tool_use_id linkage when editing prior results."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "6934b4a4-cb87-4819-9b83-7a0102f89f1a"
+  },
+  {
+    "question": "A support agent uses summarization to compress turns 1-10 into a paragraph that reads 'Customer wants a refund.' The original turn 3 said 'I want a refund of $247.50 to my Visa card ending 4242, processed by 2026-04-15.' Which of the following BEST captures what went wrong?",
+    "options": [
+      "The summarizer was poorly tuned and needs a better prompt",
+      "Precise transactional facts (amount, payment instrument, deadline) were placed in the path of summarization instead of pinned in a persistent case-facts block outside the summarized stream",
+      "The conversation was too short to need a summary",
+      "Stop_reason should have been used instead of summarization"
+    ],
+    "explanations": [
+      "Better prompts reduce frequency but not the structural inevitability of compression.",
+      "Correct. The structural diagnosis: precise facts must live outside the summarized stream to be preserved deterministically.",
+      "Length isn't the issue; the failure mode applies whenever summarization is used on facts that should be preserved.",
+      "Stop_reason is unrelated to summarization choices."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "c2f202a7-87bb-4c3d-a2ad-da163f9a9430"
+  },
+  {
+    "question": "An engineer proposes: 'we'll keep tool results untrimmed for the first 5 turns, then drop fields we now know are unused.' Why is this a fragile approach?",
+    "options": [
+      "Tool results are not allowed to be modified",
+      "API requests can't include partial tool results",
+      "Editing prior `tool_result` blocks risks breaking tool_use_id correlation; furthermore the bloat has already cost five turns of attention dilution and cumulative tokens — the structural fix is to trim at the tool boundary BEFORE accumulation",
+      "Five turns is too short to learn anything about usage"
+    ],
+    "explanations": [
+      "They can technically be modified — the question is *should* you, structurally.",
+      "Partial tool results in the message protocol aren't the issue here.",
+      "Correct. The 'trim later' approach combines two failures: late-stage editing risk plus the unavoidable cost of bloat across early turns.",
+      "Even with more turns, late trimming is fragile for the same reasons."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "21c508bf-db53-4299-a64b-d0a86548ccf7"
+  },
+  {
+    "question": "An auditor asks: 'how do we PROVE our agent will never round the customer's stated dollar amount?' Which design choice provides the strongest guarantee?",
+    "options": [
+      "A higher-quality model",
+      "A larger context window",
+      "A unit test on the summarizer's output",
+      "Pin the exact dollar amount as a string in a structured case-facts block injected outside summarized history each turn — the model receives the precise token sequence verbatim, every turn, in a recalled position"
+    ],
+    "explanations": [
+      "Better models reduce probability but don't structurally prevent compression of summarized content.",
+      "Window size doesn't address summarization compression.",
+      "Tests can sample, but they don't structurally prevent loss; the case-facts block does.",
+      "Correct. Verbatim, fixed-position injection is the deterministic structural guarantee — not a probabilistic check."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "4824ee2b-755e-4709-abb9-621159eaa7a7"
+  },
+  {
+    "question": "Which scenario is the WEAKEST fit for the 'lost-in-the-middle' diagnosis?",
+    "options": [
+      "The customer's quoted amount '$247.50' has been replaced in the running summary by 'around $250' — the precision is gone in the summary itself",
+      "A long aggregated input has its key finding sandwiched in the middle and the model paraphrases something else as the headline",
+      "A fact stated in turn 14 of 30 is missed but bookend facts are recalled",
+      "A subagent's conclusion buried at the end of a long chronological report is overlooked once a few more turns accumulate"
+    ],
+    "explanations": [
+      "Correct. Precision being smoothed inside the summary itself is the progressive-summarization failure, not a positional one — fix is the case-facts block, not reordering.",
+      "Sandwich-in-the-middle is the textbook positional case.",
+      "Classic positional drop-out signature.",
+      "Conclusion drift into the middle of the caller's window is the textbook lost-in-the-middle scenario."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "0a6f9fc7-704b-4729-a6e9-8582fc3f3dfa"
+  },
+  {
+    "question": "Which of the following is the SHARPEST argument that 'just upgrade to a 1M-context model' fails to fix lost-in-the-middle?",
+    "options": [
+      "1M models always have higher latency",
+      "Lost-in-the-middle is a positional behaviour: with a longer window, the proportional middle is *larger*, so the very content most likely to be dropped is now a bigger and more diverse region — the structural fix is moving critical facts out of the middle (head-position case-facts block, header-organised evidence), not enlarging the container that drops middles",
+      "Anthropic's docs forbid windows over 200K",
+      "1M models are too expensive"
+    ],
+    "explanations": [
+      "Latency may rise, but the structural rebuttal is positional, not performance.",
+      "Correct. The anti-trap argument: larger window enlarges the low-recall middle. The fix is positional (move facts), not size.",
+      "False — long-context models are documented and supported.",
+      "Cost is real but not the structural argument."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "0490459a-931a-40f3-9ddf-2fce0e2c24c6"
+  },
+  {
+    "question": "A team argues: 'we can just store every customer fact as plain prose at the bottom of the latest user message — that's near the tail, so recency wins.' Which subtle problem does this run into?",
+    "options": [
+      "The model only reads system prompts",
+      "Prose facts cost more tokens than structured ones",
+      "When the next user message arrives, the previous tail-block becomes a middle-history block and is now subject to lost-in-the-middle; furthermore prose is harder to scan than a structured block — a fixed-position structured case-facts block re-injected each turn outside the summarized history avoids both issues",
+      "User messages cannot contain facts"
+    ],
+    "explanations": [
+      "False — the model reads everything.",
+      "Token cost is not the central structural issue.",
+      "Correct. 'Bottom of the latest user message' is only the tail for one turn; on the next turn it's mid-history. Re-injecting a structured block every turn solves both the positional and parseability problems.",
+      "User messages can carry any content."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "9007bc5c-1c64-4905-8042-90b4ad04fe6b"
+  },
+  {
+    "question": "A team has BOTH (a) a case-facts block AND (b) a verbose 40-field tool dump appended every turn. The agent still loses precision on the customer's deadline. Most likely combined cause?",
+    "options": [
+      "The model has a bug",
+      "Tool dumps overwrite case-facts blocks",
+      "Stop_reason is being misread",
+      "The case-facts block isn't pinned — it lives inside the summarized history, OR the deadline isn't actually included in the case-facts block"
+    ],
+    "explanations": [
+      "Model 'bugs' rarely explain a deterministic preservation failure when structural patterns are correct.",
+      "Tool dumps don't overwrite blocks; they sit elsewhere in the message structure.",
+      "Stop_reason is a loop control signal, not a fact-recall signal.",
+      "Correct. If the deadline still smooths to vagueness, either the block isn't outside the summary (so summarization can still touch it) or the deadline simply isn't in the block. Tool dumps may dilute attention but they do not literally overwrite a fixed-position case-facts block."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.1"
+    ],
+    "phase": "post",
+    "qid": "c7789ee5-f0e4-4f37-9576-bb8769446802"
+  }
+]

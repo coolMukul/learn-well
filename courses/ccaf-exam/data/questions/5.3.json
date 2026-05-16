@@ -1,0 +1,882 @@
+[
+  {
+    "question": "Which four fields constitute a structured error payload that lets a coordinator recover intelligently from a subagent failure?",
+    "options": [
+      "Failure type, attempted query, partial results, and suggested alternatives.",
+      "HTTP status code, timestamp, retry count, and stack trace.",
+      "Subagent ID, model name, token count, and cost.",
+      "Boolean success flag and a free-text error message."
+    ],
+    "explanations": [
+      "Correct. These four fields together let the coordinator decide whether to retry, fall back, or proceed with partial results.",
+      "Operational metadata only. Tells the coordinator nothing about what was tried or what alternatives exist.",
+      "Resource accounting fields, not error context — the coordinator can't recover from a token count.",
+      "A boolean plus prose is exactly the generic error pattern the topic warns against."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "pre",
+    "qid": "51db42b7-5134-4feb-b16d-6f8352399eab"
+  },
+  {
+    "question": "A subagent times out after exhausting retries. Which response best supports coordinator-level recovery?",
+    "options": [
+      "Return `{\"status\": \"search unavailable\"}` and let the coordinator decide.",
+      "Return a structured payload with failure type, attempted query, any partial results, and alternative approaches.",
+      "Catch the timeout and return an empty result set marked successful.",
+      "Raise an exception that bubbles to the top-level handler and aborts the workflow."
+    ],
+    "explanations": [
+      "Generic status — hides the failure type, the query, partial work, and alternatives.",
+      "Correct. This is the structured-propagation pattern that enables intelligent coordinator recovery.",
+      "Silent suppression — synthesis treats absence-of-failure as confirmation-of-absence.",
+      "Whole-workflow termination — throws away any partial results and the work of other subagents."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "pre",
+    "qid": "addebf87-19af-4a72-863d-cf619ed9b3e4"
+  },
+  {
+    "question": "Why is it important to distinguish an access failure from a valid empty result?",
+    "options": [
+      "Because access failures cost more in API tokens than empty results.",
+      "Because empty results always indicate a bug, while access failures are normal.",
+      "Because they require different recovery actions — retry/annotate vs report as a real finding.",
+      "Because the synthesis agent is built to handle only one of the two."
+    ],
+    "explanations": [
+      "Cost is irrelevant; the distinction is about correctness of downstream synthesis.",
+      "Empty results are valid findings, not bugs; access failures are also expected operational events.",
+      "Correct. An access failure is an unknown answer; a valid empty is a known 'nothing exists' finding.",
+      "Synthesis must handle both — the distinction is what lets it do so correctly."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "pre",
+    "qid": "892f5d1c-39fc-4b7a-a0f0-182f897412b6"
+  },
+  {
+    "question": "Why is silently suppressing subagent errors (returning empty results as success) an anti-pattern?",
+    "options": [
+      "It is more expensive than letting the error propagate.",
+      "It violates the API's stop_reason contract.",
+      "It always crashes the synthesis agent.",
+      "It produces biased synthesis output that downstream consumers cannot detect."
+    ],
+    "explanations": [
+      "Cost is not the issue; correctness is.",
+      "stop_reason is unrelated to subagent error reporting.",
+      "Silent suppression typically does not crash anything — that's exactly why it's dangerous.",
+      "Correct. Synthesis treats the empty as a real finding; the failure becomes invisible to consumers."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "pre",
+    "qid": "7cf3eb32-3925-48e4-8e8e-7be57703eeb9"
+  },
+  {
+    "question": "Why is terminating the entire workflow on a single subagent failure an anti-pattern?",
+    "options": [
+      "It violates the agentic loop contract.",
+      "It throws away the successful work of the other subagents that completed.",
+      "It is functionally equivalent to silent suppression.",
+      "It saves too many tokens at the cost of quality."
+    ],
+    "explanations": [
+      "There is no loop-contract violation here; the issue is wasted partial work.",
+      "Correct. Multi-agent workflows are partial-credit — one failure should not discard three successes.",
+      "It is the opposite extreme of silent suppression, not the same thing.",
+      "The token argument is not the operative concern."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "pre",
+    "qid": "7416e53e-ba55-411d-9e5c-f3e200821ce0"
+  },
+  {
+    "question": "Where should retry/backoff for a transient (e.g., 429) subagent failure live first?",
+    "options": [
+      "In the coordinator, which has global visibility.",
+      "In the top-level harness as a global retry policy.",
+      "Inside the subagent, which has the domain knowledge for which alternatives are reasonable.",
+      "In the synthesis agent so it can re-trigger the upstream call."
+    ],
+    "explanations": [
+      "The coordinator lacks subagent-specific domain knowledge for retry strategy.",
+      "A global retry policy can't pick subagent-specific alternatives like 'use the secondary search provider.'",
+      "Correct. Local recovery happens in the subagent; only the unresolvable residue is propagated.",
+      "Synthesis is a downstream consumer, not the right place for upstream retries."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "pre",
+    "qid": "777d5596-a5d4-45b2-88eb-54a431bad748"
+  },
+  {
+    "question": "What are coverage annotations on synthesis output?",
+    "options": [
+      "Comments inside the source code of the synthesis agent.",
+      "A measure of how many tokens the synthesis used to produce the report.",
+      "Hooks that run before the synthesis step.",
+      "Per-claim labels indicating how well each claim is supported (well-supported, partial, gap)."
+    ],
+    "explanations": [
+      "Code comments — unrelated.",
+      "Token usage; not what coverage annotations describe.",
+      "Hooks belong to a different topic area entirely.",
+      "Correct. Coverage annotations let downstream consumers calibrate trust in each claim."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "pre",
+    "qid": "3bf21bd8-e3dc-46d1-8666-1245c2733a61"
+  },
+  {
+    "question": "A subagent has exhausted local recovery and still cannot complete its task. What should it pass to the coordinator?",
+    "options": [
+      "Only an exception so the coordinator can decide everything from scratch.",
+      "A structured error describing what was tried, the residue, and any partial results worth using.",
+      "An empty result so the coordinator does not have to handle errors.",
+      "A retry-this-please flag with no other details."
+    ],
+    "explanations": [
+      "An exception alone abandons partial work and forces the coordinator to guess at recovery.",
+      "Correct. Preserve-and-annotate: surface the failure but keep the partial data.",
+      "Empty result is silent suppression — the worst of the four options.",
+      "A retry flag without context is the generic 'unavailable' anti-pattern."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "pre",
+    "qid": "3aeb65d7-b856-4c6d-915d-140e64470182"
+  },
+  {
+    "question": "A regulator-stats API responds successfully but returns zero records for the requested year. How should that be reported by the subagent?",
+    "options": [
+      "As an access failure so the coordinator retries.",
+      "As silent suppression to avoid alarming the synthesis agent.",
+      "As a valid empty result — a real finding (no published records for that year).",
+      "As a fatal exception that aborts the workflow."
+    ],
+    "explanations": [
+      "An access failure means the source could not be queried; here the query succeeded.",
+      "Silent suppression of a non-error would be a category error.",
+      "Correct. The query succeeded with zero matches — a legitimate finding worth synthesising.",
+      "Zero records is not a fatal condition."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "pre",
+    "qid": "4bdfeb37-724c-4e39-93f7-c00f34ceee72"
+  },
+  {
+    "question": "What is the correct shape of error propagation between the two anti-patterns of silent suppression and whole-workflow termination?",
+    "options": [
+      "Structured propagation with partial preservation — surface the failure but keep partial results.",
+      "A retry loop with unbounded retries.",
+      "A global exception handler that emails the team.",
+      "Replacing the failed subagent with a different model and retrying."
+    ],
+    "explanations": [
+      "Correct. This is the preserve-and-annotate pattern that sits between the two extremes.",
+      "Unbounded retries do not address the propagation question.",
+      "Operational alerting is unrelated to the synthesis-correctness pattern.",
+      "Model substitution is not the propagation pattern; it might be one alternative the subagent suggests."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "pre",
+    "qid": "4d1e9b5b-083b-4554-bd46-6b1f17429f62"
+  },
+  {
+    "question": "In Scenario S3, the web-search subagent times out on a complex topic after local retries. Which response best enables coordinator-level intelligent recovery?",
+    "options": [
+      "Return structured error context including failure type, attempted query, partial results, and alternatives.",
+      "Return a generic `search unavailable` status after all retries exhausted.",
+      "Catch the timeout and return an empty result set marked as successful.",
+      "Propagate the timeout exception to a top-level handler that terminates the workflow."
+    ],
+    "explanations": [
+      "Correct. This is the canonical structured-propagation pattern for Scenario S3.",
+      "Generic status hides the four fields the coordinator needs to recover.",
+      "Silent suppression — produces biased downstream synthesis.",
+      "Whole-workflow termination — discards good work from the other subagents."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "8f0313dd-9590-4f52-b753-f541ea51d2e1"
+  },
+  {
+    "question": "A subagent receives a 503 from its primary source. Which sequence is consistent with 'local recovery first, propagate only the residue'?",
+    "options": [
+      "Immediately propagate the 503 to the coordinator with no retries.",
+      "Retry with backoff, fall back to a secondary provider, and only propagate a structured error if all alternatives fail.",
+      "Catch the 503 and return an empty result set marked successful.",
+      "Abort the workflow because external sources are unreliable."
+    ],
+    "explanations": [
+      "Skips local recovery; forces the coordinator to handle a transient blip it lacks expertise for.",
+      "Correct. Subagent exhausts in-house alternatives, then propagates the unresolved residue.",
+      "Silent suppression — wrong category.",
+      "Whole-workflow termination — wrong category."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "ba950e19-a217-4d6e-b237-935a1782fcc3"
+  },
+  {
+    "question": "Synthesis is producing a report from four subagents: three succeeded, one returned a structured access-failure error. What should the synthesis output look like?",
+    "options": [
+      "An empty report, since one subagent failed.",
+      "A full-confidence report that omits any mention of the failed subagent's topic area.",
+      "A partial report with coverage annotations, including an explicit gap label for the failed subagent's area.",
+      "A re-dispatch of all four subagents from scratch."
+    ],
+    "explanations": [
+      "Whole-workflow termination — discards three successful results.",
+      "Hides the gap, producing biased synthesis indistinguishable from a complete report.",
+      "Correct. Preserve-and-annotate plus coverage annotations is the right pattern.",
+      "Re-dispatching everything wastes the three successes; only the failed area might be retried."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "563ef297-ecc8-442d-82a8-03554abfe87d"
+  },
+  {
+    "question": "Two subagents both return `results: []`. Subagent A's source 503'd; subagent B's query ran successfully and matched nothing. How should they differ in their returned payload?",
+    "options": [
+      "They should be identical — empty is empty.",
+      "Subagent A should raise an exception; subagent B should return success.",
+      "Subagent A should return the empty result and subagent B should return a structured error.",
+      "Subagent A should tag `outcome: access_failure` with failure type; subagent B should tag `outcome: empty` indicating a successful zero-match."
+    ],
+    "explanations": [
+      "Conflating the two is the textbook anti-pattern — synthesis can't recover correctly.",
+      "Raising an exception abandons partial work and skips structured propagation.",
+      "Backwards — A had a failure, B had a real empty finding.",
+      "Correct. Discriminated outcome tags let synthesis phrase each path correctly and apply the right coverage annotation."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "5325614e-df2e-4360-9827-b47473006625"
+  },
+  {
+    "question": "A coordinator wraps every subagent call in `try/except: pass`, so any failure becomes silent. What's the most likely downstream symptom?",
+    "options": [
+      "Synthesis crashes loudly when subagents fail.",
+      "Synthesis produces a clean-looking but biased report; the failures are invisible to the human reader.",
+      "The coordinator retries each call indefinitely.",
+      "The agentic loop terminates with `stop_reason: max_tokens`."
+    ],
+    "explanations": [
+      "The opposite — silent suppression hides crashes, it doesn't cause them.",
+      "Correct. The classic silent-suppression failure mode is biased output that looks complete.",
+      "Pass-on-failure does not retry; it just swallows the error.",
+      "stop_reason is unrelated to this pattern."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "76442215-b2e8-4f53-863e-80246087f803"
+  },
+  {
+    "question": "Which annotation pattern on a synthesis claim correctly reflects 'this topic could not be researched because the source was unreachable'?",
+    "options": [
+      "[well-supported: 4 sources]",
+      "[partial: 1 source]",
+      "[gap: source unreachable during research]",
+      "[no evidence found]"
+    ],
+    "explanations": [
+      "Implies strong support, the opposite of the truth.",
+      "Implies weak but real support; here there was no support because we couldn't look.",
+      "Correct. Gap labels distinguish 'unable to look' from 'looked and found nothing.'",
+      "'No evidence found' implies the search was executed; that's a different category (valid empty)."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "f934f74c-52a0-49bf-a397-fbb2e32bcc49"
+  },
+  {
+    "question": "A subagent reports `failure_type: timeout_after_retries`, attempted_query, partial_results (3 of 10 expected hits), and suggestions. What is the *minimum* useful action the coordinator can now take that an `unavailable` status would have prevented?",
+    "options": [
+      "Crash and email the on-call engineer.",
+      "Re-dispatch every subagent from the beginning.",
+      "Mark the entire workflow as failed and abort.",
+      "Synthesise with the 3 partial hits and annotate the gap, or retry with a narrower query taken from the suggestions."
+    ],
+    "explanations": [
+      "Operational alerting; not the recovery move enabled by the structured payload.",
+      "Wasteful re-dispatch; the structured payload doesn't require it.",
+      "Whole-workflow termination — and the structured payload specifically argues against it.",
+      "Correct. The structured fields enable both partial-synthesis and targeted retry — neither possible from a generic status."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "739ba9c4-f53b-4c3b-949f-e01448faba19"
+  },
+  {
+    "question": "A team's design doc says 'subagents should be thin: catch nothing, just bubble exceptions to the coordinator.' What is the most accurate critique?",
+    "options": [
+      "Bubbling exceptions abandons partial work and forces the coordinator to micro-manage retries it lacks domain knowledge for.",
+      "Bubbling exceptions is correct; this design is fine.",
+      "Subagents should never raise exceptions, only return None.",
+      "The coordinator should be removed entirely."
+    ],
+    "explanations": [
+      "Correct. Local recovery in subagents is the prescribed pattern; only the unresolvable residue should propagate.",
+      "It's exactly the anti-pattern — propagation strips context and forces top-level retry logic.",
+      "Returning None is silent suppression — the other anti-pattern.",
+      "Removing the coordinator destroys the multi-agent architecture entirely."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "f098aed2-0a16-4042-890f-794ded90454c"
+  },
+  {
+    "question": "Which combination of synthesis-output annotations correctly reports a research run where 4 sources confirmed claim A, 1 secondary source partially confirmed B, and the source for C was 503'd?",
+    "options": [
+      "All three claims annotated identically as `confirmed`.",
+      "A and B as confirmed; omit C entirely from the report.",
+      "A: confirmed. B: confirmed. C: no evidence found.",
+      "A: well-supported (4 sources). B: partial (1 secondary source). C: gap (source unreachable)."
+    ],
+    "explanations": [
+      "Uniform-confidence prose; launders weak claims and gaps into the same register as strong ones.",
+      "Omitting C hides the gap from the consumer entirely.",
+      "Mis-tags B as fully confirmed and treats a gap as a valid empty.",
+      "Correct. Per-claim coverage annotations matched to the actual source support."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "b876a8a4-aecb-4dba-a9ce-523ec4b4633c"
+  },
+  {
+    "question": "A subagent retries 3 times in-house, fails, then returns a structured error. Should the coordinator retry the same subagent immediately?",
+    "options": [
+      "Yes — coordinators should always retry on subagent failure.",
+      "Not blindly — the structured error should describe what's been tried so the coordinator avoids redoing it; coordinator retry should change the query, source, or strategy.",
+      "Never — coordinators should not retry under any circumstances.",
+      "Only if the failure_type is `success`."
+    ],
+    "explanations": [
+      "Blind retry would redo work the subagent already exhausted.",
+      "Correct. The structured payload exists precisely so the coordinator knows what's been tried and chooses a different angle.",
+      "Coordinator retry is sometimes appropriate — just not blindly.",
+      "`success` is not a failure_type; nonsense option."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "c2a481c9-ead5-4054-9ea5-f17692128f9b"
+  },
+  {
+    "question": "The synthesis agent receives four subagent responses, one of which contains `outcome: empty` (queried successfully, zero matches). How should that be presented in the final report?",
+    "options": [
+      "As a gap due to source unavailability.",
+      "Omitted entirely from the report.",
+      "Treated as identical to an access failure.",
+      "As a real finding — e.g., 'no peer-reviewed studies found on this combination as of the research date.'"
+    ],
+    "explanations": [
+      "Wrong category — the source was reachable; the answer is just empty.",
+      "Omission hides a real finding from consumers.",
+      "Conflating a valid empty with an access failure is the trap this subtopic warns against.",
+      "Correct. A successful zero-match is a genuine, useful finding worth reporting."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "d8d3b5ba-522b-4c3c-8483-70dccf62ca6b"
+  },
+  {
+    "question": "In Scenario S3, three subagents succeed and a fourth raises an unhandled exception that bubbles to the harness. What is the predicted symptom under a 'whole-workflow termination' policy?",
+    "options": [
+      "Synthesis runs with all four results.",
+      "The workflow aborts and all three successful subagents' work is discarded.",
+      "The coordinator silently fills in the missing data.",
+      "The agentic loop's stop_reason is set to `tool_use`."
+    ],
+    "explanations": [
+      "Synthesis won't run — the abort happens before it.",
+      "Correct. This is the wasted-partial-work failure mode.",
+      "Filling in missing data would itself be a worse anti-pattern; it's not what termination does.",
+      "stop_reason is unrelated to this multi-agent failure mode."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "84e8f248-daea-4e60-9e48-c7ef96ea1edf"
+  },
+  {
+    "question": "Why does a generic 'search unavailable' status hide value compared to a structured error context?",
+    "options": [
+      "It uses fewer tokens, which is always preferable.",
+      "It is cached aggressively, leading to stale errors.",
+      "It hides the failure type, the attempted query, partial results, and any alternatives — leaving the coordinator unable to recover intelligently.",
+      "It triggers the agentic loop's max_iterations safety net."
+    ],
+    "explanations": [
+      "Token economy is not the operative concern; coordinator recovery is.",
+      "Caching behavior is unrelated.",
+      "Correct. The four hidden fields are exactly what the coordinator needs to choose its next action.",
+      "max_iterations is a different topic entirely."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "66734c5b-b6e7-4402-902e-de755e152381"
+  },
+  {
+    "question": "Which of the following is *not* a recovery action the coordinator can take when given structured error context from a subagent?",
+    "options": [
+      "Retry with a narrower query taken from the subagent's suggestions.",
+      "Synthesise with the partial results and annotate the remaining gap.",
+      "Hand the suggested-alternatives list to a different subagent.",
+      "Determine the per-token cost of the failed Anthropic API call."
+    ],
+    "explanations": [
+      "Valid — uses the suggested-alternatives field.",
+      "Valid — uses the partial-results field with coverage annotations.",
+      "Valid — re-routes via the suggested-alternatives field.",
+      "Correct answer. Per-token cost is operational metadata unrelated to coordinator recovery."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "139ec5ca-39a3-4c7e-b43e-13c8c396c90a"
+  },
+  {
+    "question": "A subagent's structured error includes `partial_results`. Why is that field load-bearing even though the call ultimately failed?",
+    "options": [
+      "It allows the coordinator to bill the user for the partial work.",
+      "It lets the coordinator (and synthesis) use what was gathered, instead of discarding everything that came before the failure.",
+      "It is required by the Anthropic API contract.",
+      "It enables the harness to log the request for observability."
+    ],
+    "explanations": [
+      "Billing is unrelated.",
+      "Correct. Preserve-and-annotate: the partial results are real data the synthesis can still use under appropriate coverage annotations.",
+      "Not an API requirement; it's a design pattern.",
+      "Logging is unrelated to the recovery decision."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "7625f812-4793-43fa-af8a-9f7e4a8d9e64"
+  },
+  {
+    "question": "A coordinator receives `outcome: access_failure, failure_type: 503, partial_results: []` from a subagent. Which action best matches the topic's recommended pattern?",
+    "options": [
+      "Mark the topic area with a coverage-annotation gap and continue synthesis with the other subagents' work; optionally retry with an alternative source.",
+      "Treat the empty array as a valid empty finding and report 'no records exist.'",
+      "Abort the entire workflow because one subagent failed.",
+      "Suppress the failure and pretend the subagent succeeded."
+    ],
+    "explanations": [
+      "Correct. Annotate the gap, preserve partial-credit synthesis, and consider an alternative source.",
+      "Conflates an access failure with a valid empty — the central anti-pattern of subtopic 2.",
+      "Whole-workflow termination — discards good work from other subagents.",
+      "Silent suppression — produces biased output."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "316ffbc0-e759-46fe-a036-e9295007d256"
+  },
+  {
+    "question": "In Scenario S3, the regulator-database query subagent returns: `{outcome: empty, query: 'FCA enforcement 2024', results: []}`. The synthesis agent reports this as 'no enforcement data found, source unreachable.' What's wrong?",
+    "options": [
+      "Nothing — that's a faithful summary.",
+      "Synthesis should have aborted because the result set was empty.",
+      "The synthesis miscategorised a valid empty as an access failure; the source was reachable and returned zero rows, which is a real finding.",
+      "The subagent should have raised an exception instead of returning empty."
+    ],
+    "explanations": [
+      "It's not faithful — it invents a 'source unreachable' detail.",
+      "Aborting on a valid empty is a category error.",
+      "Correct. Conflating valid empty with access failure is the load-bearing distinction this subtopic tests.",
+      "A successful empty query should not raise; raising would be silent-suppression-by-omission of the finding."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "6a966b19-7469-46b6-88c6-c2502212298e"
+  },
+  {
+    "question": "Which of these is the *best* default rule for where retry/backoff for transient failures should sit?",
+    "options": [
+      "Always at the harness level so retries are uniform.",
+      "Inside the subagent first; only propagate the unresolvable residue to the coordinator.",
+      "At the coordinator only; subagents should be 'thin'.",
+      "At the user-message layer — the user can re-ask if it failed."
+    ],
+    "explanations": [
+      "Uniform harness retries can't pick subagent-specific alternatives.",
+      "Correct. Local recovery exploits the subagent's domain knowledge; the residue propagates upward as a structured error.",
+      "Thin subagents force the coordinator to micro-manage transient retries — the anti-pattern in subtopic 4.",
+      "Pushing retries to the human is not a multi-agent recovery pattern."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "0bb9920a-f3fb-42fd-854e-345e8604840f"
+  },
+  {
+    "question": "A synthesis agent simply concatenates all subagent outputs into uniform-confidence prose. What is the principal failure mode?",
+    "options": [
+      "Reports run too long and exceed the context window.",
+      "The synthesis agent uses too many tokens.",
+      "stop_reason gets set to `end_turn` prematurely.",
+      "One-source guesses and four-source consensuses are presented identically; the consumer cannot calibrate trust per claim."
+    ],
+    "explanations": [
+      "Length is not the operative defect.",
+      "Token use is not the issue.",
+      "stop_reason is unrelated to this synthesis defect.",
+      "Correct. Without coverage annotations, upstream uncertainty is laundered into false confidence."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "f550322c-bb2d-47ed-8acb-984c3536dc96"
+  },
+  {
+    "question": "Which option best summarises the preserve-and-annotate propagation pattern in one sentence?",
+    "options": [
+      "Subagents propagate every error immediately to keep the coordinator informed.",
+      "Subagents recover what they can locally and propagate a structured error with partial results when they cannot resolve the failure.",
+      "Subagents catch all errors silently and return empty results to keep the workflow running.",
+      "The coordinator aborts on any subagent failure to guarantee a clean workflow state."
+    ],
+    "explanations": [
+      "Skips local recovery and pollutes the coordinator with transient blips.",
+      "Correct. Local recovery first; structured propagation of the unresolvable residue with partial preservation.",
+      "Silent suppression — the central anti-pattern.",
+      "Whole-workflow termination — the other central anti-pattern."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "6de2aad5-6892-4bbb-a4a7-4b5cd8fc6d23"
+  },
+  {
+    "question": "A teammate proposes: 'On any subagent error, just raise an exception — let the coordinator handle it. That's the cleanest separation of concerns.' Why does this fail the test as stated?",
+    "options": [
+      "Because exceptions are slower than return values in Python.",
+      "Because the coordinator cannot catch exceptions across agent boundaries.",
+      "Because raising abandons any partial work the subagent already produced; the prescribed pattern is preserve-and-annotate via a structured return, not raise-and-abort.",
+      "Because the Anthropic SDK forbids subagents from raising."
+    ],
+    "explanations": [
+      "Performance is not the issue; correctness is.",
+      "Exception propagation across agents is technically possible; it's just the wrong design.",
+      "Correct. The propagation rule preserves partial results and annotates; raising discards them.",
+      "There is no SDK rule against raising; the issue is the design pattern."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "d67f63eb-8eaa-4474-9b0b-5ed278a45abd"
+  },
+  {
+    "question": "Two designs are proposed for the search subagent. Design A: catch all timeouts and return `{results: []}` to keep the workflow flowing. Design B: catch all timeouts and raise to a top-level handler that aborts the workflow. Which is correct?",
+    "options": [
+      "A — keep the workflow flowing at all costs.",
+      "B — fail fast to surface the problem.",
+      "Neither — both are anti-patterns. Return a structured error with partial results so synthesis can annotate the gap and other subagents' work is preserved.",
+      "Both are equivalent in behaviour."
+    ],
+    "explanations": [
+      "Silent suppression — produces biased synthesis.",
+      "Whole-workflow termination — discards the other subagents' good work.",
+      "Correct. Each design is one of the two named anti-patterns; the prescribed third path is structured propagation with partial preservation.",
+      "They produce dramatically different downstream behaviour — silent vs catastrophic."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "dd3ac486-23bb-4be8-9afd-f5e4cd3727f1"
+  },
+  {
+    "question": "A coordinator receives subagent payloads with `outcome` tags but no other failure context. The coordinator is now able to: (i) distinguish access failures from valid empties, (ii) decide whether to retry. Which of (i)/(ii) is supported and which is not?",
+    "options": [
+      "Both (i) and (ii) are fully supported.",
+      "(i) is supported; (ii) is only partially supported because retry decisions also need attempted_query, failure_type, and alternatives.",
+      "Neither is supported by the outcome tag.",
+      "(ii) is supported; (i) is not."
+    ],
+    "explanations": [
+      "Outcome alone enables (i) but not full retry decisions.",
+      "Correct. The discriminated tag is necessary for distinguishing the two categories, but informed retry needs the rest of the structured payload.",
+      "Outcome does support (i) cleanly.",
+      "Backwards — outcome is exactly what enables (i)."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "ade4114a-1754-490b-9358-35d1d1b35fcd"
+  },
+  {
+    "question": "An exam option reads: 'Implement automatic retry with exponential backoff inside the subagent, returning a generic `search unavailable` status only after all retries are exhausted.' Why is this option still wrong despite doing local recovery correctly?",
+    "options": [
+      "Because exponential backoff is the wrong retry strategy.",
+      "Because retries should be in the coordinator, not the subagent.",
+      "Because the post-recovery payload is generic — it hides the failure type, attempted query, partial results, and alternatives the coordinator needs.",
+      "Because retries should never have a backoff."
+    ],
+    "explanations": [
+      "Backoff is fine; the issue is the structure of what's returned.",
+      "Local recovery in the subagent is correct (subtopic 4); the issue is what comes after.",
+      "Correct. Local recovery is correct, but the generic post-failure status defeats the purpose of structured propagation.",
+      "Backoff is appropriate for transient failures."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "64623557-d6a2-40ec-ae77-636b24fe030e"
+  },
+  {
+    "question": "Synthesis annotates claim X as `[well-supported: 4 sources]` while one of those four sources actually returned an access failure (the subagent silently swallowed it and returned empty). The annotation is wrong. What is the upstream defect?",
+    "options": [
+      "The synthesis agent should re-verify all source counts itself.",
+      "Coverage annotations are intrinsically unreliable; remove them.",
+      "The coordinator should have aborted when the source failed.",
+      "Silent error suppression upstream caused the access failure to look like 'absence of contribution,' which the annotation pipeline counted incorrectly."
+    ],
+    "explanations": [
+      "Re-verification is not the architectural fix; the upstream subagent should not have suppressed.",
+      "Coverage annotations are reliable when fed correct inputs; the issue is upstream contamination.",
+      "Aborting is the other anti-pattern; the right fix is structured propagation, not termination.",
+      "Correct. Silent suppression at the subagent level corrupts the inputs that downstream coverage annotations depend on."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "8dfea6bb-00de-4bff-8329-4bbb9db5c1b1"
+  },
+  {
+    "question": "Which scenario most directly motivates having a discriminated `outcome` tag (`access_failure` vs `empty`) on subagent responses?",
+    "options": [
+      "Reducing token usage in the response payload.",
+      "A search returning `[]` could mean 'queried successfully, zero matches' or 'couldn't query at all'; without the tag, synthesis claims absence of evidence as evidence of absence.",
+      "Improving cache hit rates on repeated queries.",
+      "Allowing the harness to skip retries for empty results."
+    ],
+    "explanations": [
+      "Tokens are not the operative concern.",
+      "Correct. The conflation between successful empty and access failure is the central downstream-correctness risk.",
+      "Caching is unrelated.",
+      "The tag is about correctness of synthesis, not retry-skipping."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "f3cb1f39-1581-403b-a79c-671b348bedbf"
+  },
+  {
+    "question": "A coordinator can take any of: (a) retry with a modified query, (b) try an alternative source, (c) proceed with partial results, (d) annotate as a gap. What enables it to choose intelligently among (a)-(d)?",
+    "options": [
+      "A higher-temperature setting on the model.",
+      "A bigger context window.",
+      "More iterations of the agentic loop.",
+      "The structured error payload — failure_type, attempted_query, partial_results, suggested_alternatives — surfaces exactly the information needed to choose."
+    ],
+    "explanations": [
+      "Sampling temperature does not fix missing information.",
+      "Context window doesn't manufacture information that wasn't surfaced.",
+      "More iterations cannot recover information the subagent never returned.",
+      "Correct. Each of the four fields underwrites at least one of the four recovery moves."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "13622ce9-c8df-4b2e-a7ef-21deb1733fa7"
+  },
+  {
+    "question": "A subtle exam option reads: 'On subagent failure, the coordinator should immediately raise the exception so the user sees the failure quickly.' What's the strongest objection?",
+    "options": [
+      "Users prefer fast failures.",
+      "It is a whole-workflow termination dressed up as user-friendliness — it discards the partial work of other subagents and prevents the synthesis agent from producing an annotated partial report that's often more useful than a hard fail.",
+      "The user already sees subagent failures via stop_reason.",
+      "Raising is faster than returning."
+    ],
+    "explanations": [
+      "User preferences don't override the architectural rule.",
+      "Correct. The user is better served by a partial-but-annotated report than by an aborted workflow that discards three successes.",
+      "stop_reason does not surface subagent-level failures to end users.",
+      "Performance is not the issue."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "4231f455-b3ea-4daf-a083-892049b3870c"
+  },
+  {
+    "question": "Three subagents return: A=success(4 sources), B=valid-empty, C=access-failure. A naive synthesis flattens all three into one sentence: 'The research found that X, Y, and no Z.' Which two distinct upstream errors are being concealed by this synthesis?",
+    "options": [
+      "Token over-use and stop_reason misuse.",
+      "Coverage uniformity (A's strong support presented identically to B and C) and access-failure-vs-empty conflation (C's gap presented identically to B's real empty finding).",
+      "Silent suppression and whole-workflow termination — both at once.",
+      "Local recovery and structured propagation."
+    ],
+    "explanations": [
+      "Operational metadata, not synthesis-correctness defects.",
+      "Correct. Uniform-confidence prose erases coverage; flattening C and B erases the empty-vs-access-failure distinction.",
+      "Suppression and termination are both upstream anti-patterns; neither is what's wrong with the synthesis sentence here.",
+      "Local recovery and structured propagation are correct patterns, not defects."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "f8f2e648-90ad-4edd-8870-3c477dab5b8b"
+  },
+  {
+    "question": "An exam item asks: 'What is the *single most reliable* heuristic for telling whether a `results: []` response from a subagent represents a recoverable upstream gap or a real-world empty finding?' Which answer correctly captures the topic's prescribed mechanism?",
+    "options": [
+      "Inspect the discriminated `outcome` tag the subagent attaches (`access_failure` vs `empty`); the empty-array shape alone is intentionally indistinguishable, which is why the tag exists.",
+      "Measure the latency of the response — slow responses indicate access failures and fast responses indicate valid empties.",
+      "Check whether the underlying API returned a 200 status code; if it did, treat the empty as a real finding regardless of subagent metadata.",
+      "Default to treating every empty as an access failure to be safe."
+    ],
+    "explanations": [
+      "Correct. The discriminated outcome tag is precisely what the topic prescribes; it is the only mechanism that survives a `results: []` shape that's intentionally identical for both cases.",
+      "Latency is unreliable — slow successful queries and fast access failures both occur regularly.",
+      "Status codes are necessary but not sufficient: a 200 with empty rows is a real finding, but the subagent might have synthesised a 'fake 200' on a swallowed error, which is exactly the silent-suppression contamination that breaks status-only reasoning.",
+      "Defaulting to 'access failure' just collapses the distinction in the other direction; valid empty findings get reported as gaps, which is also wrong."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.3"
+    ],
+    "phase": "post",
+    "qid": "2ce6b16f-9c65-4f11-90d4-26145a8944ad"
+  }
+]

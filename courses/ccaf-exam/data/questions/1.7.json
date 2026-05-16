@@ -1,0 +1,882 @@
+[
+  {
+    "question": "What does the `--resume <session-name>` flag do in Claude Code / Agent SDK?",
+    "options": [
+      "Re-attaches to a named prior session, restoring its conversation history and prior tool-result context so the agent continues where it left off.",
+      "Spawns a parallel subagent that inherits the coordinator's tools.",
+      "Creates an independent branch from a shared baseline for divergent exploration.",
+      "Discards prior context and starts a brand-new session under the given name."
+    ],
+    "explanations": [
+      "Correct — resumption restores the named session's accumulated state (conversation, tool results, decisions) so follow-up queries reason over the prior context.",
+      "Wrong — that describes subagent spawning (Task 1.3), not session resumption.",
+      "Wrong — that describes `fork_session`, the divergent-branch primitive.",
+      "Wrong — discarding context and starting fresh is the *opposite* of resumption; that's `start fresh + summary`."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "pre",
+    "qid": "a68897d4-5e2b-4632-ad89-4e490da3463b"
+  },
+  {
+    "question": "What is the canonical use case for `fork_session`?",
+    "options": [
+      "Continuing a paused investigation hours later from the same point.",
+      "Persisting state across a Claude Code crash so it can recover.",
+      "Creating independent branches from a shared analysis baseline to explore divergent approaches (e.g., comparing two refactoring strategies) without redoing the baseline per branch.",
+      "Compressing the conversation history to free context tokens."
+    ],
+    "explanations": [
+      "Wrong — that's `--resume`. Resumption continues a single session line; it does not create branches.",
+      "Wrong — crash recovery is closer to structured manifests (Task 5.4); fork is about deliberate parallel exploration.",
+      "Correct — fork copies the baseline up to the fork point and then runs each branch independently, so divergent approaches can be compared without contamination and without redoing the expensive baseline.",
+      "Wrong — that describes context compaction, not forking."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "pre",
+    "qid": "bde25bc2-5898-43af-9253-e33c3cab7a5c"
+  },
+  {
+    "question": "An investigation session paused yesterday. Overnight, a teammate merged a PR that edited several files the prior session analyzed. What is the most reliable next move?",
+    "options": [
+      "Resume with `--resume <session-name>` exactly as before — saved tokens are worth the small risk.",
+      "Resume but add a vague 'things may have changed, please re-check' to the next prompt.",
+      "Wait until the prior session's cached tool results expire and resume then.",
+      "Start fresh and inject a structured summary of the prior findings; re-run the relevant tools to obtain current data."
+    ],
+    "explanations": [
+      "Wrong — resumption inherits cached tool results as ground truth. The model has no signal the data is stale and will confidently reason over outdated content.",
+      "Wrong — vague re-check prompts force the model to either re-do too much (defeats resuming) or trust too much (still uses stale cache).",
+      "Wrong — cached tool results don't auto-expire in a way that protects you; the staleness has already taken effect once external changes occurred.",
+      "Correct — fresh + structured summary preserves the prior facts/decisions cheaply while ensuring tool re-queries return current data, which is the right answer when prior tool results are stale."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "pre",
+    "qid": "c05ab9cb-cf3b-4373-b384-bed2ddb658d4"
+  },
+  {
+    "question": "Why are named sessions (`--session-name auth-refactor-2026-04`) preferred over auto-generated session IDs for long-running investigations?",
+    "options": [
+      "Auto-generated IDs cannot be resumed at all.",
+      "Named sessions are stable, meaningful handles that humans can reliably find days later; auto-generated IDs are forgettable for multi-day work.",
+      "Named sessions consume fewer tokens.",
+      "Auto-generated IDs are tied to a single machine and cannot be shared."
+    ],
+    "explanations": [
+      "Wrong — auto-generated IDs can be resumed; the issue is human findability, not technical capability.",
+      "Correct — names are durable handles. For investigations spanning multiple work blocks, future-you (or a teammate) needs to find the right session reliably.",
+      "Wrong — naming has no impact on token consumption.",
+      "Wrong — that's not a property of the IDs; the practical issue is human memory."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "pre",
+    "qid": "ac04dcf0-67e8-4a77-b389-1be079769c7c"
+  },
+  {
+    "question": "A team has spent significant tokens building a shared baseline analysis of a legacy module. They now want to evaluate two refactoring approaches (strangler-fig vs clean-room rewrite) without contaminating one analysis with the other. Which primitive fits best?",
+    "options": [
+      "Continue both analyses sequentially in the same session.",
+      "Start two fresh sessions and redo the baseline analysis in each.",
+      "Use `fork_session` twice to create independent branches from the shared baseline; each branch explores one approach.",
+      "Use `--resume` twice on the same baseline session, alternating between the two approaches."
+    ],
+    "explanations": [
+      "Wrong — sequential exploration in one session lets the first approach bias the analysis of the second; comparison is contaminated.",
+      "Wrong — wastes the expensive baseline work and risks the two baselines drifting subtly across re-analyses.",
+      "Correct — `fork_session` creates independent branches that share the baseline up to the fork point but evolve independently after. Each conclusion is uncontaminated by the other.",
+      "Wrong — `--resume` continues a single session line; alternating prompts on the same line doesn't isolate the explorations from each other."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "pre",
+    "qid": "57392ee8-de60-4a5e-a6db-cfa4dd8032c7"
+  },
+  {
+    "question": "An architect resumes an investigation session. Since the pause, two specific files have been edited; everything else is unchanged. What's the right way to handle the resume?",
+    "options": [
+      "`--resume` and immediately ask the substantive follow-up question; trust the cached context.",
+      "`--resume` and explicitly tell the session which two files changed and the nature of each change, instructing it to re-read those files; everything else stays cached.",
+      "Discard the session entirely and redo the whole investigation from scratch.",
+      "`--resume` with a generic 'something might have changed, please verify the codebase' prompt."
+    ],
+    "explanations": [
+      "Wrong — silent resumption with stale cache for two files means the model reasons over outdated content for those files; conclusions can be confidently wrong.",
+      "Correct — targeted re-analysis: explicit named files + nature of change lets the session re-read exactly what's stale and integrate updates without redoing valid work.",
+      "Wrong — discards a lot of valid analysis. Targeted re-analysis is the precise and cheaper fix.",
+      "Wrong — vague prompts produce either over- or under-correction; the model has no scope to act on."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "pre",
+    "qid": "84dce36d-ece8-4ecf-a1f1-cc86eaa27cf3"
+  },
+  {
+    "question": "What is the primary failure mode of resuming a session whose underlying systems have changed since it paused?",
+    "options": [
+      "The session prompt grows too long and exceeds the context window.",
+      "The session crashes immediately with a stale-cache error.",
+      "The model treats cached tool results (`Read`, `Grep`, `Bash` outputs) as ground truth and reasons confidently over outdated data, with no signal anything is wrong.",
+      "Tool calls fail because the SDK detects the staleness and refuses to execute."
+    ],
+    "explanations": [
+      "Wrong — context size isn't what the staleness pattern is about; the issue is data accuracy, not size.",
+      "Wrong — there is no automatic staleness detection. Resumption silently inherits the cached results.",
+      "Correct — this is the canonical failure mode. Stale tool results in resumed context are silent poison; the model has no signal to know they're outdated.",
+      "Wrong — the SDK does not detect staleness. That's why the human architect has to make the resume-vs-fresh call deliberately."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "pre",
+    "qid": "d75677f9-e4cc-4287-b8aa-9382aa7ab9ef"
+  },
+  {
+    "question": "Starting a fresh session instead of resuming, what should you do to avoid throwing away the prior investigation's value?",
+    "options": [
+      "Inject a structured summary (scope, key findings, decisions, open questions, provenance flags) so the new session inherits the *facts* without inheriting *stale tool results*.",
+      "Paste the entire prior conversation history into the new session as raw text.",
+      "Skip any handoff — the new session should rediscover everything from scratch.",
+      "Re-run every tool call from the prior session before starting any new work."
+    ],
+    "explanations": [
+      "Correct — the structured summary is the cheap way to transfer accumulated knowledge while leaving stale tool outputs behind. The new session re-queries tools as needed and gets current data.",
+      "Wrong — pasting raw history reintroduces the stale tool results the fresh start was meant to escape.",
+      "Wrong — without a summary the new session redoes discovery, wasting tokens and risking divergent conclusions.",
+      "Wrong — re-running every tool call defeats the cost benefit of fresh-with-summary; only re-query tools when the new work needs them."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "pre",
+    "qid": "2e443f88-56ad-4272-8e02-3f9eb86a1f9a"
+  },
+  {
+    "question": "Which of the following best distinguishes `--resume` from `fork_session`?",
+    "options": [
+      "They are interchangeable; the choice is stylistic.",
+      "`--resume` continues a single session line from where it paused; `fork_session` splits the session into independent branches that share history up to the fork point but then evolve separately.",
+      "`--resume` is for CLI use; `fork_session` is API-only.",
+      "`fork_session` is just a shortcut that calls `--resume` twice."
+    ],
+    "explanations": [
+      "Wrong — they solve different problems: continuation vs branching. Picking the wrong one produces contamination or duplicated baseline work.",
+      "Correct — that's the precise distinction. Resume = continue one line; fork = split into two independent lines from a shared point.",
+      "Wrong — both primitives are exposed in both surfaces; the distinction is semantic, not interface.",
+      "Wrong — fork creates independent branches; calling resume twice on the same name doesn't produce isolated branches."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "pre",
+    "qid": "ecc0a96a-93f9-44e6-9ecb-e486754f78b4"
+  },
+  {
+    "question": "An exam scenario: 'A weeks-long investigation session has been resumed many times. The underlying repository is stable; nothing material has changed since yesterday's pause. The team has a follow-up question to ask.' Which is the correct action?",
+    "options": [
+      "Resume with `--resume <session-name>` and ask the follow-up — prior context is mostly valid and resumption is the right call here.",
+      "Start fresh with a structured summary; resumption is never reliable for multi-resume sessions.",
+      "Use `fork_session` so the follow-up exploration is isolated from the rest of the investigation.",
+      "Discard the session and redo the investigation to be safe."
+    ],
+    "explanations": [
+      "Correct — when prior context is mostly valid (no material external changes), resumption is exactly the intended use. The risk pattern only fires when something has changed since the pause.",
+      "Wrong — fresh-with-summary is for the staleness case. Applying it when nothing has changed wastes the prior context's accumulated state.",
+      "Wrong — fork is for divergent exploration from a baseline, not for follow-up questions on a single line of investigation.",
+      "Wrong — discarding a valid session and redoing weeks of work is unjustified when nothing has changed."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "pre",
+    "qid": "572e87ad-2dcc-4e2d-9d52-aaec392c1690"
+  },
+  {
+    "question": "An investigation session named `q2-billing-audit` paused 18 hours ago. Since then, two PRs were merged that touched 5 of the 22 files the session analyzed. What is the architecturally correct next move, and why?",
+    "options": [
+      "Resume with `--resume q2-billing-audit` and ask the next substantive question; the session's cached context will reason over the new state automatically.",
+      "Start a fresh session, inject a structured summary of the prior session's findings (scope, key conclusions, decisions, open questions), and let the fresh session re-query tools for the changed files. The summary preserves prior facts cheaply; tool re-queries guarantee current data.",
+      "Use `fork_session` to create one branch per merged PR.",
+      "Resume the session with a generic 'something may have changed since yesterday, please re-check the relevant files' prompt."
+    ],
+    "explanations": [
+      "Wrong — resumption silently inherits cached `Read`/`Grep` results from before the PRs landed. The model treats them as ground truth and reasons over outdated content, producing confidently-wrong answers.",
+      "Correct — the staleness blast radius (5 of 22 files plus possible downstream effects) is wide enough that fresh-with-summary is the right call. The summary keeps prior decisions/findings without dragging the stale tool results into the new session.",
+      "Wrong — `fork_session` is for divergent exploration from a shared baseline, not for handling external file changes. Wrong primitive.",
+      "Wrong — vague re-check prompts produce either over- or under-correction. The model has no precise scope to act on, and the cache problem isn't fixed."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "71714189-0a61-46b4-9111-0f80ae14b28a"
+  },
+  {
+    "question": "A team has captured an expensive shared baseline analysis of a payments module (dependency graph, test coverage, business rule extraction). They want to compare three migration strategies — strangler-fig, clean-room rewrite, and incremental in-place refactor — without one analysis biasing the others. Which approach is correct?",
+    "options": [
+      "From the baseline session, call `fork_session` three times to create three independent branches; each branch explores one strategy. All three inherit the baseline; conclusions stay independent because forks don't share post-fork state.",
+      "Run all three analyses sequentially in the baseline session, separated by clear delimiters in the prompts.",
+      "Start three fresh sessions and redo the baseline in each.",
+      "Use `--resume` three times on the baseline session, asking one strategy per resume."
+    ],
+    "explanations": [
+      "Correct — `fork_session` is the precise primitive for divergent exploration from a shared baseline. Each fork inherits the baseline; their post-fork explorations are independent; the comparison is contamination-free.",
+      "Wrong — sequential analyses in one session let earlier analyses bias later ones (the model 'remembers' what it just argued for). Comparison is contaminated.",
+      "Wrong — wastes the expensive baseline three times and risks subtle drift in baseline understanding across the redoes.",
+      "Wrong — `--resume` continues one line of conversation; alternating strategy questions on that line doesn't produce independent branches."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "98160bd7-300a-455f-b53a-1f5f87d3c084"
+  },
+  {
+    "question": "Which statement most accurately describes the cost-benefit tradeoff between `--resume` (with stale cache) and 'start fresh + structured summary'?",
+    "options": [
+      "Resume is always cheaper because it reuses prior tokens, so it should be the default.",
+      "Fresh is always cheaper because tools re-execute quickly, so it should be the default.",
+      "They have identical cost profiles; pick by personal preference.",
+      "Resume is cheaper at startup but has a high recovery cost if cached results are stale (silent bad answers). Fresh + summary has higher startup cost but bounded recovery cost (re-query the missing piece). The expected-cost winner depends on whether anything has changed since the pause."
+    ],
+    "explanations": [
+      "Wrong — resume's startup token saving is small; its risk-adjusted cost spikes when stale data drives wrong conclusions, and that risk is invisible to the model.",
+      "Wrong — fresh starts pay re-discovery costs that are real; they aren't always cheaper.",
+      "Wrong — the cost profiles differ materially. The whole point of the trade-off is choosing based on the staleness condition.",
+      "Correct — that's the precise framing. Resume is fine when nothing material has changed; fresh + summary wins when staleness risk is non-trivial because the silent-bad-answer cost dwarfs the token savings."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "7a8656f2-19a0-41ee-87cc-2b47d91faf62"
+  },
+  {
+    "question": "An architect proposes always using `--resume` 'because it saves tokens.' What's the strongest critique of using resumption as the default?",
+    "options": [
+      "Resumption inherits cached tool results as ground truth. When the underlying systems have changed, the model reasons confidently over stale data with no signal — silently wrong answers cost far more than the small token savings.",
+      "Resumption is slower than starting fresh because re-attaching to a session takes time.",
+      "Resumption requires manual session naming, which is cumbersome.",
+      "Resumption cannot be used in CI environments."
+    ],
+    "explanations": [
+      "Correct — that's the architectural critique. The token savings are real but small; the silent-failure cost when prior tool results are stale is potentially very large and undetectable.",
+      "Wrong — re-attach time is not the architectural issue; correctness under change is.",
+      "Wrong — naming is a small UX concern, not the principled critique against default-resume.",
+      "Wrong — resumption is not blocked from CI; that's not the issue."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "8c3e73f1-a01f-4a18-a37f-a9274b65f4a1"
+  },
+  {
+    "question": "What distinguishes `fork_session` from spawning parallel subagents (Task 1.3) when both can run analyses in parallel?",
+    "options": [
+      "They are functionally identical; either works.",
+      "Subagents start with no inherited context — each is isolated from the start (Task 1.2 hub-and-spoke). `fork_session` branches start with the *full session baseline* up to the fork point, then evolve independently. Forks are the right primitive when divergent explorations need to share an expensive baseline.",
+      "Subagents can use tools; forks cannot.",
+      "Forks share state with each other after the fork; subagents do not."
+    ],
+    "explanations": [
+      "Wrong — they solve different problems. Subagents = clean-context delegation; forks = shared-baseline branching.",
+      "Correct — the difference is what each branch *inherits at start*. When the baseline is expensive and the explorations need to start from the same ground truth, forks are right; when each parallel investigation needs clean context, subagents are right.",
+      "Wrong — both can use tools; the distinction is initial context.",
+      "Wrong — forks are *independent* after the fork point; that's the entire point of the primitive."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "06675d08-69a7-4673-917f-cdf72d02f1fb"
+  },
+  {
+    "question": "When starting a fresh session after a long-running investigation, what makes a structured summary effective vs a poor handoff?",
+    "options": [
+      "A good summary is short and only mentions the final conclusion.",
+      "A good summary pastes the entire conversation transcript so nothing is lost.",
+      "A good summary lists scope (files/systems under investigation), key findings with summary evidence, decisions already made, open questions for the resumed work, and provenance flags on findings whose supporting tool results may now be stale. A poor summary omits the open questions or the provenance flags.",
+      "Any summary is equally effective as long as it mentions the project name."
+    ],
+    "explanations": [
+      "Wrong — final conclusion alone strips away the supporting facts/decisions the new session needs to continue from.",
+      "Wrong — pasting the full transcript reintroduces the stale tool results the fresh start was meant to escape.",
+      "Correct — those five elements are exactly the structured-summary contract. Open questions tell the new session where to pick up; provenance flags tell it which findings to re-verify before relying on them.",
+      "Wrong — summary quality varies dramatically by what it preserves vs strips. Project name alone is not actionable handoff."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "2168f2a7-b6be-44cb-81fc-81322dda8d56"
+  },
+  {
+    "question": "An investigation session is paused. Two named files have changed since the pause; everything else is unchanged. The team needs to ask a follow-up question. Which technique uses resources most efficiently while staying correct?",
+    "options": [
+      "Discard the session and start fresh from scratch.",
+      "`--resume` and immediately ask the follow-up; trust the cached context for everything.",
+      "`--resume` plus a precise re-analysis instruction: name the two changed files, describe the nature of each change, instruct the session to re-read those files only and update conclusions accordingly. Other files keep their valid cached state.",
+      "`fork_session` so the follow-up runs in an independent branch."
+    ],
+    "explanations": [
+      "Wrong — discards much valid prior analysis. Targeted re-analysis is cheaper and equally correct.",
+      "Wrong — silent stale cache for the two changed files leads to confidently-wrong conclusions on those files.",
+      "Correct — targeted re-analysis: precise scoping (named files + nature of change) lets the session re-read exactly what's stale and integrate updates without redoing valid work. Most efficient correct option.",
+      "Wrong — fork is for divergent exploration from a shared baseline, not for handling targeted file changes on a continuation."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "2de618b1-2eee-47e5-ac7d-b7d9c98f988a"
+  },
+  {
+    "question": "How does Task 1.7 (resume / fork) relate to Task 5.4 (scratchpads, structured manifests, /compact)?",
+    "options": [
+      "5.4 covers durability *within* a long-running session (scratchpad files, structured manifests for crash recovery, /compact to free context). 1.7 covers durability *across* sessions and parallel branches (--resume, fork_session, structured-summary handoffs). The manifests from 5.4 are exactly the artifacts that feed 1.7's structured-summary pattern; together they are the durability story for long agentic work.",
+      "They contradict each other; pick one or the other.",
+      "1.7 deprecates 5.4 in newer SDK versions.",
+      "5.4 is for Claude Code only; 1.7 is for the Agent SDK only."
+    ],
+    "explanations": [
+      "Correct — they are complementary durability layers. 5.4 keeps long sessions surviving context turnover; 1.7 keeps work surviving session boundaries and enables divergent exploration. Manifests written by 5.4 become summaries injected via 1.7.",
+      "Wrong — they are complementary, not in tension. The exam may probe either lens.",
+      "Wrong — neither task deprecates the other; they cover different layers.",
+      "Wrong — both apply across Claude Code and SDK surfaces."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "189e7800-7bf9-4d9f-a244-e6133f7c4000"
+  },
+  {
+    "question": "Which scenario most clearly demands `fork_session` (rather than `--resume` or fresh+summary)?",
+    "options": [
+      "A weeks-long audit pauses overnight and resumes the next morning with no external changes.",
+      "A teammate merged a PR last night that touched the modules under investigation.",
+      "After expensive shared baseline analysis, the team needs to compare three migration strategies side-by-side without one analysis biasing the next.",
+      "The session is approaching its context-window limit and needs compaction."
+    ],
+    "explanations": [
+      "Wrong — that's a textbook `--resume` case. Nothing has changed; resumption is the right primitive.",
+      "Wrong — that's a textbook fresh-with-summary case. Stale tool results are the trigger; fork doesn't help here.",
+      "Correct — divergent exploration from a shared baseline is exactly what `fork_session` was designed for. Independent branches share the baseline up to the fork point and then evolve separately, so each strategy's analysis is uncontaminated.",
+      "Wrong — context-window pressure is a Task 5.4 problem (/compact, manifests); fork doesn't address it."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "197cbc21-54ae-4426-b31c-4ef4fc5422f4"
+  },
+  {
+    "question": "Why is 'just paste the entire prior conversation transcript into a new session' an inadequate substitute for a structured summary when starting fresh?",
+    "options": [
+      "Pasted transcripts exceed token limits in all cases.",
+      "Pasting the raw transcript reintroduces the stale tool results (cached `Read`/`Grep`/`Bash` outputs) that the fresh start was meant to escape; the model treats them as ground truth and reasons confidently over outdated data — same failure mode as a naive resume. A structured summary preserves the prior *facts and decisions* without the stale tool outputs.",
+      "Transcripts cannot be parsed by the model.",
+      "Transcripts are private and cannot be shared with the model."
+    ],
+    "explanations": [
+      "Wrong — large transcripts may pressure context, but that's not the architectural critique. The principled issue is correctness, not size.",
+      "Correct — the whole point of fresh-with-summary is to *leave behind* the stale tool results. Pasting the raw transcript drags them right back in. The summary's value is its curated structure: facts and decisions only, no cached tool outputs presented as ground truth.",
+      "Wrong — models can read transcripts; that's not the issue.",
+      "Wrong — there's no privacy block; the issue is what the transcript contains, not whether it can be shared."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "a8e212d4-30b9-47d6-89a5-6cb647703a8e"
+  },
+  {
+    "question": "A team is restarting work on an investigation paused yesterday. The session was named `auth-refactor-2026-04`. Which command best matches Task 1.7's named-resumption pattern?",
+    "options": [
+      "`claude --new-session auth-refactor-2026-04` — creates a brand-new session with that name.",
+      "`claude --resume auth-refactor-2026-04` — re-attaches to the named session, restoring the conversation history, prior tool results, and accumulated context so the model can continue exactly where it left off.",
+      "`claude --replay auth-refactor-2026-04` — replays prior tool calls deterministically from the log.",
+      "`claude --fork auth-refactor-2026-04` — branches from the named session into a new independent fork."
+    ],
+    "explanations": [
+      "Wrong — `--new-session` would discard the accumulated state. The point of named resumption is to *continue*, not to start over with the same label.",
+      "Correct — `--resume <session-name>` is the canonical command for named resumption. The session name is the stable handle for accumulated state, and resumption re-attaches to that state on the next invocation.",
+      "Wrong — there is no `--replay` primitive. Even if there were, replaying tool calls deterministically isn't what 'resume' means; resumption brings back the model's reasoning context, not just a tool log.",
+      "Wrong — that would be `fork_session`, which creates an *independent branch* rather than continuing a single linear investigation. Use fork for divergent exploration, resume for continuation."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "017a75a3-e60c-4c6c-98c0-79fdf5bdb086"
+  },
+  {
+    "question": "A developer resumes session `legacy-audit-2026-03` after a 4-day pause. During those days, several files in the audited service were refactored. The agent confidently states 'the validateToken function in auth/session.py uses bcrypt and has no input validation' — but the file was rewritten to use Argon2 with explicit length checks. What's the architectural diagnosis?",
+    "options": [
+      "The resumed session inherits the prior `Read`/`Grep`/tool-result blocks as ground truth. After 4 days of refactors those results are stale, but the model has no signal that they are — it reasons over the cached content with full confidence. Fix: start fresh with a structured summary, OR inform the resumed session about the specific files that changed for targeted re-analysis.",
+      "The model is hallucinating; switch to a more capable model.",
+      "'bcrypt' appears in the system prompt and is biasing the answer; remove it.",
+      "The Read tool has a caching bug that should be reported to Anthropic."
+    ],
+    "explanations": [
+      "Correct — this is the canonical Task 1.7 failure mode for resumption. Stale tool results in the conversation context are treated as ground truth; the model has no out-of-band signal that they've decayed. The two correct mitigations are starting fresh with a summary, or informing the session about which files changed so it can re-Read them.",
+      "Wrong — the model isn't hallucinating; it's reasoning faithfully over stale evidence the resume left in its context. A more capable model would make the same mistake.",
+      "Wrong — there's no system-prompt bias; the prior `Read` result literally said 'bcrypt' before the refactor. The issue is the staleness of cached evidence, not prompt contamination.",
+      "Wrong — there is no caching bug. The runtime correctly preserves prior tool results; the issue is whether resuming is appropriate after the world has changed underneath."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "b68e5227-47b6-4a10-b0b7-a0e0797fe720"
+  },
+  {
+    "question": "What is the precise difference between `--resume <session-name>` and `fork_session` from a state-sharing perspective?",
+    "options": [
+      "Both create new isolated sessions; the only difference is naming.",
+      "`--resume` re-attaches to a single session and continues mutating it; `fork_session` creates **independent branches that share state up to the fork point**, after which each branch evolves in isolation. Forks let you compare divergent strategies without cross-contamination; resume continues a single linear investigation.",
+      "`--resume` shares state across all named handles; `fork_session` is just a Unix-shell alias for it.",
+      "`fork_session` requires a separate process per branch and so cannot run within a single coordinator turn."
+    ],
+    "explanations": [
+      "Wrong — they have very different semantics. Resume mutates one session; fork creates branches that share history up to the fork point and then diverge.",
+      "Correct — that is exactly the divide. Resume is for continuing one linear investigation; fork is for exploring divergent approaches from a shared baseline. Mixing them up is a common source of architecture errors.",
+      "Wrong — the two are distinct primitives with distinct semantics. They share neither implementation nor purpose.",
+      "Wrong — `fork_session` does not require multiple processes; it can be invoked within a coordinator's turn the same way other tools are. The relevant property is state-sharing semantics, not process model."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "903a1ca2-b5a2-4945-8a64-faad66555012"
+  },
+  {
+    "question": "A team relies on auto-generated session IDs (e.g., `s_a1b2c3d4`). After three weeks they cannot find the session that contained their dependency-upgrade investigation, so they redo two days of analysis from scratch. What's the lightweight architectural fix Task 1.7 prescribes?",
+    "options": [
+      "Switch to a different session-management product entirely.",
+      "Disable session resumption and force every team member to start fresh on every invocation.",
+      "Build a separate database mapping IDs to free-text descriptions and require everyone to log there before resuming.",
+      "Adopt a session-naming discipline. Use meaningful names like `dependency-upgrade-investigation` or `q2-billing-audit-2026` so the session name is a stable, human-findable handle for the accumulated state. Auto-generated IDs are forgettable; named sessions are durable."
+    ],
+    "explanations": [
+      "Wrong — the problem isn't the product; it's that auto-IDs are forgettable. Switching tools doesn't change that intrinsic property.",
+      "Wrong — that throws away the value of resumption entirely. The fix is to make resumption findable, not to remove it.",
+      "Wrong — adding an external mapping table is heavier engineering than the lightweight fix. The session-name field is itself a stable handle if you treat it that way.",
+      "Correct — Task 1.7 names this directly: meaningful session names are the cheap, durable handle for accumulated investigation state. The session-name *is* the index; treating it as such is the fix."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "2bbce56b-fe99-4525-8cb3-1b15a4855b09"
+  },
+  {
+    "question": "You are about to resume a paused investigation. You know exactly two files have changed since the pause; the rest of the codebase is unchanged. Which technique is most efficient while staying correct?",
+    "options": [
+      "Discard the session and start fresh with a structured summary of everything that was learned previously.",
+      "Resume the session and immediately tell the agent which two files changed (by path) and ask it to re-Read them, so the prior tool results for those files are superseded by fresh reads. Targeted re-analysis preserves the unchanged context while invalidating only the stale parts.",
+      "Resume the session silently and let the agent re-derive what changed by re-exploring the codebase from scratch.",
+      "Fork the session twice — one fork ignoring the changes, the other re-reading them — and compare the answers."
+    ],
+    "explanations": [
+      "Wrong — discarding the entire session forfeits a lot of valid context (file structures, dependency maps, prior reasoning) for the sake of two stale Reads. Targeted update is cheaper and equally correct.",
+      "Correct — Task 1.7's targeted re-analysis pattern. Inform the resumed session about the specific files that changed; the agent re-Reads them, the new content supersedes the stale tool results in context, and everything else stays valid.",
+      "Wrong — silent resume leaves the agent reasoning over stale `Read` results for the changed files. Without being told, it has no way to know they need re-reading.",
+      "Wrong — forking is for *divergent strategies*, not for resolving stale tool results. This is one investigation with two specific stale entries; targeted re-Read is the right primitive."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "4a0e3325-e20a-4611-a013-8fb3771d1d70"
+  },
+  {
+    "question": "Which scenario is the strongest candidate for `--resume` rather than starting fresh with a structured summary?",
+    "options": [
+      "The prior session's tool results are stale because the underlying database was repopulated overnight.",
+      "A colleague merged five PRs touching most of the files the prior session analysed.",
+      "A continuing investigation where nothing has changed externally since the session paused yesterday — the user wants to ask a follow-up question that builds on the in-context analysis already done.",
+      "A new investigator joining the team with no prior context, picking up where a teammate left off."
+    ],
+    "explanations": [
+      "Wrong — overnight database changes invalidate prior tool results. Resume gives the model false confidence; fresh-with-summary is correct.",
+      "Wrong — touching most of the files in the analysis surface is exactly when prior tool results are stale. Fresh-with-summary is correct.",
+      "Correct — when the world hasn't changed and the user wants to ask follow-ups that build on already-loaded analysis, resumption is exactly the right primitive. Tokens are saved without paying back via stale data.",
+      "Wrong — a new investigator typically needs to *understand* the prior analysis, which a structured summary surfaces explicitly. Resuming silently into another person's accumulated context is opaque to the new joiner."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "15007218-4f42-4108-b0a1-11e06c9eda63"
+  },
+  {
+    "question": "A coordinator forks a session three ways to compare migration strategies (strangler-fig, clean-room rewrite, in-place refactor) against a shared baseline. Each fork produces a draft plan with risks, effort estimates, and rollback story. What's the coordinator's right next move at the convergence step?",
+    "options": [
+      "Read the three forks' outputs (which the coordinator collects when each fork reports back), compare them on the user's stated criteria (risk vs effort vs rollback), and either recommend one or surface the trade-offs explicitly. The forks themselves remain isolated; the coordinator does the cross-fork comparison.",
+      "Discard two forks at random and report the surviving one as the recommendation.",
+      "Re-merge the forks back into one shared timeline so the original session contains all three plans.",
+      "Spawn a fourth fork tasked with 'judging' the other three."
+    ],
+    "explanations": [
+      "Correct — convergence is the coordinator's job. Forks gave you isolated explorations from the same baseline; the coordinator now compares their outputs against the user's criteria and either recommends a winner or surfaces the trade-offs. The forks stay isolated by design.",
+      "Wrong — random discard is not comparison; it throws away the divergent exploration's value entirely.",
+      "Wrong — there is no merge primitive that re-stitches forks into one timeline. Forks diverge after the fork point; the coordinator reads each fork's reported outcome and acts on those outcomes.",
+      "Wrong — adding a fourth fork to 'judge' the others adds latency and complexity without adding information. The coordinator can compare the three outputs directly using the user's criteria."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "03e033bc-b384-4d3d-bdbd-49d731da0669"
+  },
+  {
+    "question": "A new investigator runs `fork_session` *immediately* after a fresh session starts (before any analysis has been done) to 'explore three approaches in parallel.' Why is this misuse of the primitive?",
+    "options": [
+      "`fork_session` requires a paid licence tier the team doesn't have.",
+      "`fork_session` only works after the Bash tool has been enabled in the session.",
+      "Forks must be created from a session that has been explicitly named via `--session-name`.",
+      "`fork_session` is for branching from an *already-built shared baseline* — its value is each branch inheriting expensive prior analysis without redoing it. With no baseline yet, the three forks each start near-empty and effectively duplicate work that would have been simpler as three parallel subagents (Task 1.3) or three independent fresh sessions."
+    ],
+    "explanations": [
+      "Wrong — there is no licence tier gating the primitive. The misuse is architectural, not commercial.",
+      "Wrong — `fork_session` doesn't depend on Bash. The issue is *when* in the lifecycle to fork, not which other tools are enabled.",
+      "Wrong — forking does not require explicit naming. Naming helps with resumption later but isn't a precondition for forking.",
+      "Correct — Task 1.7 frames `fork_session` specifically as 'create independent branches *from a shared analysis baseline*'. Without a baseline, forking has nothing to share except an empty system prompt; you've paid the abstraction cost without earning the benefit. Use parallel subagents or separate fresh sessions instead."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "b030fe66-2b19-47ba-ac0f-f9be5e0ec0af"
+  },
+  {
+    "question": "You need to compare three migration strategies against a shared codebase analysis you've spent the morning building inside the current session. Why is `fork_session` a better fit than spawning three parallel subagents (Task 1.3)?",
+    "options": [
+      "Parallel subagents always cost more than forks, so pricing alone makes the choice.",
+      "Subagent context is **isolated** — each parallel subagent starts fresh and would have to be hand-fed the morning's analysis through its prompt, which is lossy and expensive. `fork_session` clones the current session including the built-up analysis, so each fork inherits the full baseline natively. Forks are the right primitive for divergent exploration *from a shared baseline*; subagents are right for routine isolated delegation.",
+      "`fork_session` is the only way to run anything in parallel in the SDK.",
+      "Subagents cannot be used after a session has had any tool calls; forks lift this restriction."
+    ],
+    "explanations": [
+      "Wrong — pricing is not the architectural reason. The decision turns on what state each branch needs.",
+      "Correct — this is the precise distinction between Task 1.3 (subagents, isolated context) and Task 1.7 (forks, shared baseline). Forks inherit the morning's analysis natively; subagents would need it copied into their prompts (and may lose nuance in the process).",
+      "Wrong — multiple Task tool_use blocks in one coordinator turn (Task 1.3) are also parallel. `fork_session` is not the only parallelism primitive.",
+      "Wrong — there is no such restriction. Subagents work fine after tool calls; the question is which primitive's semantics fit the situation."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "587597d1-f264-4833-a9a6-69fcab02b19d"
+  },
+  {
+    "question": "A resumed agent re-Reads a file that's been modified since the pause and notices the new content disagrees with prior `Grep` results that are still in its context. What's the correct behaviour, and what would be a bug?",
+    "options": [
+      "Correct: silently prefer the new Read because newer is better. Bug: surfacing the discrepancy to the user.",
+      "Correct: silently prefer the older Grep because it has been in context longer and has more 'endorsements.' Bug: re-Reading at all.",
+      "Correct: surface the discrepancy and either ask the user how to proceed or explicitly note that the prior `Grep` is stale and supersede it with the fresh `Read`. Stale tool results in context are exactly what causes resumption errors; acknowledging the conflict is healthier than silently picking either source.",
+      "Correct: fork the session immediately so the older results are preserved in one fork and the fresh ones in the other."
+    ],
+    "explanations": [
+      "Wrong — silent preference (even for the correct value) hides the staleness signal that should inform whether to keep resuming or switch to fresh-with-summary.",
+      "Wrong — preferring older context is the textbook resumption failure. Older tool results are exactly the entries most likely to be stale; they shouldn't get a recency bonus.",
+      "Correct — Task 1.7's framing is that stale tool results are the danger of resumption. When the agent itself notices a conflict between cached and fresh data, the right move is to surface it explicitly: either ask the user, or note the supersession in context. That preserves the integrity of subsequent reasoning.",
+      "Wrong — forking is for divergent strategies, not for resolving a single stale result. The conflict is over which value is currently true, not which strategy to explore."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "5940f22c-5457-42c1-89ae-9eb51ce916c8"
+  },
+  {
+    "question": "A coordinator runs the morning's expensive baseline analysis on a billing module, then notices CI just merged a refactor PR touching 8 of the 14 baseline files. The coordinator still wants to compare three migration strategies side-by-side. Which sequence is architecturally correct?",
+    "options": [
+      "Immediately call `fork_session` three times from the current session and run each strategy's prompt in parallel; the forks will inherit a baseline that's 'good enough' for comparison.",
+      "Refresh the baseline first (start fresh with a structured summary, re-query the 8 changed files, integrate findings), THEN `fork_session` three times from the refreshed baseline so each strategy explores from a current shared ground truth.",
+      "Skip forking entirely; compare the three strategies sequentially in one resumed session — the model will keep them separate by reading the prompts carefully.",
+      "Fork three times from the stale baseline now, then re-Read the 8 changed files independently inside each fork so each branch corrects itself."
+    ],
+    "explanations": [
+      "Wrong — forking from a stale baseline is the documented anti-pattern. Both/all forks inherit the staleness; the comparison is biased before the first fork-prompt runs, and the bias is invisible to each branch.",
+      "Correct — the staleness tradeoff fires *before* the fork question. Validate or refresh the baseline first; fork only from a baseline you trust. Otherwise every branch is reasoning from outdated tool results that were 'authoritative' at fork time.",
+      "Wrong — sequential exploration in one session lets the first strategy bias the second; the resumption itself also inherits stale cache. Two failure modes stacked.",
+      "Wrong — duplicating re-reads inside every fork wastes the value of the shared baseline (each fork pays the discovery cost) AND each fork's correction is invisible to the others, so the 'shared' baseline drifts across forks. Refresh once, fork from the refreshed baseline."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "9e69faa2-320b-47ab-9571-b199c09782a2"
+  },
+  {
+    "question": "A long-running session named `q3-perf-investigation` has been resumed seven times across two weeks. Each resume has paused with no external changes in between. What is true of this pattern?",
+    "options": [
+      "After three resumes, the cached tool results automatically become unreliable and the session should be discarded.",
+      "Multi-resume across many work blocks is a supported pattern: each resume continues from where the last block ended and the session accumulates state cumulatively. The risk pattern fires only when external state changes between resumes — not from the act of resuming itself.",
+      "The session should be forked after each resume to prevent state buildup.",
+      "Each resume halves the prior session's effective context window, so by the seventh resume the model is effectively contextless."
+    ],
+    "explanations": [
+      "Wrong — there is no 'three-resume rule' or automatic decay. Cached results stay valid until external state changes. The trigger is staleness from external changes, not the count of resumes.",
+      "Correct — the reference explicitly states sessions can be resumed multiple times, with each resume continuing where the last block ended. Cumulative state buildup is the *feature*; the risk is staleness from external changes, which is independent of how many resumes have happened.",
+      "Wrong — forking is for divergent exploration, not for hygiene. Forking after each resume sprawls branches without addressing any real problem.",
+      "Wrong — there is no per-resume context halving. The session's context evolves with new tool calls and conversation; resumption itself doesn't shrink it."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "4608d692-3018-407b-aa97-ba1ecefe1aeb"
+  },
+  {
+    "question": "A session paused yesterday investigated 30 files in `src/payments/`. Overnight, a PR merged that did NOT touch any of those 30 files but did touch `src/billing/`, on which payments depends transitively. What's the right call?",
+    "options": [
+      "Resume freely — none of the analysed files changed, so the cached state for those 30 files is exactly current.",
+      "Resume but skip re-analysis — the dependency graph from yesterday's session covers the indirect coupling.",
+      "Start fresh with a structured summary. Even though the session's directly-analysed files weren't touched, downstream behaviour may have shifted via the dependency. The reference flags 'a PR merged that touched the area we were investigating' as a fresh-with-summary trigger — 'area' includes transitive dependencies, not just the literal files in scope.",
+      "Use `fork_session` so the original investigation is preserved while the dependency change is explored separately."
+    ],
+    "explanations": [
+      "Wrong — staleness isn't only about the files in the cached `Read` set. If the analysed code's *behaviour* now depends on changed code, the conclusions drawn over the cached files may no longer hold even though the cache content is byte-equivalent.",
+      "Wrong — the dependency graph captured at pause time may itself be incomplete (the reference notes downstream behaviour may have shifted). Trusting yesterday's coupling map to absolve re-analysis is exactly the silent-failure pattern.",
+      "Correct — the reference's second sub-pattern is 'a PR merged that touched the area we were investigating → start fresh with a summary, even if our specific files weren't in the PR, downstream behaviour may have shifted.' This is the precise scenario.",
+      "Wrong — `fork_session` is for divergent strategy exploration from a shared baseline, not for reconciling external state changes. Wrong primitive entirely."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "0a72e6df-0f35-4fc6-b869-b023f790d10b"
+  },
+  {
+    "question": "A handoff summary lists scope, key findings, decisions, and open questions, but omits provenance flags. Why does the reference treat this as a deficient summary specifically?",
+    "options": [
+      "Provenance flags are a CI-tool concern, not a session-handoff concern; the summary is fine as-is.",
+      "Without provenance flags, the new session has no signal which findings depend on tool results that may now be stale. It treats every summarised finding as equally trustworthy and may rely on a finding whose underlying `Read`/`Grep` evidence has decayed without re-verifying. Flags are what make 'fresh + summary' robust against the same staleness pattern that defeats naive resumption.",
+      "Provenance flags inflate token count without adding value; their omission is preferred.",
+      "Provenance flags are required only for compliance audits; for engineering work the four sections listed are sufficient."
+    ],
+    "explanations": [
+      "Wrong — provenance is a session-handoff concept in the reference: it tells the resumed/fresh session which findings depend on possibly-stale tool evidence and should be re-verified before being relied on.",
+      "Correct — provenance flags translate the staleness concept from resume-vs-fresh into the summary itself. A finding labelled 'depends on src/auth/middleware.py @ 2026-04-28' tells the new session: 'before relying on this, re-Read middleware.py and confirm.' Without flags, the new session has no map of where to re-verify and either trusts the whole summary (silent staleness inheritance) or re-verifies everything (defeats efficiency).",
+      "Wrong — the flags' value is exactly the structured signal of which findings need re-verification. The token cost is small; the failure mode they prevent is the silent-bad-answer staleness pattern.",
+      "Wrong — provenance is a correctness mechanism for the staleness tradeoff, not a compliance artefact. It applies to all engineering handoffs."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "fc26fa2e-a550-471b-b911-63663fe351ac"
+  },
+  {
+    "question": "A session investigated query-plan behaviour against a staging database. Overnight the staging DB was repopulated with synthetic Q3 data; no code changed. The session is resumed the next morning to ask a follow-up. What's the failure mode if the team resumes naively?",
+    "options": [
+      "No failure mode — the codebase didn't change, so resumption is safe regardless of external data state.",
+      "Resumption fails fast with a stale-data exception once the new data shape is detected.",
+      "The cached `Bash`/MCP query results from the prior session reflect the *old* DB contents and are still in context as authoritative. The model reasons confidently over the old query plans / row counts / cardinalities even though the actual current DB now returns different results. Staleness applies to *any* tool result, not just file reads — external data changes are equally invalidating.",
+      "Only file Reads are subject to staleness; tool results from databases or APIs are automatically refreshed on resume."
+    ],
+    "explanations": [
+      "Wrong — staleness isn't limited to source-code changes. The reference explicitly lists 'database state changed' alongside file edits and dependency upgrades. Cached query results in context are the same kind of authoritative-looking stale evidence as cached `Read` results.",
+      "Wrong — there is no automatic stale-data detection. The whole architectural problem is that staleness is silent.",
+      "Correct — the reference treats database state, dependency state, and external systems as equivalent staleness sources to file edits. Cached `Bash`/MCP/database tool results are inherited as ground truth on resume; the model has no signal that the underlying data has been replaced. Fresh + summary is the right call.",
+      "Wrong — there is no auto-refresh mechanism. All cached tool results — Reads, Greps, Bash, MCP — inherit on resume and are equally subject to staleness."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "e572ecde-ac27-4550-bc4c-46d3e08ff44b"
+  },
+  {
+    "question": "A team adopts the convention 'every session must have a meaningful name like `auth-refactor-2026-04`.' Six months later they still find investigations confidently reasoning over stale data after PRs land. What's the most accurate diagnosis?",
+    "options": [
+      "Naming was a cosmetic change. It solves the *findability* of paused sessions (so future-you can locate the right one days later) but does nothing about the *staleness tradeoff* (when to resume vs start fresh after external changes). The team adopted half of Task 1.7's discipline and skipped the harder half.",
+      "The naming convention is causing the staleness — auto-IDs would have prevented it.",
+      "Naming sessions resets their cached tool results, so the convention should be abandoned.",
+      "Naming is sufficient for correctness; the team must be using broken sessions."
+    ],
+    "explanations": [
+      "Correct — naming and the staleness tradeoff are independent disciplines under Task 1.7. Naming gives durable handles to *find* the right session; the staleness tradeoff governs *whether* to resume that session vs start fresh. Solving findability without solving staleness leaves the silent-bad-answer failure mode in place.",
+      "Wrong — naming has no causal relationship with staleness. Auto-IDs don't prevent staleness either; they just make sessions harder to find.",
+      "Wrong — naming a session does not affect its tool-result cache. The two are orthogonal.",
+      "Wrong — naming is necessary for findability but not sufficient for correctness. The staleness tradeoff is a separate decision the architect must make on each resume."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "1ad13605-8089-4a86-9f5f-112757845e82"
+  },
+  {
+    "question": "A coordinator resumes session `legacy-audit-2026-03` knowing 4 specific files have changed since the pause. Two strategies are proposed: (A) resume and instruct the agent to re-Read all 22 files in the prior analysis 'to be safe,' (B) resume and instruct the agent to re-Read only the 4 named changed files with the nature of each change explained. Which is correct under Task 1.7, and why?",
+    "options": [
+      "(A) — re-Reading everything is the only way to guarantee correctness; precise scoping leaves gaps.",
+      "(A) — explicit scoping is brittle; the agent should rebuild its picture from scratch each resume.",
+      "(B) — targeted re-analysis is the precise pattern Task 1.7 prescribes for this case. The 18 unchanged files keep their valid cached state; the 4 changed files get fresh Reads with context for *why* they changed. Re-Reading all 22 wastes tokens on 18 files whose cache is still correct, and signals to the model that 'maybe everything is stale,' which dilutes the targeted scoping that makes the pattern work.",
+      "Both are equivalent — the only requirement is that the changed files eventually get re-Read."
+    ],
+    "explanations": [
+      "Wrong — 're-Read everything' is a vaguer cousin of the 'discard and start fresh' anti-pattern. It defeats the efficiency benefit of resumption and introduces noise (18 valid Reads getting redone for no reason) that obscures the actual update.",
+      "Wrong — rebuilding from scratch on every resume is exactly what targeted re-analysis exists to avoid. The reference explicitly identifies precise scoping as the right pattern.",
+      "Correct — Task 1.7's targeted re-analysis pattern is named-files-plus-nature-of-change. The reference highlights that specifying *which* files changed *and why* is what makes the pattern effective. 'Re-Read everything to be safe' is the same shape as the vague 'something may have changed, please verify' anti-pattern — over-correction that wastes tokens.",
+      "Wrong — they are not equivalent. Precise scoping vs broad re-Read have different cost profiles, and broad re-Reads risk the model conflating 'I'm being asked to re-verify' with 'everything in cache is suspect,' which corrupts the targeted update."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "f47941c4-43af-411d-a9ac-2b1af440bd4e"
+  },
+  {
+    "question": "A team needs three independent strategy explorations from this morning's expensive baseline. They consider two architectures: (X) `fork_session` x3 from the current session, or (Y) write a structured summary of the baseline, start three fresh sessions, inject the summary into each. Both can produce comparable independent explorations. What's the principled tiebreaker?",
+    "options": [
+      "Always pick (X). Forks are objectively superior to summary-injection in every scenario.",
+      "Always pick (Y). Fresh + summary is objectively superior because it guarantees current tool data.",
+      "Pick (X) when the baseline is current and you trust it (forks inherit the full reasoning context, including subtle nuances a summary may strip). Pick (Y) when the baseline may be stale or when you specifically want the explorations to re-verify against current tool results — the fresh sessions will re-query tools rather than inherit possibly-stale cached results from the baseline.",
+      "The two are interchangeable; the team's preference is the only deciding factor."
+    ],
+    "explanations": [
+      "Wrong — forks are not always preferable; they inherit whatever staleness exists in the baseline at fork time.",
+      "Wrong — fresh + summary always pays a re-discovery cost (the new sessions re-query tools, the summary may strip nuances). It's not free; it's the right choice when staleness is the dominant concern.",
+      "Correct — this maps to the reference's core insight: forks are richer (full context inherited) but inherit baseline staleness; fresh + summary is leaner (only the curated summary travels) but guarantees current tool re-queries. Pick by the staleness condition, not by reflex. The reference explicitly notes that summary-driven fresh sessions are the route 'that lets a fresh session fork without losing the baseline' when staleness is a concern.",
+      "Wrong — they have different cost/correctness profiles. The principled choice depends on whether the baseline is trustworthy, not on preference."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "28e4b004-0641-4b9b-ac19-518b88963207"
+  },
+  {
+    "question": "A senior engineer argues: 'I can simulate `fork_session` by spawning three subagents (Task 1.3) and pasting the morning's analysis summary into each subagent's prompt — same outcome.' What's the strongest principled rebuttal?",
+    "options": [
+      "Subagents are technically forbidden from receiving summary text in their prompts; the simulation can't even be set up.",
+      "The simulation works for the trivial case but loses fidelity: the morning's analysis lives in the session as accumulated reasoning context (intermediate hypotheses, ruled-out branches, subtle dependency observations) that a written summary necessarily compresses. Forks inherit *all* of it natively; subagent prompts inherit only what the summary author thought to write down. For divergent strategy exploration where 'subtle nuances' from baseline reasoning bias which approach is best, the fidelity gap matters.",
+      "Subagents always cost more than forks regardless of content, so the simulation is uneconomical.",
+      "Subagents cannot run in parallel; only forks can, so the simulation cannot achieve concurrency."
+    ],
+    "explanations": [
+      "Wrong — subagents can absolutely receive analysis text in their prompts. The objection is fidelity, not technical feasibility.",
+      "Correct — this is the architectural distinction the reference draws between Task 1.3 (subagents, isolated context) and Task 1.7 (forks, shared baseline). Forks inherit the *full reasoning state* including non-summarised nuances; subagents inherit only the prompt-encoded subset. For comparing strategies that depend on subtle baseline reasoning, the lossy summary path is meaningfully worse — the reference describes it as 'lossy + expensive.'",
+      "Wrong — pricing is not the principled distinction. Even if subagents were cheaper, the fidelity gap remains the architectural reason to prefer forks.",
+      "Wrong — Task 1.3 explicitly enables parallel subagents (multiple Task tool_use blocks in one coordinator turn). Concurrency isn't the differentiator."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "46ad1e73-2d4a-490a-be39-f770ec775bb7"
+  },
+  {
+    "question": "A session has been resumed daily for two weeks. Each evening pause has been followed by an overnight CI run that touches 1–2 files in the analysis surface. Each morning the team resumes with `--resume` and asks a follow-up. After two weeks, conclusions look subtly off. What's the best diagnosis?",
+    "options": [
+      "Two-week sessions are unsupported; the SDK has a hard 7-day session limit being exceeded.",
+      "The naming convention used (`<area>-<date>`) is causing the drift; rename to numeric IDs to fix.",
+      "Resumption corrupts the model's reasoning over time independent of file changes; the fix is to limit resumes to three.",
+      "Each individual resume looked 'safe' (only 1–2 files changed) but the team never applied targeted re-analysis on the changed files. Stale tool results for those files accumulated across resumes — by day 14 a substantial fraction of the cached `Read`/`Grep` evidence is outdated. Either each resume needed targeted re-Read instructions for the files CI touched, or the team should periodically restart fresh with a structured summary to flush accumulated staleness."
+    ],
+    "explanations": [
+      "Wrong — there is no 7-day session limit. The pattern is about staleness accumulation, not a runtime cap.",
+      "Wrong — the naming convention has no causal effect on staleness or reasoning quality. This is a distractor mixing two independent disciplines.",
+      "Wrong — there is no intrinsic decay from resumption. The reference is explicit that the risk fires from external state changes, not from the act of resuming.",
+      "Correct — this is the slow-staleness-accumulation failure mode. Each resume looks individually low-risk (small change) so the team skips targeted re-analysis; over many resumes the accumulated stale entries quietly poison the model's reasoning. The right disciplines are (a) targeted re-Read on every resume where files changed, regardless of how few, and (b) periodic fresh-with-summary restarts to flush. Either alone is partial; together they bound staleness."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.7"
+    ],
+    "phase": "post",
+    "qid": "ec7e6ed7-24c3-4df5-b402-b6d3d76f58d3"
+  }
+]

@@ -1,0 +1,882 @@
+[
+  {
+    "question": "An agent has been exploring a large codebase for 60+ turns. At turn 5 it correctly cited the project's `RetryableQuery` helper from CLAUDE.md. At turn 60, asked the same retry question, it produces a generic `try/except + sleep` snippet. What is this symptom called?",
+    "options": [
+      "Drift to typical patterns from extended-session degradation",
+      "Tool-result drop bug",
+      "Plan-mode violation",
+      "Scope creep in the system prompt"
+    ],
+    "explanations": [
+      "Correct. Extended sessions degrade toward common idioms once project-specific context is buried beneath verbose output.",
+      "A tool-result drop would manifest as Claude re-issuing the same tool, not as inventing a generic helper.",
+      "Plan mode controls whether the agent edits files; it does not affect retrieval of project-specific helpers.",
+      "Scope creep refers to the system prompt growing over time, not to a single session's behaviour drift."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "pre",
+    "qid": "a1e1f02f-8c29-4902-b97f-2c4c14994871"
+  },
+  {
+    "question": "What is the durable fix for an extended exploration session reverting to 'typical patterns' instead of project-specific ones?",
+    "options": [
+      "Always run `/compact` every 20 turns",
+      "Persist key findings to scratchpad files the agent re-reads",
+      "Lower the temperature on every request",
+      "Disable tool calls and rely on plain prompting"
+    ],
+    "explanations": [
+      "`/compact` is lossy and can itself accelerate drift; it is not the durable fix.",
+      "Correct. Scratchpad files keep load-bearing findings on disk, outside the conversation, so they survive context churn.",
+      "Temperature affects sampling diversity, not whether buried project facts are surfaced.",
+      "Disabling tools prevents work entirely; it is not a context-discipline technique."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "pre",
+    "qid": "affae32d-878c-4f07-aea8-93d01bb76839"
+  },
+  {
+    "question": "What problem does delegating verbose exploration to a subagent actually solve?",
+    "options": [
+      "It eliminates the need for a system prompt",
+      "It hides the user's request from Anthropic's logs",
+      "It keeps the noisy raw output out of the coordinator's context, returning only a short summary",
+      "It speeds up tool calls by running them in parallel"
+    ],
+    "explanations": [
+      "Subagents still operate under a system prompt; delegation does not remove it.",
+      "Logging is unaffected by delegation; this is not a privacy mechanism.",
+      "Correct. The subagent absorbs the verbose tool output in its own window and returns a distilled summary.",
+      "Subagents are about isolation of context, not parallelism. Speed is incidental at best."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "pre",
+    "qid": "5aab7c5d-b095-463e-b7e3-38d98eef13a9"
+  },
+  {
+    "question": "An exploration agent crashes mid-task. Which artifact lets the next agent resume without starting over?",
+    "options": [
+      "A scratchpad of distilled findings",
+      "A higher max_tokens setting",
+      "The user re-typing the original prompt",
+      "A structured state manifest recording phase, completed steps, and next step"
+    ],
+    "explanations": [
+      "A scratchpad records knowledge but doesn't tell the next agent where in the plan to resume.",
+      "max_tokens affects output length, not recovery.",
+      "Re-prompting forces the next agent to redo work; the manifest is what enables true resume.",
+      "Correct. Manifests are explicit state exports designed for crash recovery."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "pre",
+    "qid": "3b766fd4-5505-4227-9391-77a15bf28f78"
+  },
+  {
+    "question": "What does Claude Code's `/compact` command do?",
+    "options": [
+      "Deletes the oldest message verbatim from history",
+      "Forks the session into two parallel branches",
+      "Summarises the conversation history in place to reclaim context",
+      "Sends the conversation to a smaller model"
+    ],
+    "explanations": [
+      "Compaction summarises rather than removing oldest messages verbatim.",
+      "Forking is a separate feature (e.g., `fork_session`); `/compact` does not branch.",
+      "Correct. `/compact` replaces verbose history with a model-generated summary.",
+      "Model selection is unrelated to `/compact`."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "pre",
+    "qid": "7af12fff-d035-43d5-9b19-d803a4e030e5"
+  },
+  {
+    "question": "Why is 'just rely on `/compact` whenever the window fills' an anti-pattern on long explorations?",
+    "options": [
+      "`/compact` is rate-limited per hour",
+      "Compaction is lossy; repeated compaction discards project-specific detail and accelerates drift",
+      "`/compact` deletes scratchpad files",
+      "`/compact` requires admin permissions"
+    ],
+    "explanations": [
+      "There is no documented rate limit driving the anti-pattern; the issue is information loss.",
+      "Correct. Each compaction discards detail the model judged less important, which often includes project-specific facts.",
+      "`/compact` operates on conversation history; it doesn't touch files on disk.",
+      "Permissions are not the issue; lossy summarisation is."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "pre",
+    "qid": "fcd34ce4-e605-4e75-a6d5-79c4edc1c632"
+  },
+  {
+    "question": "What belongs in a scratchpad file for a long exploration session?",
+    "options": [
+      "Verbatim copies of every Grep result the agent saw",
+      "The full text of CLAUDE.md duplicated",
+      "Stack traces of every failed tool call",
+      "Distilled findings: file paths, function names, invariants, and decisions"
+    ],
+    "explanations": [
+      "Verbatim Grep output relocates the noise instead of distilling it.",
+      "Duplicating CLAUDE.md adds bytes without adding signal; the original is already loaded.",
+      "Failure transcripts are noise; only the distilled lessons learned belong on the scratchpad.",
+      "Correct. Scratchpads are conclusions, not transcripts."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "pre",
+    "qid": "b763c610-93f3-4dd5-bd38-bb54b10ec111"
+  },
+  {
+    "question": "Manifest vs scratchpad — what is the cleanest one-line distinction?",
+    "options": [
+      "Manifest is JSON; scratchpad is markdown — there is no other difference",
+      "Manifest is read-only; scratchpad is writable",
+      "Manifest records plan state (where we are); scratchpad records knowledge (what we've learned)",
+      "Manifest is for humans; scratchpad is for the model"
+    ],
+    "explanations": [
+      "Format is incidental; both can be either format. The distinction is intent.",
+      "Both are typically writable artifacts agents update during a session.",
+      "Correct. Manifests track plan position for recovery; scratchpads track distilled findings.",
+      "Both are typically agent-facing; the distinction is state vs knowledge."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "pre",
+    "qid": "4e2511a3-f988-49ed-9133-b3d41f81b894"
+  },
+  {
+    "question": "When is delegating to a subagent the *wrong* choice?",
+    "options": [
+      "When the question requires only a single Grep call to answer",
+      "When the question would otherwise produce hundreds of Grep result lines",
+      "When the question spans many files and barrel re-exports",
+      "When the user explicitly asked for a deep audit"
+    ],
+    "explanations": [
+      "Correct. Delegation has overhead; for one-Grep questions, that overhead exceeds the savings.",
+      "This is exactly when delegation pays off — the noisy output stays out of the coordinator.",
+      "Multi-file traces are a textbook delegation candidate.",
+      "Deep audits benefit from delegation per phase."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "pre",
+    "qid": "dfe9831a-5de4-4464-9a24-f94273ef6aaf"
+  },
+  {
+    "question": "Why is the project-specific helper from CLAUDE.md sometimes ignored at turn 60 of an extended session?",
+    "options": [
+      "Claude only reads CLAUDE.md once at turn 0 and forgets it",
+      "The model lacks support for multi-turn conversations",
+      "The helper has been deleted from history during compaction",
+      "It is still in history but its effective attention has been crowded out by intervening verbose output"
+    ],
+    "explanations": [
+      "CLAUDE.md is part of the message history every turn; it is not 'forgotten' deterministically.",
+      "Multi-turn conversation is fundamental to the API; this is not the cause.",
+      "Even without `/compact`, drift can occur. The cause isn't necessarily deletion.",
+      "Correct. The text is technically present but its attention weight collapses under the volume of intervening tool output."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "pre",
+    "qid": "903e0473-da69-45cc-b9bb-149007f72582"
+  },
+  {
+    "question": "Tier 1 — A team's exploration agent reliably answers project-specific retry questions correctly at turn 5 but produces generic snippets at turn 50. What single intervention most directly addresses the symptom?",
+    "options": [
+      "Lower the temperature parameter for every request",
+      "Switch to a smaller, faster model after turn 30",
+      "Have the agent write key findings to a scratchpad after each phase and re-read it before answering",
+      "Remove CLAUDE.md so the agent doesn't get confused"
+    ],
+    "explanations": [
+      "Temperature controls sampling diversity, not retrieval of buried project facts.",
+      "Smaller models are usually *more* prone to drift, not less.",
+      "Correct. Scratchpads anchor the agent on project-specific facts that would otherwise drift to typical patterns.",
+      "Removing CLAUDE.md guarantees the loss of project-specific context."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "d4d33142-0af3-4f85-a815-71b4cf9d694b"
+  },
+  {
+    "question": "Tier 1 — Which one-liner correctly contrasts a manifest with a scratchpad?",
+    "options": [
+      "Manifest is for humans; scratchpad is for the model",
+      "Manifest is plan state (where we are); scratchpad is knowledge (what we've learned)",
+      "Manifest is markdown; scratchpad is JSON",
+      "Manifest is created by the user; scratchpad is created by the agent"
+    ],
+    "explanations": [
+      "Both artifacts are typically agent-facing; audience is not the distinction.",
+      "Correct. The distinction is intent: state vs knowledge.",
+      "Format is incidental — either artifact can be either format.",
+      "Both are typically created by the agent during a session."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "777c64e3-58db-4779-8484-da5ecaf51808"
+  },
+  {
+    "question": "Tier 1 — A coordinator delegates 'enumerate every test that mentions `RefundService`' to an exploration subagent. What does the coordinator's history grow by?",
+    "options": [
+      "Every Grep result line the subagent saw",
+      "Nothing at all — subagent runs are invisible to the coordinator",
+      "A short structured summary returned by the subagent",
+      "The full system prompt of the subagent"
+    ],
+    "explanations": [
+      "That would defeat the purpose; the subagent absorbs the noise.",
+      "The coordinator does receive a result; it just isn't the raw output.",
+      "Correct. The coordinator's history grows by the summary, not the noisy raw output.",
+      "Subagent system prompts are not injected into the coordinator's history."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "33758e33-0b12-41aa-9b0f-ce640da2e659"
+  },
+  {
+    "question": "Tier 1 — `/compact` is best characterised as which of the following?",
+    "options": [
+      "A free, lossless way to reclaim context",
+      "A command that deletes scratchpad files to save tokens",
+      "A no-op alias for `/clear`",
+      "A lossy summarisation of conversation history that should be used deliberately"
+    ],
+    "explanations": [
+      "It is not lossless — it summarises and discards detail.",
+      "It does not affect on-disk files.",
+      "`/clear` resets the session entirely; `/compact` summarises in place.",
+      "Correct. It reclaims context but loses detail; use it deliberately, not reflexively."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "e8bf9d9a-6adf-4888-ae8c-62049417af77"
+  },
+  {
+    "question": "Tier 1 — A fresh agent picks up an interrupted multi-hour audit. What should it read first?",
+    "options": [
+      "The most recent system log lines",
+      "The complete chat history of every prior session",
+      "The user's original prompt only",
+      "The manifest (to know where to resume) and the scratchpad (to know what's already established)"
+    ],
+    "explanations": [
+      "System logs are useful for debugging but are not the recovery artifact.",
+      "There is no chat history available across crashes — that's exactly why manifests exist.",
+      "The original prompt restarts work without resuming.",
+      "Correct. Manifest = where to resume; scratchpad = what's established."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "9467d256-48f6-485b-b6ca-227a5637b21a"
+  },
+  {
+    "question": "Tier 1 — Which of these is the canonical anti-pattern for handling a filling context window during exploration?",
+    "options": [
+      "Saving findings to a scratchpad before continuing",
+      "Delegating the next noisy phase to a subagent",
+      "Using `/compact` reflexively as the first response, with no scratchpad written",
+      "Recording manifest state at the next phase boundary"
+    ],
+    "explanations": [
+      "This is a recommended discipline, not an anti-pattern.",
+      "Also a recommended discipline.",
+      "Correct. Reflexive `/compact` is lossy and discards project-specific detail.",
+      "Manifest checkpoints support recovery; not an anti-pattern."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "673183bf-0e92-49bd-a21c-96ce87201262"
+  },
+  {
+    "question": "Tier 1 — Why is a free-form prose paragraph a poor format for a crash-recovery manifest?",
+    "options": [
+      "Recovery requires structured fields the next agent can parse without ambiguity",
+      "Prose costs more tokens than JSON",
+      "Markdown isn't supported by the harness",
+      "Prose can't reference files outside the workspace"
+    ],
+    "explanations": [
+      "Correct. The next agent needs explicit phase, status, next step, and artifact paths.",
+      "Token cost differences are minor; the issue is parseability, not size.",
+      "Markdown is supported throughout the workspace.",
+      "Either format can reference any file."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "70b1fa1b-2f01-43a7-a13c-43323bc8364a"
+  },
+  {
+    "question": "Tier 1 — A scratchpad gets dumped with verbatim copies of every Grep result and file Read. What is the most likely problem?",
+    "options": [
+      "It will never load due to size limits",
+      "It just relocates the noise; re-reading it provides little signal over the conversation history",
+      "It will be auto-deleted on `/compact`",
+      "It triggers a tool-result-drop error"
+    ],
+    "explanations": [
+      "Loading is not the issue; usefulness is.",
+      "Correct. Scratchpads should be distilled conclusions, not transcripts.",
+      "`/compact` does not delete files on disk.",
+      "Scratchpad content does not interact with the tool-result mechanism."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "8e9bc61c-4377-425a-8cd7-9ab88db2e7dc"
+  },
+  {
+    "question": "Tier 1 — What happens to information stored in a scratchpad file when the agent runs `/compact`?",
+    "options": [
+      "It is deleted along with the conversation history",
+      "It is auto-summarised in place",
+      "It is unaffected; `/compact` only summarises in-conversation history, not on-disk files",
+      "It is merged into the manifest"
+    ],
+    "explanations": [
+      "On-disk files are independent of conversation state.",
+      "`/compact` does not edit files on disk.",
+      "Correct. That durability is precisely why scratchpads are the durable counterpart to lossy compaction.",
+      "Manifest and scratchpad are separate artifacts; `/compact` does not merge them."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "c42943df-999b-41dd-8304-26831c04d83c"
+  },
+  {
+    "question": "Tier 1 — The coordinator's history is filling with raw Grep output during a long audit. Which intervention is the *most aligned* with topic 5.4 guidance?",
+    "options": [
+      "Move the next noisy phase into a subagent so the raw output never reaches the coordinator",
+      "Stop using Grep entirely",
+      "Lower the system prompt's word count",
+      "Increase the model's context window via API parameter"
+    ],
+    "explanations": [
+      "Correct. Subagent delegation prevents the noise from polluting the coordinator's history.",
+      "Grep is the right primitive for content search; eliminating it is not the answer.",
+      "System prompt size is not the cause of Grep-output bloat.",
+      "There is no API parameter to increase the window beyond model capacity."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "cef173ff-2fbd-4f13-8fa7-089f4d72c57d"
+  },
+  {
+    "question": "Tier 2 — During a 4-phase codebase audit, the agent has just finished Phase 2. The window is 60% full. Which sequence best matches topic 5.4 guidance?",
+    "options": [
+      "`/compact` immediately, then continue Phase 3 in the same session",
+      "Update the scratchpad with Phase-2 findings and the manifest with new state, *then* consider `/compact` if needed before Phase 3",
+      "Discard the conversation and start a fresh session with no artifacts",
+      "Delegate Phase 3 inline without writing any artifacts"
+    ],
+    "explanations": [
+      "Compacting before persisting findings risks losing them in the lossy summary.",
+      "Correct. Persist first (so nothing load-bearing depends on the soon-to-be-summarised history), then compact deliberately.",
+      "Discarding without persisting loses everything.",
+      "Skipping artifacts means the next phase has no anchor against drift."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "45226750-87cf-4522-8c72-41e0d1a6a7ae"
+  },
+  {
+    "question": "Tier 2 — A coordinator and a subagent both write notes during an audit. Which assignment of artifacts is correct?",
+    "options": [
+      "Subagent writes the manifest; coordinator writes nothing",
+      "Coordinator writes the scratchpad only; manifests are unnecessary if a scratchpad exists",
+      "Both should write to the same single file to avoid duplication",
+      "Coordinator writes the manifest; subagents return summaries the coordinator distils into a scratchpad"
+    ],
+    "explanations": [
+      "Subagents shouldn't own coordinator-level plan state.",
+      "Manifests serve crash recovery, which scratchpads do not.",
+      "Mixing state and knowledge in one file conflates manifest and scratchpad.",
+      "Correct. The coordinator owns plan state; subagent summaries feed the scratchpad."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "215c5197-df85-4145-ac5f-1ba4d7315a10"
+  },
+  {
+    "question": "Tier 2 — The team observes that `/compact` is helping less and less on long sessions: each compaction loses more useful detail than the last. What is the most likely root cause?",
+    "options": [
+      "A bug in the harness that double-counts tokens",
+      "Repeated compaction is inherently lossy; each pass discards more project-specific detail because there is less raw evidence left to anchor the summary",
+      "The model has been fine-tuned to summarise poorly",
+      "The user is asking too many questions per turn"
+    ],
+    "explanations": [
+      "Token counting bugs would not produce the gradual quality decline.",
+      "Correct. Compounding lossy summarisation is the structural cause.",
+      "Fine-tuning is not the cause of session-level drift in this setting.",
+      "Questions per turn doesn't drive compaction quality decline."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "616e1ca5-4ce8-4766-8983-e4ce28fc8c5c"
+  },
+  {
+    "question": "Tier 2 — Which of the following BEST describes the role a manifest plays that a scratchpad does NOT?",
+    "options": [
+      "It records distilled findings",
+      "It survives `/compact`",
+      "It enables a fresh agent to resume from a known checkpoint after a crash",
+      "It can be Read by the agent"
+    ],
+    "explanations": [
+      "Findings live in the scratchpad — that's a scratchpad role.",
+      "Scratchpads also survive `/compact` since both live on disk.",
+      "Correct. The manifest's defining role is crash recovery via structured state.",
+      "Both can be Read; this is not a distinguishing role."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "a25c5a94-a1d3-4fbf-b559-c36a1be645f1"
+  },
+  {
+    "question": "Tier 2 — A team adds a hook that runs `/compact` automatically every 10 turns, hoping to extend session length. What is the predicted long-run quality impact?",
+    "options": [
+      "Quality stays roughly constant because compaction is lossless",
+      "Quality declines: repeated lossy compaction discards project-specific detail and accelerates drift to typical patterns",
+      "Quality improves because the model sees less noise",
+      "Quality is unaffected; the hook is a no-op"
+    ],
+    "explanations": [
+      "Compaction is not lossless.",
+      "Correct. Reflexive compaction is the canonical anti-trap.",
+      "The detail loss usually outweighs noise reduction on long technical sessions.",
+      "Hooks that call `/compact` do execute; this is not a no-op."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "5ed2662f-88ae-48c0-90ee-eea51e163959"
+  },
+  {
+    "question": "Tier 2 — During Scenario S2 (Code Generation), the agent is producing snippets that ignore the project's `RetryableQuery` helper. CLAUDE.md still contains the guidance. What is the most useful intervention?",
+    "options": [
+      "Move the guidance to a scratchpad and have the agent re-read it before generating each retry-related snippet",
+      "Delete CLAUDE.md so the agent stops getting confused",
+      "Switch from CLAUDE.md to inline system prompt text",
+      "Run `/compact` to clean the history"
+    ],
+    "explanations": [
+      "Correct. Promoting buried context into a scratchpad re-read at decision time counteracts the attention falloff.",
+      "Removing CLAUDE.md guarantees loss of the project-specific helper.",
+      "Inlining the same text doesn't help when the surrounding history has buried it just as much.",
+      "Compaction would accelerate, not reverse, the drift."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "81e321ff-a817-499d-aad6-7187986a3ab7"
+  },
+  {
+    "question": "Tier 2 — Which artifact is MOST appropriate to record `{phase: 2, completed: [...], pending: [...], next: '...'}`?",
+    "options": [
+      "The conversation history",
+      "The system prompt",
+      "A structured manifest file",
+      "A scratchpad of findings"
+    ],
+    "explanations": [
+      "Conversation history is volatile and unstructured for parsing.",
+      "System prompts are not edited mid-session for state tracking.",
+      "Correct. That schema is exactly a manifest's purpose.",
+      "Scratchpads hold findings, not plan state."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "e7e2e6d1-4065-4bf9-aeba-b8a9002a5b23"
+  },
+  {
+    "question": "Tier 2 — A subagent returns a 12,000-token raw transcript of every file it Read. The coordinator then writes that transcript verbatim to its scratchpad. What is the predicted outcome?",
+    "options": [
+      "The scratchpad now serves as a perfect record and prevents drift permanently",
+      "`/compact` will automatically clean the scratchpad",
+      "The harness will reject the scratchpad write",
+      "The scratchpad has just relocated the noise; future re-reads will be expensive and low-signal"
+    ],
+    "explanations": [
+      "Volume isn't fidelity; raw transcripts don't anchor the model the way distilled findings do.",
+      "`/compact` does not edit on-disk files.",
+      "There is no such write rejection in the harness.",
+      "Correct. The discipline is to distil, not transcribe."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "2df77f3b-eff0-4a8f-93f5-e89daefb4a7e"
+  },
+  {
+    "question": "Tier 2 — Which scenario most clearly justifies using subagent delegation over inline exploration?",
+    "options": [
+      "Resolving a single typo in a known file",
+      "Tracing every caller of `formatCurrency` (including barrel-renamed aliases) across a 500-file repo",
+      "Reading a 30-line config file",
+      "Asking the agent its name"
+    ],
+    "explanations": [
+      "A typo fix is one Edit; delegation overhead is wasted.",
+      "Correct. Multi-phase trace through a large repo produces verbose output the coordinator doesn't need at full fidelity.",
+      "A small Read is a single cheap call; delegation is overkill.",
+      "A trivial response is not exploration."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "f17afb07-f44c-4842-b73e-4ee8a6fc2318"
+  },
+  {
+    "question": "Tier 2 — A junior engineer writes a 'manifest' that says: \"We did some Grep stuff and found a thing. Trying to figure out the next step now.\" What should code review flag?",
+    "options": [
+      "It needs more emojis to be readable",
+      "It is unparseable for resume — needs explicit phase, status, next step, and artifact paths",
+      "It should be encrypted",
+      "It is too short"
+    ],
+    "explanations": [
+      "Decoration is irrelevant to recoverability.",
+      "Correct. Manifests must be structured for the next agent to parse without ambiguity.",
+      "Encryption is unrelated to manifest discipline.",
+      "Length isn't the issue; structure is."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "ae0fbf19-ae52-4d0b-b743-ed1676c76145"
+  },
+  {
+    "question": "Tier 3 — A team's exploration agent runs `/compact` every time the window crosses 60% full. They notice that early in the session it correctly cites `RetryableQuery`, but after several `/compact` rounds it produces a generic `try/except` retry, even though no underlying CLAUDE.md change has occurred. Which single explanation BEST captures the failure mode?",
+    "options": [
+      "`/compact` deleted CLAUDE.md from disk",
+      "Each compaction lossily summarises history, progressively discarding the project-specific helper detail; the agent then drifts to 'typical patterns' once the helper is no longer salient in summarised history",
+      "The model was silently downgraded by Anthropic mid-session",
+      "Tool results were dropped between iterations"
+    ],
+    "explanations": [
+      "`/compact` does not modify files on disk; CLAUDE.md is intact.",
+      "Correct. Repeated lossy compaction is the canonical anti-pattern that produces drift to typical patterns even when project context exists.",
+      "Mid-session model substitution is not a documented behaviour and would not produce this specific symptom.",
+      "Tool-result drop produces re-issued tool calls, not a quietly drifted answer."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "a56f1cee-2bb1-4c5c-ae61-3230cae75f73"
+  },
+  {
+    "question": "Tier 3 — During a 3-hour codebase audit the harness OOMs and restarts. The team has been writing both a scratchpad of findings and a structured manifest. The fresh agent boots up. To restore correctness AND minimise rework, what should it load and in what order?",
+    "options": [
+      "Scratchpad only — findings are sufficient",
+      "Conversation history only — that's the canonical record",
+      "Manifest first to know where to resume, then scratchpad for what's already established; resume from `pending[0]`",
+      "Re-prompt the user from scratch and ignore both artifacts"
+    ],
+    "explanations": [
+      "Without manifest state the agent doesn't know which phase is next or what's still pending.",
+      "Conversation history is volatile and may not have survived the OOM.",
+      "Correct. Manifest = state, scratchpad = knowledge; load both, in that order, then resume.",
+      "Re-prompting forces redundant work and discards both artifacts."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "6b1137cf-13de-4d7a-b8fb-1616b340365a"
+  },
+  {
+    "question": "Tier 3 — A reviewer claims: \"Subagent delegation, scratchpads, manifests, and `/compact` are interchangeable techniques — pick whichever is convenient.\" Which response BEST corrects the misconception?",
+    "options": [
+      "Each treats a different symptom: delegation prevents noise from entering the main session, scratchpads persist findings against drift, manifests enable crash recovery, and `/compact` reclaims tokens lossily; substituting one for another (e.g., `/compact` instead of a scratchpad) loses the property that mattered",
+      "They are interchangeable; the reviewer is correct",
+      "They are all forms of `/compact` under the hood",
+      "Only one of them — `/compact` — is officially supported"
+    ],
+    "explanations": [
+      "Correct. Each technique addresses a distinct symptom; conflating them is a top exam trap.",
+      "They are not interchangeable.",
+      "They are distinct mechanisms with different implementations.",
+      "All four are documented techniques; `/compact` is not the only one."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "29265dee-706e-4549-acc1-a969bc7dd193"
+  },
+  {
+    "question": "Tier 3 — An engineer proposes: \"To save tokens, drop the scratchpad — `/compact` already summarises history and the summary is durable enough.\" Which counterargument is strongest?",
+    "options": [
+      "`/compact` is only available in API mode, not in Claude Code",
+      "Scratchpads are required by the Anthropic SDK; dropping them is illegal",
+      "`/compact` only works on the system prompt, not the conversation",
+      "`/compact` is lossy and lives in conversation; on a multi-hour or crash-prone session, history can be summarised away or lost entirely. Scratchpads on disk are the durable record that survives both compaction and crashes"
+    ],
+    "explanations": [
+      "`/compact` is a Claude Code command.",
+      "There is no SDK requirement around scratchpads.",
+      "`/compact` summarises conversation history, not the system prompt.",
+      "Correct. Durability across compaction AND crashes is exactly the scratchpad's reason to exist."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "2c792219-02d5-415f-b980-eda207a94dd1"
+  },
+  {
+    "question": "Tier 3 — A new policy says: \"Every long session should use ALL of: subagent delegation, scratchpads, manifests, and `/compact`.\" Which critique is MOST accurate?",
+    "options": [
+      "Each technique should be matched to a symptom; routinely using all four with no judgement still risks reflexive `/compact` calls that lose project-specific detail and conflated manifest/scratchpad notes that defeat both",
+      "Using all four is always optimal regardless of session shape",
+      "Only one of the four is ever needed at a time",
+      "The four are mutually exclusive"
+    ],
+    "explanations": [
+      "Correct. Discipline isn't a checklist of all four; it's matching technique to symptom.",
+      "Routine combination without judgement is itself an anti-pattern.",
+      "Long audits often use multiple techniques together (e.g., delegation + scratchpad + manifest).",
+      "They compose; they are not mutually exclusive."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "830f9104-562f-4079-a793-06c7cfdc038d"
+  },
+  {
+    "question": "Tier 3 — The coordinator delegates a noisy enumeration to a subagent. The subagent returns a 5-line summary. Two turns later the coordinator forgets a detail from the summary. What is the cleanest fix that follows topic 5.4 guidance?",
+    "options": [
+      "Re-run the subagent every time the coordinator forgets",
+      "Have the coordinator append the subagent's summary (the 5 lines) to a scratchpad immediately on receipt, and re-read the scratchpad before subsequent decisions",
+      "Pipe the subagent's full raw output into the coordinator after all",
+      "Run `/compact` to refresh the coordinator's memory"
+    ],
+    "explanations": [
+      "Re-running is wasteful and the next run might give a slightly different summary.",
+      "Correct. Persist the distilled summary to disk immediately so future drift is anchored against the scratchpad.",
+      "That defeats the purpose of delegation — the noise reaches the coordinator.",
+      "Compaction makes the situation worse by lossily summarising further."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "647b8f27-d518-4fd6-b158-d2e0948e682c"
+  },
+  {
+    "question": "Tier 3 — Two artifact files exist: `state/audit.json` containing `{phase, completed, pending, next, artifacts}` and `notes/audit.md` containing distilled findings. A teammate suggests merging them into a single `audit.md` file to reduce file count. Why is this a regression?",
+    "options": [
+      "Markdown can't contain JSON",
+      "Single-file artifacts violate the Anthropic SDK contract",
+      "Merging makes parsing for crash recovery harder by mixing structured state with prose findings, conflating manifest and scratchpad roles and defeating both",
+      "There is no regression; merging is fine"
+    ],
+    "explanations": [
+      "Markdown can embed code blocks containing JSON.",
+      "There is no such SDK contract.",
+      "Correct. Manifest needs structured fields for parseable resume; scratchpad needs distilled prose for human/agent re-reading. Mixing them weakens both.",
+      "There is a real regression — separation of state and knowledge is intentional."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "1ff7fa41-a400-4279-945f-556efe6e4602"
+  },
+  {
+    "question": "Tier 3 — A team's S4 productivity agent generates correct project-specific code at low context utilisation. After several long sessions with no scratchpad, no manifest, and frequent `/compact` calls, the same agent on the same repo now produces generic snippets. Which root-cause analysis is MOST aligned with topic 5.4?",
+    "options": [
+      "The training data was changed",
+      "The harness is corrupting tool calls",
+      "The user's prompts have become less specific",
+      "Extended-session degradation: with no durable scratchpad to anchor project facts and frequent lossy `/compact` calls discarding detail, the agent drifts to 'typical patterns' even though the underlying repo and CLAUDE.md are unchanged"
+    ],
+    "explanations": [
+      "Underlying training is unrelated to within-session drift.",
+      "Tool corruption would produce different symptoms (failed calls, re-issued tools).",
+      "Even with identical prompts, the absence of durable findings + repeated lossy compaction will produce drift.",
+      "Correct. The classic combination — no scratchpad, reflexive `/compact` — is exactly the canonical drift pathway."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "432ac2cb-64a0-4a35-ad85-7751384f38a8"
+  },
+  {
+    "question": "Tier 3 — Which of the following is the SHARPEST distinction between 'use a subagent' and 'use `/compact`' as remediations for context pressure?",
+    "options": [
+      "Subagent delegation prevents noise from ever entering the main session, while `/compact` lossily summarises noise after it is already in. Delegation is preventive; `/compact` is reactive and lossy",
+      "Both techniques have identical effects; choose by personal preference",
+      "`/compact` is only valid for short sessions; subagents are only valid for long sessions",
+      "Subagents create files on disk; `/compact` creates files on disk too"
+    ],
+    "explanations": [
+      "Correct. Prevention vs lossy reaction is the cleanest framing.",
+      "They have very different effects — one prevents pollution, one summarises it lossily.",
+      "There is no such hard cutoff; both apply across session lengths.",
+      "`/compact` does not write files on disk."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "99181529-13d4-47af-818a-995b3188d95e"
+  },
+  {
+    "question": "Tier 3 — A coordinator just compacted its history at the phase-2/phase-3 boundary. It had not yet written its scratchpad. After `/compact`, the agent answers the next question with a generic helper and ignores the project's `RetryableQuery`. Two engineers debate the cause. Engineer A: \"`/compact` deleted the helper.\" Engineer B: \"Drift was already developing; `/compact` accelerated it by collapsing the only remaining detail into a lossy summary.\" Who is more correct, and why?",
+    "options": [
+      "Engineer A — `/compact` always deletes specific details deterministically",
+      "Engineer A — `/compact` writes over CLAUDE.md",
+      "Neither — the agent's behaviour is unrelated to `/compact` at this point",
+      "Engineer B — `/compact` summarises lossily, and without a scratchpad to anchor `RetryableQuery`, the helper's already-fading attention weight collapses further into a generic summary, accelerating drift to typical patterns"
+    ],
+    "explanations": [
+      "`/compact` is lossy but it summarises rather than deterministically deleting any specific term.",
+      "`/compact` does not modify CLAUDE.md or any on-disk file.",
+      "The behaviour is highly correlated with `/compact` and the missing scratchpad; this answer ignores the mechanism.",
+      "Correct. Engineer B captures the real mechanism: lossy compaction + no durable anchor = accelerated drift to typical patterns."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.4"
+    ],
+    "phase": "post",
+    "qid": "513e1d56-2e9a-40bf-8de6-048427c68abc"
+  }
+]

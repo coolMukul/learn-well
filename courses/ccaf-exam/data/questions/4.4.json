@@ -1,0 +1,882 @@
+[
+  {
+    "question": "An extraction fails JSON Schema validation. Which set of inputs makes a retry-with-error-feedback follow-up most effective?",
+    "options": [
+      "The original document, the failed extraction, and the specific validation error message.",
+      "Just the original document with a 'try again' instruction.",
+      "Just the failed extraction with the original prompt.",
+      "Only the validation error message; sending the document again wastes tokens."
+    ],
+    "explanations": [
+      "Correct. The model needs the source (to re-read), its prior attempt (to diff), and the specific error (to know the delta to close).",
+      "Strips both the diff signal and the exact error; the model has no more information than before.",
+      "Without the source the model cannot verify against the document; it will likely repeat or hallucinate.",
+      "Without the document and the failed extraction the model is guessing what to fix and against what."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "pre",
+    "qid": "8fefd43a-c438-4cce-8995-13d74399c397"
+  },
+  {
+    "question": "An invoice schema requires a `po_number` field, but the source document genuinely doesn't print one. What is the right behaviour?",
+    "options": [
+      "Retry up to five times with progressively sharper error messages until the model emits a value.",
+      "Stop retrying — surface the gap (e.g., `missing_field: ['po_number']`) and let downstream code decide.",
+      "Bump temperature on retry so the model 'thinks harder' and finds the value.",
+      "Lower the schema's required fields so validation passes."
+    ],
+    "explanations": [
+      "Retry can't surface information that isn't there; pushing harder pressures the model toward hallucination.",
+      "Correct. This is a missing-info failure, not a format failure; the right response is to surface the absence.",
+      "Temperature adds variance, not information; it can only make hallucination more likely.",
+      "Silently relaxing the schema masks the gap and corrupts downstream guarantees."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "pre",
+    "qid": "c9e48921-9a15-4f03-b154-4fc502090ffb"
+  },
+  {
+    "question": "What is the purpose of a `detected_pattern` field on extraction outputs?",
+    "options": [
+      "A stable categorical label for *why* the model produced the finding, enabling systematic false-positive analysis.",
+      "A free-form note explaining the model's reasoning to the end user.",
+      "A confidence score on the extracted value.",
+      "A flag indicating that the extraction failed schema validation."
+    ],
+    "explanations": [
+      "Correct. Stable labels let you group dismissals and discover systematic FP classes you can fix in one prompt edit.",
+      "Free-form text doesn't aggregate; the whole point of `detected_pattern` is grouping.",
+      "Confidence is a different field; `detected_pattern` captures the construct that triggered the finding.",
+      "Schema failure is signalled by the validator's error, not by an extracted field."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "pre",
+    "qid": "7396fb20-a530-4cca-82b3-837bf9ec5c49"
+  },
+  {
+    "question": "Why extract both `calculated_total` (sum of line items) and `stated_total` (the printed total)?",
+    "options": [
+      "To make the schema strictly typed and reject any floating-point values.",
+      "So the validator can cross-check the two values and catch arithmetic conflicts the schema can't see.",
+      "To give the model two chances at the same field so the higher one wins.",
+      "Because tool use requires duplicate fields for redundancy."
+    ],
+    "explanations": [
+      "Cross-checking, not type strictness, is the goal here.",
+      "Correct. A single `total` passes any schema as long as it's a number; dual extraction surfaces OCR errors, misreads, and document inconsistencies.",
+      "There's no 'higher wins' rule — disagreement is a signal, not a tiebreaker.",
+      "Tool use does not require duplicate fields."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "pre",
+    "qid": "2e8b5e02-5296-482c-9c4f-b0124d09f981"
+  },
+  {
+    "question": "A vendor invoice prints `subtotal: $100` but the line items sum to $105. The model should…",
+    "options": [
+      "Pick the larger value (105) since it's likely more accurate.",
+      "Pick the printed value (100) since it's authoritative.",
+      "Set `conflict_detected: true` with a description, so downstream code can route to human review.",
+      "Reject the whole document and refuse to extract anything."
+    ],
+    "explanations": [
+      "Silently picking either side hides the contradiction and is unrecoverable later.",
+      "Same issue — silent picks erase auditability.",
+      "Correct. Letting the model declare the conflict preserves the audit trail and lets downstream code decide.",
+      "Refusing extraction is too coarse — the rest of the fields are usable."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "pre",
+    "qid": "86afe7ee-dc95-44d0-b439-3e42b19ac471"
+  },
+  {
+    "question": "Which sequence describes a self-correction validation flow?",
+    "options": [
+      "Extract → cap retries at 5 → return whatever passed last.",
+      "Extract → retry 3 times unconditionally → return the final result.",
+      "Validate first → only extract if validation predicts success.",
+      "Extract → validate (schema + semantic) → on fail, classify → retry-with-error-feedback only for format errors → cap and surface."
+    ],
+    "explanations": [
+      "No validation step; cap is a circuit-breaker, not the decision-maker.",
+      "Unconditional retries waste turns on missing-info failures and pressure hallucination.",
+      "Validation is a post-extraction check; you can't validate before extracting.",
+      "Correct. Classification is what separates retry-eligible failures from missing-info ones."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "pre",
+    "qid": "50db86f3-86e1-4add-a377-09d08acab9cf"
+  },
+  {
+    "question": "Schema validation (via tool use) eliminates which class of error?",
+    "options": [
+      "Pure syntax/shape errors — wrong types, missing required fields, extra fields.",
+      "Semantic errors — values that contradict each other or fail business rules.",
+      "Hallucinated values that look correctly typed.",
+      "Information genuinely absent from the source document."
+    ],
+    "explanations": [
+      "Correct. Schema enforces shape; that's the class tool use removes for free.",
+      "Schema can't see meaning; semantic checks live in your validator.",
+      "Hallucinated values often pass schema cleanly; only semantic checks catch them.",
+      "Schema can't tell you a missing-info failure from a format failure — that's the classifier's job."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "pre",
+    "qid": "567f3064-2bb8-4f78-898b-4842c5d89f3c"
+  },
+  {
+    "question": "You replace `detected_pattern` (an enum-like stable label) with a free-form `reason` string. What capability do you lose?",
+    "options": [
+      "The ability to validate the field against a JSON Schema.",
+      "The ability to aggregate dismissals across runs and quantify FP classes (no clean `GROUP BY`).",
+      "The ability to extract findings at all — the schema requires `detected_pattern` by name.",
+      "Nothing — free-form strings carry strictly more information."
+    ],
+    "explanations": [
+      "Free-form strings can still be validated as strings; the issue isn't schema validation.",
+      "Correct. Stable labels group; free-form strings vary across runs and don't aggregate.",
+      "The field name is up to you; the issue is the *shape* of its values.",
+      "Free-form may carry more text, but it can't be aggregated to drive systematic prompt fixes."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "pre",
+    "qid": "1249cf2b-ae40-4de8-86da-474f55f424f9"
+  },
+  {
+    "question": "After a validation failure, which retry strategy is *least* likely to help?",
+    "options": [
+      "Send the original document, the failed extraction, and the specific validator error.",
+      "Classify the failure first; only retry format/structural errors.",
+      "Bump temperature on the retry so the model 'gets a different answer'.",
+      "Include the validator's exact error message in the retry payload."
+    ],
+    "explanations": [
+      "This is the canonical effective shape — exactly the right move.",
+      "Classification prevents pointless retries on missing-info failures.",
+      "Correct. Higher temperature adds variance without addressing the root cause; the validator's error is the actual signal.",
+      "Including the specific error tells the model the exact delta to close — clearly useful."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "pre",
+    "qid": "c6ba743a-fb47-4ccd-a6ca-5e6e6ac5ecf5"
+  },
+  {
+    "question": "What's a sensible cap for retries inside a self-correction loop?",
+    "options": [
+      "No cap — keep retrying until validation passes.",
+      "20+ — tokens are cheap, more attempts can only help.",
+      "Exactly 1 — never retry more than once for any reason.",
+      "1–3 attempts; after that, surface the failure to a human or downstream queue."
+    ],
+    "explanations": [
+      "An uncapped loop on a missing-info failure runs forever and pressures hallucination.",
+      "Most retries beyond the first three are wasted on cases retry can't fix.",
+      "Format errors sometimes need a second clarification pass; a hard cap of 1 is too tight.",
+      "Correct. The cap is a circuit-breaker for cases that aren't recoverable; classification handles the decision-making."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "pre",
+    "qid": "6476c0b8-f0bd-4694-9267-34cebac92474"
+  },
+  {
+    "question": "Tier 1. An extraction returns `total: '$1,234.56'` but the schema demands a number. Best retry payload?",
+    "options": [
+      "Just the prompt template with a higher temperature.",
+      "The original document + the failed extraction + the error `total: expected number, got string \"$1,234.56\"`.",
+      "Only the failed JSON, asking the model to 'fix it' without the document.",
+      "Only the error message, not the failed JSON."
+    ],
+    "explanations": [
+      "Temperature isn't the right lever; this is a format error with a specific fix.",
+      "Correct. Document + failed extraction + specific error is the canonical retry-with-error-feedback shape.",
+      "Without the document the model can't verify against the source.",
+      "Without the failed extraction the model can't diff against its prior attempt."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "86a166c0-ac36-4092-9016-bbdd092b374e"
+  },
+  {
+    "question": "Tier 1. Schema validation passes but the validator detects `calculated_total: 105` ≠ `stated_total: 110`. What kind of error is this?",
+    "options": [
+      "A schema/syntax error — the values are the wrong type.",
+      "A network error caused by tool use.",
+      "A semantic validation error — values that pass schema can still be inconsistent.",
+      "A hallucination that retrying cannot ever fix."
+    ],
+    "explanations": [
+      "Both values are numbers; the type is fine.",
+      "There's no network involvement here; it's a pure validation classification.",
+      "Correct. Semantic errors are exactly the meaning-level mismatches schema can't see.",
+      "It may or may not be a hallucination; the validator can't know without retrying with the discrepancy as context."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "73e01db2-bc28-4990-a6e6-0be416c001eb"
+  },
+  {
+    "question": "Tier 1. Why include the *failed extraction* in the retry payload — isn't the validator's error enough?",
+    "options": [
+      "So the model can diff its own prior attempt against the source and the error, instead of starting cold.",
+      "Because the API requires the failed JSON to be re-sent for accounting.",
+      "It isn't needed; sending only the error is the recommended practice.",
+      "To hide the document from the model and force it to use only the error."
+    ],
+    "explanations": [
+      "Correct. The diff signal — 'here's what you said, here's why it's wrong' — is the cheapest way to focus the model on the exact delta.",
+      "There's no API-level requirement of this kind.",
+      "Sending only the error strips the diff signal; the model has to reconstruct its prior reasoning.",
+      "The document is also part of the canonical payload; hiding it would defeat the purpose."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "89a002f1-360f-4d7e-8d2c-f6fb4f0e5960"
+  },
+  {
+    "question": "Tier 1. A code-review agent flags 200 findings; developers dismiss 40 of them and all 40 carry `detected_pattern: 'string_concatenation_in_query_builder'`. What's the right next move?",
+    "options": [
+      "Lower the global confidence threshold so fewer findings are surfaced overall.",
+      "Switch to a stronger model and re-run the entire batch.",
+      "Disable the SQL injection category entirely.",
+      "Update the prompt (or add a few-shot example) to teach the model that this specific pattern is not a finding."
+    ],
+    "explanations": [
+      "Threshold tuning is too coarse and removes useful findings along with the FPs.",
+      "Model swap doesn't address the systematic FP pattern this prompt is producing.",
+      "Disabling the whole category loses real findings.",
+      "Correct. The whole point of `detected_pattern` is enabling exactly this kind of targeted prompt fix."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "ff9b4b6d-2a4e-465d-83c8-26afba2aa3c4"
+  },
+  {
+    "question": "Tier 1. Which failure type is *not* recoverable by retry-with-error-feedback?",
+    "options": [
+      "A date in `04/15/2026` format when the schema requires `YYYY-MM-DD`.",
+      "A required field whose value is genuinely absent from the source document.",
+      "A `total` returned as a string `\"$1,234.56\"` instead of a number.",
+      "An extra unexpected field in the output."
+    ],
+    "explanations": [
+      "Format mismatch — retry with the specific error fixes this cleanly.",
+      "Correct. Missing-info failures cannot be resolved by retry; the data isn't in the source.",
+      "Type/format coercion — recoverable.",
+      "Shape error — recoverable by re-extraction with the schema reminder."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "12ae4650-383f-4c63-ae6c-a395ea9681e4"
+  },
+  {
+    "question": "Tier 1. Where does the *cross-check* between `calculated_total` and `stated_total` happen?",
+    "options": [
+      "Inside the JSON Schema definition, via a custom keyword.",
+      "Inside the model's tool-use call, before the response is returned.",
+      "Inside your validator (the validate step of the loop), after the schema accepts the JSON.",
+      "Inside the operating system's filesystem layer."
+    ],
+    "explanations": [
+      "JSON Schema doesn't support arbitrary cross-field arithmetic in standard form.",
+      "The model returns both values, but the comparison itself happens in your code.",
+      "Correct. Semantic checks are part of the validator step, after schema validation passes.",
+      "Filesystem has nothing to do with this."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "70e57ed6-6e49-4815-97dd-66f650560047"
+  },
+  {
+    "question": "Tier 1. What does the `conflict_detected: true` boolean buy you over silently picking one of two contradictory source values?",
+    "options": [
+      "Auditability — downstream consumers can see and triage the conflict instead of inheriting a hidden choice.",
+      "A faster extraction, since the model skips one of the values.",
+      "Lower token cost, because conflicting fields are compressed.",
+      "Stronger schema validation — the schema rejects conflicting documents."
+    ],
+    "explanations": [
+      "Correct. Declaring conflict preserves the audit trail; silent picks are unrecoverable later.",
+      "It's strictly more work, not less.",
+      "There's no compression effect; if anything, it adds an extra field.",
+      "Schema can't tell whether two fields are 'in conflict' without semantic logic."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "0dc0534d-34f4-4753-8218-345c2d0977ed"
+  },
+  {
+    "question": "Tier 1. A team caps retries at 10 'because tokens are cheap'. What's the most likely outcome?",
+    "options": [
+      "Higher accuracy across the board, since more attempts means more chances to get it right.",
+      "Slightly slower extraction with no other downsides.",
+      "Burned tokens on missing-info failures the model can never recover, plus increased hallucination risk on those cases.",
+      "Cleaner audit logs because every failure is retried to a stable conclusion."
+    ],
+    "explanations": [
+      "Beyond a few retries the marginal accuracy gain on format errors is near zero; missing-info failures don't improve at all.",
+      "There's a real downside: hallucination pressure on missing-info cases.",
+      "Correct. A high cap with no classification step wastes tokens and elevates hallucination risk on un-recoverable cases.",
+      "The audit log gets noisier, not cleaner — every retry adds entries without resolving the failure."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "2eea20c8-03fd-407c-9559-b02374631dc9"
+  },
+  {
+    "question": "Tier 1. Which question is the right *first* diagnostic when a validation failure occurs?",
+    "options": [
+      "Is the information present in the source document?",
+      "How many tokens did the failed call consume?",
+      "Should we switch to a different model?",
+      "Is the temperature set correctly?"
+    ],
+    "explanations": [
+      "Correct. The presence-or-absence diagnostic determines whether retry is structurally eligible at all.",
+      "Token counting doesn't tell you what to do next.",
+      "Model swap is rarely the right first move and addresses no specific failure mode.",
+      "Temperature isn't the lever for either format or missing-info errors."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "97199939-414b-493c-8e4b-609759934e07"
+  },
+  {
+    "question": "Tier 1. A schema-bound extraction returns valid JSON in which `start_date: '2026-05-10'` is *after* `end_date: '2026-05-01'`. Which check would catch this?",
+    "options": [
+      "JSON Schema syntax validation alone.",
+      "A regex on the date strings.",
+      "A type check on the field.",
+      "A semantic validator that compares the two dates and flags `start_date > end_date`."
+    ],
+    "explanations": [
+      "Schema sees both as valid date strings; the relationship is invisible to it.",
+      "Regex confirms format only.",
+      "Type check is satisfied — both are strings.",
+      "Correct. Semantic checks compare values across fields; that's exactly what's needed here."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "1a5979dc-03bb-4a9d-9ed3-7fc47a912aef"
+  },
+  {
+    "question": "Tier 2. After a failed extraction, you have three choices: (a) retry with the validator's error message and the failed JSON, (b) retry with raised temperature, (c) retry with a fresh prompt that *removes* the document to keep tokens low. Rank from best to worst.",
+    "options": [
+      "c, b, a — minimising tokens preserves context budget.",
+      "b, a, c — temperature variance is the cheapest unblocker.",
+      "a, c, b — the document is dispensable as long as the error is precise.",
+      "a, b, c — error context first, temperature is a noisy fallback, dropping the document is the worst."
+    ],
+    "explanations": [
+      "Removing the document destroys the model's ability to verify against the source — strictly bad.",
+      "Temperature isn't an unblocker for either format or missing-info errors.",
+      "The document is essential — without it the model can't re-read the source.",
+      "Correct. (a) is the canonical effective payload, (b) doesn't address root cause, (c) actively destroys signal."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "4bde0c74-40c2-4358-8a68-7027f065e8f4"
+  },
+  {
+    "question": "Tier 2. Your retry loop appends *only the error message* (no document, no failed extraction) on each retry. What's the most likely failure mode?",
+    "options": [
+      "The model often regenerates a similar wrong answer because it lacks the diff signal and the source to verify against.",
+      "Schema validation always succeeds because the error is verbose enough.",
+      "Token usage drops to zero on retries.",
+      "The validator stops being called."
+    ],
+    "explanations": [
+      "Correct. Without the document and prior attempt, the model has no way to triangulate the fix; same input shape, same wrong output.",
+      "Verbose errors don't fix root causes by themselves.",
+      "There's no zero-token path here.",
+      "The validator runs every pass; it's a separate code path."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "3579635f-ae6e-46d1-bab7-3963219a22bb"
+  },
+  {
+    "question": "Tier 2. Two designs for `detected_pattern`: (X) free-form natural-language note, (Y) closed enum of ~20 stable labels. Which scales for FP analysis and why?",
+    "options": [
+      "(X) free-form, because analysts can search keywords across runs.",
+      "(X) free-form, because it carries more information per finding.",
+      "(Y) closed enum, because identical patterns produce identical labels and group cleanly under `GROUP BY`.",
+      "Either works; the choice is purely cosmetic."
+    ],
+    "explanations": [
+      "Keyword search across free-form text is fragile; phrasing varies per run.",
+      "More text per finding doesn't help if you can't aggregate them.",
+      "Correct. Stable labels are what makes statistical FP analysis tractable.",
+      "Aggregation behaviour is meaningfully different; it's not cosmetic."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "84a334c4-3e8f-4540-81a1-3bfc324b1a06"
+  },
+  {
+    "question": "Tier 2. Your validator runs *both* schema checks (via tool use) and semantic checks (math, conflicts). Which kinds of errors would only be caught by the semantic layer?",
+    "options": [
+      "An extra unexpected field that wasn't declared in the schema.",
+      "`stated_total` and `calculated_total` disagreeing, despite both being valid numbers.",
+      "A required field returned as `null`.",
+      "A field returned as a string instead of a number."
+    ],
+    "explanations": [
+      "Schema with `additionalProperties: false` catches this.",
+      "Correct. Both values pass schema cleanly; only semantic comparison surfaces the discrepancy.",
+      "Schema's `required` keyword catches this.",
+      "Schema type check catches this."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "7039f0f8-5a3e-4dd7-b381-bb23d89609bf"
+  },
+  {
+    "question": "Tier 2. A teammate says: 'On format failures, just keep retrying until validation passes — the cap is for missing-info cases only.' What's wrong with this framing?",
+    "options": [
+      "Nothing — that's exactly the right policy.",
+      "The cap is the primary decision-maker; classification is a fallback.",
+      "Format failures can also be unrecoverable (e.g., model mode collapses on a broken prompt); the cap is a circuit-breaker for *any* failure type, with classification deciding whether retry is *eligible* at all.",
+      "Format failures should never be retried — only missing-info ones should."
+    ],
+    "explanations": [
+      "It's almost right but inverts the safety net's role.",
+      "Classification is the decision-maker; the cap is the circuit-breaker.",
+      "Correct. Both classification (eligibility) and cap (safety net) are needed; uncapped retries on format errors can also pathologically loop.",
+      "Format failures are exactly the case retry was designed for."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "4c859aa1-7c46-492c-991e-dd58d568ef42"
+  },
+  {
+    "question": "Tier 2. An extraction call returns `{ total: 110, calculated_total: 110, conflict_detected: true, conflict_description: 'Tax line item not summed' }`. Schema passes; semantic validator passes. Should the system accept this output?",
+    "options": [
+      "Yes — schema and semantic checks both pass; downstream consumers can use the data and the conflict flag together.",
+      "No — `conflict_detected: true` should always trigger a hard rejection.",
+      "No — `conflict_detected: true` is a contradiction with `calculated_total === total` and indicates a model bug.",
+      "Yes, but only after stripping the `conflict_description` to keep the audit log clean."
+    ],
+    "explanations": [
+      "Correct. The point of `conflict_detected` is to declare conflicts so downstream code can decide what to do; a flagged record with a description is exactly the intended shape.",
+      "Hard rejection wastes a usable extraction; routing to human review is the standard policy.",
+      "It's not a contradiction — the totals can match while a *line-item* sub-conflict exists; that's the audit trail's job to capture.",
+      "Stripping the description loses the audit signal — exactly the wrong move."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "878789c0-084d-4113-b35d-eccd6954c8a7"
+  },
+  {
+    "question": "Tier 2. You instrument every extraction with `detected_pattern`. After a sprint, 10% of dismissed findings share pattern `shipping_listed_as_line_item`. What does this *most directly* tell you?",
+    "options": [
+      "The model needs a smaller context window.",
+      "Switch to JSON-mode output instead of tool use.",
+      "There's a systematic FP class around shipping-line-item handling that can likely be fixed with a prompt-level change (e.g., a few-shot example).",
+      "Retry temperature should be lowered globally."
+    ],
+    "explanations": [
+      "Context window isn't the variable controlling FP class membership.",
+      "Output format isn't producing the FP; the prompt's interpretation is.",
+      "Correct. A pattern-grouped FP class is the exact signal `detected_pattern` was designed to surface, and the right fix is a targeted prompt update.",
+      "Temperature has nothing to do with the systematic misclassification of shipping lines."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "f8efde7c-ef39-4369-9b60-9e6ceb64face"
+  },
+  {
+    "question": "Tier 2. A self-correction flow has a *classification step* between validation failure and retry. What does removing this step cost you?",
+    "options": [
+      "Nothing important — classification is an optional optimisation.",
+      "The ability to skip futile retries on missing-info failures, which both wastes tokens and pressures the model toward hallucination.",
+      "JSON Schema compatibility.",
+      "The ability to send the failed extraction in the retry payload."
+    ],
+    "explanations": [
+      "Removing it converts a recoverable design into a token-burning, hallucination-prone one.",
+      "Correct. Classification is the decision that prevents the wrong retries from happening at all.",
+      "Schema compatibility is unrelated.",
+      "You can still send the failed extraction; the issue is whether you should retry at all."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "11e98a80-5d98-472a-9d71-ae76126c9edd"
+  },
+  {
+    "question": "Tier 2. Which of these is the *strongest* sign that a validation failure should NOT be retried?",
+    "options": [
+      "The schema returned a regex mismatch on a date field.",
+      "A re-read of the source document confirms the required field never appears in the input.",
+      "The previous extraction had a string where a number was expected.",
+      "An unexpected extra field appeared in the output."
+    ],
+    "explanations": [
+      "Regex mismatch on a present field is the canonical retry-eligible case.",
+      "Correct. Information genuinely absent is the missing-info case where retry pressures hallucination.",
+      "Type coercion — retry with a clear error message fixes this.",
+      "Extra field — retry with the schema reminder fixes this."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "a0863da3-dd1c-475b-8723-eb69840975fc"
+  },
+  {
+    "question": "Tier 2. You see a retry loop that does: extract → validate → if fail, *raise temperature by 0.1 and retry the same prompt*. Why is this design weak?",
+    "options": [
+      "Temperature changes always invalidate JSON Schema compliance.",
+      "Tool use forbids any temperature changes mid-loop.",
+      "It generates variance instead of addressing the root cause; the validator's specific error is the actual signal the model needs.",
+      "It costs strictly more than retry-with-error-feedback."
+    ],
+    "explanations": [
+      "Temperature doesn't break schema compliance.",
+      "There's no such API restriction.",
+      "Correct. Higher temperature gives a different roll of the dice rather than telling the model what to fix.",
+      "Cost isn't the primary objection; correctness is."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "85ef0779-3f12-445d-a902-1c86b61604f2"
+  },
+  {
+    "question": "Tier 3. A 'robust' extraction service retries every validation failure 3 times with no error context, and then surfaces the failure. A failure-mode review finds that a third of the 'fixed' retries silently produced *plausible but fabricated* values for fields that weren't in the source. What was the root cause?",
+    "options": [
+      "Model temperature was too low.",
+      "The retry cap was too aggressive at 3.",
+      "Prompts were too short on the retries.",
+      "Retries weren't classifying the failure type — missing-info failures were being retried, and the unrelenting prompt pressure pushed the model toward hallucination."
+    ],
+    "explanations": [
+      "Temperature wasn't the lever; the prompt loop's lack of classification was.",
+      "Three is a normal cap; the design problem was unconditional retry, not the cap value.",
+      "Length isn't the issue; it's the absence of error context and classification.",
+      "Correct. Without classification, missing-info failures get the same retry pressure as format failures, and the model invents values to satisfy the validator."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "90d4cad1-a018-44ed-8256-2374393ce1b7"
+  },
+  {
+    "question": "Tier 3. A team reports: 'We added retry-with-error-feedback and accuracy *dropped*.' On inspection, every retry payload contains the validator error and the failed JSON, but *not* the original document. What's the most likely cause of the regression?",
+    "options": [
+      "The schema is too strict; loosening it would help.",
+      "Without the original document the model can't verify against the source, so it tends to mutate its prior (wrong) answer rather than re-read; some mutations introduce *new* errors that pass schema but are factually worse.",
+      "The validator is producing too many false positives.",
+      "The model's context window is too small to fit the failed JSON."
+    ],
+    "explanations": [
+      "Schema strictness is irrelevant; the symptom is downstream of payload shape.",
+      "Correct. Original doc + failed extraction + error are jointly required; dropping the doc is exactly the failure mode that produces fluent-but-wrong retries.",
+      "Validator behaviour didn't change with the retry rollout.",
+      "Context window isn't the issue — the failed JSON is small; the missing piece is the source document."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "30c8f03e-8667-43d9-bc35-3933f805e63e"
+  },
+  {
+    "question": "Tier 3. An invoice extractor passes schema validation (every field is the right type) and semantic validation (`calculated_total === stated_total`, `conflict_detected === false`). A spot-check finds that the *line items* themselves are subtly hallucinated — descriptions that don't match the source. Which of the following is the BEST next move?",
+    "options": [
+      "Add a `line_item_text_verbatim` boolean per item plus a sample-level human-review queue; semantic validators can't catch every fabrication, but structured review on a sampled tail can.",
+      "Lower the model temperature on every call so hallucinations stop.",
+      "Add another retry attempt, on the theory that more passes will catch hallucinations.",
+      "Drop the schema entirely and ask for free-form text."
+    ],
+    "explanations": [
+      "Correct. Once both schema and semantic checks pass, residual hallucinations require either richer per-field verification (verbatim flags, source-span citations) or human-in-the-loop sampling — not more retries.",
+      "Lower temperature reduces variance but doesn't structurally prevent fabrication of plausible values.",
+      "Retrying a well-formed, semantically-consistent (but wrong) extraction just produces another well-formed, semantically-consistent extraction; retry isn't the right tool here.",
+      "Free-form output is strictly worse than structured + targeted human review for this failure mode."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "20203167-448e-4633-8ed3-7b734e907978"
+  },
+  {
+    "question": "Tier 3. Two competing PRs land on your retry harness. PR-A bumps the cap from 3 to 10. PR-B keeps the cap at 3 but adds failure classification (format vs missing-info). Which PR has the larger expected quality gain, and why?",
+    "options": [
+      "PR-A — more retries always means more chances to land a correct extraction.",
+      "Both are equivalent; the choice is purely about token budget.",
+      "PR-B — classification removes pointless retries on missing-info cases (saving tokens) AND prevents the hallucination pressure that long retry chains apply to absent fields. PR-A actively makes the missing-info case worse.",
+      "Neither — the harness should remove retries entirely."
+    ],
+    "explanations": [
+      "Past 2–3 retries the marginal gain on format errors is near zero; on missing-info failures more retries are strictly negative.",
+      "Their expected effects on accuracy are very different.",
+      "Correct. Classification both saves tokens and reduces hallucination pressure; raising the cap without classification amplifies the wrong behaviour on missing-info cases.",
+      "Removing retries forfeits real recovery on format errors."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "cb659e6c-46ab-435c-b105-99d8f42d3cf0"
+  },
+  {
+    "question": "Tier 3. Your team proposes replacing `detected_pattern` with a hashed string of the offending source snippet (`source_hash`) for FP grouping. What's the subtle problem with this design?",
+    "options": [
+      "Hashes don't fit in JSON Schema string fields.",
+      "Hashing is deterministic so it would over-group.",
+      "Hashes are not human-readable.",
+      "`source_hash` groups *identical snippets*, not *identical reasoning patterns*; two semantically-equivalent FPs (different code, same anti-pattern) won't share a hash, so the grouping fragments and FP-class detection fails."
+    ],
+    "explanations": [
+      "Hashes are strings; schema isn't the issue.",
+      "Hashes don't over-group identical reasoning; they under-group it.",
+      "Readability is a side concern; the design failure is structural.",
+      "Correct. The whole point of `detected_pattern` is to abstract away surface variation so reasoning-equivalent FPs cluster — a snippet hash defeats that."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "f8a81440-ac25-45ee-adeb-52622c242d7d"
+  },
+  {
+    "question": "Tier 3. A senior engineer claims: 'We don't need `calculated_total` — modern models do arithmetic well, so just trust the `total` they emit.' The strongest counter-argument is:",
+    "options": [
+      "Models still produce occasional arithmetic errors AND, more importantly, dual extraction surfaces *document-level* inconsistencies (the source itself disagreeing with its own line items) that a single-field extraction can never expose.",
+      "Schema validation catches arithmetic errors automatically.",
+      "Tool use disables the model's arithmetic ability.",
+      "Modern models are bad at arithmetic and can't be trusted at all."
+    ],
+    "explanations": [
+      "Correct. The dual-extraction value isn't just 'check the model's math' — it's catching document-internal contradictions the model would silently propagate.",
+      "Schema can't see across fields; arithmetic isn't its job.",
+      "Tool use doesn't disable arithmetic.",
+      "An overstatement that weakens the argument; the right framing is 'occasional errors plus document inconsistencies', not 'totally untrustworthy'."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "50ef8f47-c6d0-474a-a15b-6273d1ba8f09"
+  },
+  {
+    "question": "Tier 3. A self-correction loop is producing extractions where `conflict_detected: true` but `conflict_description` is empty. Which design change addresses the root cause?",
+    "options": [
+      "Mark `conflict_description` as required *whenever* `conflict_detected: true` (a conditional schema constraint) AND include an example in the prompt showing the description shape; that turns the validator into a hard gate against incomplete conflict reports.",
+      "Disable `conflict_detected` entirely.",
+      "Auto-fill `conflict_description` with 'unspecified' on the server side.",
+      "Increase retry temperature so the model fills the field."
+    ],
+    "explanations": [
+      "Correct. A conditional-required constraint plus a prompt-level shape example is the canonical fix for 'flag set but description empty' patterns.",
+      "Disabling the field hides conflicts entirely — strictly worse.",
+      "Auto-filling 'unspecified' fakes audit data and breaks downstream review.",
+      "Temperature isn't the lever for missing-text fields."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "c0a58cec-105c-4188-8c84-a0504ad7ff8d"
+  },
+  {
+    "question": "Tier 3. After deploying retry-with-error-feedback, your token usage *triples* but extraction accuracy improves by only 2%. Where would you look first?",
+    "options": [
+      "Lower the model's max output tokens.",
+      "The classification step — most likely you're retrying missing-info failures (which can't improve) and burning the extra tokens on un-recoverable cases. Adding a presence-check before retry should restore the cost/quality ratio.",
+      "The schema definition — it must be too lax.",
+      "The temperature setting — likely too low for the retries."
+    ],
+    "explanations": [
+      "Output token cap addresses no specific failure mode here.",
+      "Correct. The classic regression for 'tripled tokens, tiny accuracy gain' is unconditional retries on a population where most failures are missing-info, not format.",
+      "Schema laxness wouldn't explain the cost spike.",
+      "Temperature isn't the variable behind a 3× cost regression."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "be782ac5-bacf-4aca-aec9-233cb5615c20"
+  },
+  {
+    "question": "Tier 3. Which statement about schema validation vs semantic validation is MOST accurate?",
+    "options": [
+      "Schema validation catches semantic errors as a side-effect; explicit semantic checks are redundant.",
+      "Semantic checks subsume schema validation; tool use's schema layer is therefore unnecessary.",
+      "Schema validation eliminates a *known class* (shape/type/required) so semantic checks can focus exclusively on meaning-level defects (cross-field math, contradictions, business rules) — the two are layered, not interchangeable.",
+      "Both layers always reject the same set of inputs; the choice is stylistic."
+    ],
+    "explanations": [
+      "Schema is shape-blind to meaning; it can't catch semantic errors.",
+      "Tool use's schema layer eliminates a real class for free; throwing it out is a regression.",
+      "Correct. The layered framing — schema for shape, semantic checks for meaning — is the canonical architecture for robust extraction.",
+      "Their accept/reject sets are very different; the layering matters."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "b3b4edd7-6e90-4f89-87e3-d30253f0257f"
+  },
+  {
+    "question": "Tier 3. The retry payload contains the document, the failed extraction, and the validator error — but the failure is `total: expected number, got string \"$1,234.56\"`. After 3 retries the model still emits `\"$1,234.56\"`. Most likely root cause and fix?",
+    "options": [
+      "The model is broken; switch vendors.",
+      "Lower the temperature to zero; that always fixes string/number coercion.",
+      "The prompt's *instruction layer* is implicitly steering the model toward currency-formatted strings (e.g., a few-shot example that shows `$` in the output). Fix the prompt's example, not the retry loop.",
+      "Increase the retry cap to 10; it'll converge eventually."
+    ],
+    "explanations": [
+      "Vendor swap is a heavy hammer for a prompt-level bug.",
+      "Temperature isn't the steering force here; the prompt's examples are.",
+      "Correct. When retries with full error context fail repeatedly on the same coercion, the prompt is teaching the wrong shape via its examples; the fix is the example, not more retries.",
+      "More retries against a prompt-driven mistake reproduce the same mistake."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.4"
+    ],
+    "phase": "post",
+    "qid": "c151e4dd-2e73-49fa-9628-084054a10d57"
+  }
+]

@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit(courses/**)",
+      "Write(courses/**)",
+      "Bash(node *)",
+      "Bash(ls *)",
+      "Bash(mkdir *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Grep|Glob|Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "grep -qF 'Foundations Certification Exam Guide' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Access to reference/Claude Certified Architect \\u2013 Foundations Certification Exam Guide.txt is blocked by a project hook. Skip this file.\"}}' || true"
+          }
+        ]
+      }
+    ]
+  }
+}

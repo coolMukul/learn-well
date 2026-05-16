@@ -1,0 +1,882 @@
+[
+  {
+    "question": "A developer asks Claude Code to convert a list of field names to snake_case. After a long prose description, the output is inconsistent on acronyms like XMLParser and iOSConfig. What is the highest-leverage next move?",
+    "options": [
+      "Rewrite the prose description in even greater detail",
+      "Provide 2-3 concrete input/output examples (e.g. XMLParser -> xml_parser, iOSConfig -> ios_config)",
+      "Ask Claude to generate its own examples and trust the output",
+      "Switch to a stricter system prompt about following instructions exactly"
+    ],
+    "explanations": [
+      "Longer prose introduces more places interpretation can drift, not fewer. The original problem is that natural language is interpreted inconsistently for transformations.",
+      "Concrete I/O examples pin the contract on the exact cases where prose interpretation drifts (acronyms, mixed-case prefixes). Claude pattern-matches the rule from the examples and applies it consistently.",
+      "Self-generated examples may codify the buggy interpretation. The developer is the one who knows the desired contract, so they should supply it.",
+      "Stricter wording doesn't address the root cause; the issue isn't compliance but ambiguity in what 'snake_case for acronyms' means."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "pre",
+    "qid": "713fba35-db89-49aa-ad17-3dbd285f4f06"
+  },
+  {
+    "question": "When iterating with a test-driven workflow in Claude Code, what should you typically share back after a test fails?",
+    "options": [
+      "The actual test failure output: assertion, expected value, and actual value",
+      "A re-phrased version of the original requirement",
+      "Only the line number of the failing test",
+      "A request to 'try again with more care'"
+    ],
+    "explanations": [
+      "Failure output carries the specific input, the expected output, and the actual output — the most compressed form of 'what's wrong'. Claude can fix the exact case.",
+      "Re-phrasing the requirement throws away the highest-signal artifact (the failure) in favour of the lowest-signal (more prose).",
+      "A line number alone tells Claude where but not what — it still has to reason about the failure mode.",
+      "Vague directives don't carry information about which case is wrong or what is expected."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "pre",
+    "qid": "b3984178-30e4-408d-9938-bd2bab0bdc2c"
+  },
+  {
+    "question": "A developer is about to ask Claude Code to implement a distributed cache layer in an unfamiliar domain. Which iterative-refinement technique is most likely to surface hidden constraints before any code is written?",
+    "options": [
+      "Write the full implementation first and review it afterwards",
+      "Provide a single short prose specification and trust Claude to fill in defaults",
+      "Ask Claude to ask clarifying questions before implementing (the interview pattern)",
+      "Skip planning and use plan mode only after the first failing test"
+    ],
+    "explanations": [
+      "Implementation-first in an unfamiliar domain produces guess-driven code that has to be unwound when constraints emerge later.",
+      "Defaults in subtle domains like caching are exactly where guesses go wrong; a short spec relies on guessing.",
+      "The interview pattern asks Claude to surface clarifying questions (TTL, invalidation, failure modes) before writing code — exactly the constraints the developer may not have anticipated.",
+      "Waiting for a failing test is reactive; the interview is proactive and prevents the wrong contract from being implemented in the first place."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "pre",
+    "qid": "4d27940d-e4a0-41d7-9eb7-1ca8a6544b8b"
+  },
+  {
+    "question": "A developer needs to fix two unrelated bugs: a typo in the README and a wrong default value in an unrelated utility. How should these be sent to Claude Code?",
+    "options": [
+      "Sequential messages, one fix per turn",
+      "Single message with both fixes, to save round-trips",
+      "Combined into a planning-mode session before either is touched",
+      "Sent only after writing tests for the README"
+    ],
+    "explanations": [
+      "Independent issues go sequentially: each iteration is fast, the diff is small, and either fix can be discarded without affecting the other.",
+      "Bundling truly independent fixes produces a long diff that is harder to review and makes it harder to roll back one fix without losing the other.",
+      "Plan mode is overkill for two trivially independent fixes; the deciding factor is interaction, not complexity.",
+      "Tests for a README typo are unnecessary; the fix is mechanical and not behavioural."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "pre",
+    "qid": "4af4362c-49fb-47bd-843c-9e2c3eef8ef3"
+  },
+  {
+    "question": "Two bugs sit in the same caching path: the eviction policy is too aggressive, and the hit-rate metric is computed incorrectly off the same eviction events. How should they be sent to Claude Code?",
+    "options": [
+      "Sequential messages, one fix per turn",
+      "Only fix the metric — the eviction will resolve itself",
+      "Open a new session for each fix to isolate context",
+      "Single detailed message containing both, so Claude reasons about them jointly"
+    ],
+    "explanations": [
+      "Sending these sequentially forces Claude to re-discover the joint constraints each turn; fixes can oscillate as one fix re-breaks the diagnosis of the other.",
+      "Ignoring one half of an interacting pair leaves the system inconsistent; the metric and policy need to be reconciled together.",
+      "Fresh sessions discard the very context (the relationship between the two bugs) that makes the joint fix correct.",
+      "Interacting issues — fixing one changes how the other should be fixed — go in a single detailed message so Claude reasons about them jointly and produces a coherent fix."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "pre",
+    "qid": "61464dbd-88d8-4dba-a005-19e9f293325a"
+  },
+  {
+    "question": "A migration script crashes on rows where 'country' is null. The developer wants the row to pass through with region set to 'unknown'. Which fix instruction is most effective?",
+    "options": [
+      "'Handle nulls properly in the migration script'",
+      "Provide a specific test case: input row with country=null, expected output row with region='unknown', plus an explicit 'do not raise' note",
+      "Tell Claude to write defensive code and trust its judgement",
+      "Add 'be careful with edge cases' to the system prompt"
+    ],
+    "explanations": [
+      "'Properly' is interpretable; the buggy implementation already thought it was handling nulls properly. The narrative restates the bug rather than fixing it.",
+      "A specific test case with exact input, exact expected output, and an explicit note on what not to do (don't raise, don't skip) makes the contract unambiguous.",
+      "'Defensive code' is just as interpretable as 'properly' — it doesn't pin the desired output for the null-country row.",
+      "Generic system-prompt nudges don't tell Claude what the expected behaviour is for the specific case that's failing."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "pre",
+    "qid": "6eefadea-cb7f-4ee0-a192-4ce4b88b6316"
+  },
+  {
+    "question": "Why are concrete input/output examples typically more effective than prose descriptions for transformation tasks?",
+    "options": [
+      "They use fewer tokens than prose, so Claude has more budget for reasoning",
+      "They bypass the model's instruction-following entirely",
+      "They pin the contract on specific cases where prose interpretation is ambiguous, so Claude pattern-matches the rule instead of inferring it",
+      "They guarantee deterministic output"
+    ],
+    "explanations": [
+      "Token efficiency is incidental; well-chosen examples are valuable even when they're longer than the prose they replace.",
+      "Examples don't bypass instruction-following — they ARE the instructions, in their highest-signal form.",
+      "The mechanism is contract-pinning: examples cover boundary cases prose leaves ambiguous (acronyms, mixed-case names, edge formats). Claude generalises the demonstrated rule.",
+      "Determinism is a property of the model and sampling, not of the prompt format; examples improve consistency, not determinism."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "pre",
+    "qid": "0547b0ce-a7b1-455f-a97d-b6e8f33c40c8"
+  },
+  {
+    "question": "What should be in a test suite *before* you ask Claude to implement?",
+    "options": [
+      "Only happy-path tests, since edge cases will reveal themselves later",
+      "No tests; let Claude write the tests after the implementation",
+      "Only integration tests against production data",
+      "Happy path, edge cases, and where relevant performance bounds — anything that defines 'done'"
+    ],
+    "explanations": [
+      "Edge cases revealed later cost extra iterations; capturing them upfront is what makes the test suite a complete contract.",
+      "Claude writing tests after implementation tends to codify the implementation's bugs — the tests pass not because the code is right but because they were derived from it.",
+      "Production-data-only tests don't capture the spec; they capture whatever production happens to contain today.",
+      "The TDD-iteration pattern relies on the test suite being the contract: happy path, edge cases, and performance bounds where they matter. Anything that defines 'done' belongs in."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "pre",
+    "qid": "75e99232-709b-461e-8a94-8be286f332c0"
+  },
+  {
+    "question": "A team has rewritten the same prompt three times in escalating prose detail and the output still drifts on the same edge cases. What's the higher-leverage next move?",
+    "options": [
+      "Stop adding prose; switch to concrete I/O examples (or write a failing test and share its output)",
+      "Add a fourth, longer prose specification with more caveats",
+      "Switch to a different model and resend the same prose",
+      "Reduce temperature to zero and resend the prose"
+    ],
+    "explanations": [
+      "The pattern says concrete examples or failing tests are higher-signal than prose. After repeated prose attempts fail, switching format is the leverage point.",
+      "More prose creates more places for interpretation to drift. After three rounds with no convergence, the format is the problem, not the length.",
+      "Different models still face the same prose-ambiguity problem on the same edge cases.",
+      "Temperature affects sampling variability, not interpretation of an ambiguous specification."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "pre",
+    "qid": "5570afa3-a09a-4519-a7e0-ec7b327284c7"
+  },
+  {
+    "question": "Which best describes the interview pattern in Claude Code?",
+    "options": [
+      "Claude interviews the end user about UX preferences before generating UI code",
+      "An interactive REPL where Claude is permitted to run arbitrary tools without confirmation",
+      "The developer explicitly asks Claude to ask clarifying questions before implementing, so hidden constraints surface up front",
+      "A code-review style turn where Claude critiques the developer's PR"
+    ],
+    "explanations": [
+      "End-user UX interviewing isn't the pattern; this is about the developer-Claude exchange before implementation.",
+      "Auto-approving tools is a permissions concept and unrelated to the iterative-refinement interview pattern.",
+      "The pattern is: 'Before you implement, ask me any questions you have about <X, Y, Z>.' Claude surfaces design considerations the developer may not have anticipated.",
+      "Code review is post-implementation; the interview pattern is pre-implementation."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "pre",
+    "qid": "61dcb242-18b2-407f-82e8-260214618013"
+  },
+  {
+    "question": "A developer asks Claude to 'normalise these timestamps to ISO 8601' and gets back a mix of formats: some with milliseconds, some without; some with timezone offsets, some with 'Z'. Which fix has the most leverage?",
+    "options": [
+      "Provide 2-3 input/output examples that pin the desired millisecond and timezone conventions explicitly",
+      "Add 'be more consistent' to the prompt",
+      "Tell Claude to think harder before answering",
+      "Switch to using JSON schema validation as the only fix"
+    ],
+    "explanations": [
+      "Concrete I/O examples pin the convention: e.g. '2026-04-15T09:30:00.000Z -> 2026-04-15T09:30:00Z' (drop ms) or vice versa. The boundary is unambiguous.",
+      "'Be more consistent' doesn't tell Claude WHICH convention is desired; it just labels the output as wrong.",
+      "Reasoning effort doesn't help when the desired output isn't specified — Claude has nothing to reason towards.",
+      "JSON schema validation flags wrong output AFTER it's produced; it doesn't tell Claude what the right shape is."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "c96fc931-cbc2-44c1-ade5-373ab832ff8c"
+  },
+  {
+    "question": "What is the canonical test-driven iteration loop with Claude Code?",
+    "options": [
+      "Implement first, then write tests, then describe failures in prose",
+      "Run the implementation in production, observe defects, file tickets",
+      "Write tests covering happy/edge/perf cases first, ask Claude to implement, run tests, share failures verbatim, repeat",
+      "Skip tests entirely; verify by reading the diff"
+    ],
+    "explanations": [
+      "Implementation-first means the tests get derived from the (possibly buggy) implementation rather than driving it. Prose-described failures lose signal.",
+      "Production verification is far too late and expensive as an iteration loop.",
+      "Tests-first defines the contract; pasting failures verbatim feeds the highest-signal artifact back to Claude each turn.",
+      "Eyeballing the diff misses behavioural bugs that tests catch automatically."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "82fde6fc-ee2e-42db-a858-0cb7f81aed86"
+  },
+  {
+    "question": "An agent is asked to fix a typo in the README, refactor a date-parsing helper, and update an unrelated YAML config. None of the changes touch the same files. How should they be sent?",
+    "options": [
+      "All three in one message to minimise round-trips",
+      "Sequentially, one fix per message, since the issues are independent",
+      "Only the most important one; ignore the others",
+      "Bundle the README and YAML, then send the helper separately"
+    ],
+    "explanations": [
+      "One mega-message produces a long diff that is harder to review and makes selective rollback painful, with no compensating benefit since the fixes don't interact.",
+      "Independent fixes go sequentially: each turn is fast, each diff is small and reviewable, and any fix can be discarded without affecting the others.",
+      "Skipping fixes isn't an iterative-refinement strategy; it's just dropping work.",
+      "Bundling unrelated fixes that don't interact creates the same review/rollback problems as bundling all three."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "309520da-9989-4368-a04f-fd73555d3992"
+  },
+  {
+    "question": "When iterating on a transformation function, which artifact carries the most signal back to Claude after a failure?",
+    "options": [
+      "The original prose specification, restated more emphatically",
+      "A general statement that 'something is still wrong'",
+      "A new system prompt asking Claude to 'be more careful'",
+      "The failing assertion with its specific input, expected output, and actual output"
+    ],
+    "explanations": [
+      "Restating the spec doesn't tell Claude which case failed or what the expected vs actual values were.",
+      "Vague feedback gives Claude no information about which case to fix or what to fix it to.",
+      "Generic carefulness directives don't carry information about the specific failing case.",
+      "A failing assertion is the most compressed, highest-signal description of the bug: exact input, exact expected, exact actual."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "39627851-8bb6-4dea-886a-780c1ac6849b"
+  },
+  {
+    "question": "Which scenario most clearly calls for the interview pattern before implementation?",
+    "options": [
+      "Designing a retry policy with backoff and idempotency in a domain the developer is unfamiliar with",
+      "Renaming a local variable across three files",
+      "Updating a copyright year in a header comment",
+      "Adding a single missing import statement"
+    ],
+    "explanations": [
+      "Retry/idempotency design hides constraints (what counts as a duplicate, how long the dedup window is, what happens on partial failure) — exactly what the interview pattern is meant to surface.",
+      "A mechanical rename has no hidden constraints to surface; the interview is just overhead.",
+      "Year updates have no design surface to interview about.",
+      "An import fix has no semantic surface to surface constraints from."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "526bc3dd-906e-421b-9d6d-4b6ca9e83086"
+  },
+  {
+    "question": "Why is providing a specific test case (input + expected output) typically better than describing an edge case in narrative prose?",
+    "options": [
+      "Test cases use less Claude reasoning effort",
+      "Narrative prose is interpretable; the implementation that produced the bug already thought it was handling the case correctly",
+      "Narrative prose violates Claude's instruction-following constraints",
+      "Test cases are the only format the model accepts for edge cases"
+    ],
+    "explanations": [
+      "Reasoning effort isn't the variable; the issue is what the prompt actually communicates.",
+      "Narrative descriptions like 'handle nulls properly' are exactly what the buggy implementation thought it was doing. A concrete input/expected pair removes interpretation.",
+      "There's no instruction-following constraint at play; both formats are valid prompts.",
+      "Claude accepts both formats; the question is which one converges faster."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "2ab42949-a4d3-4194-986d-ac5e7f9eb8d6"
+  },
+  {
+    "question": "After two prose iterations on the same edge case, the output is still drifting. Which intervention is most consistent with the iterative-refinement playbook?",
+    "options": [
+      "Continue with longer prose explanations until convergence",
+      "Restart the conversation from scratch with the same prose",
+      "Switch to a concrete I/O example for the failing case, or write a failing test and paste its output",
+      "Lower temperature to 0 and resend"
+    ],
+    "explanations": [
+      "Longer prose adds more interpretation surface, not less; the format is the problem.",
+      "Restarting the conversation discards context but preserves the format that wasn't working.",
+      "The playbook says: when prose stops converging, switch to examples or failing-test output — both pin the contract on a specific case.",
+      "Temperature controls sampling variance, not specification ambiguity."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "1ebf1519-8e07-432a-9a61-a2b03315878b"
+  },
+  {
+    "question": "Which of the following best describes the rule for batching fixes in iterative refinement?",
+    "options": [
+      "Always batch everything to save round-trips",
+      "Always send fixes sequentially to keep diffs small",
+      "Batch interacting fixes into a single message; send independent fixes sequentially",
+      "Batch by file: one message per file regardless of interaction"
+    ],
+    "explanations": [
+      "Always-batching produces unreviewable mega-diffs and masks regressions when fixes are independent.",
+      "Always-sequential forces Claude to re-discover joint constraints when fixes interact, producing oscillation.",
+      "The rule is interaction-driven: 'Does fixing A change how I'd fix B?' Yes -> single message; No -> sequential.",
+      "Per-file batching ignores whether the fixes interact, which is the actual decision criterion."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "5bc08c83-ff1a-4302-86f3-0a7e46c5a558"
+  },
+  {
+    "question": "A developer wants Claude to refactor a formatter. The first prompt is 'rewrite formatInvoice to handle currencies and locales properly'. The output drifts. Which is the most effective single change to the next prompt?",
+    "options": [
+      "Add 'do a better job this time'",
+      "Demand the rewrite happen in a single edit",
+      "Ask for a longer prose description from Claude before the rewrite",
+      "Provide 2-3 concrete (amount, locale) -> formatted-string examples"
+    ],
+    "explanations": [
+      "Effort directives don't help when the desired output isn't specified.",
+      "Single-edit constraints have nothing to do with the ambiguity problem.",
+      "More prose from Claude doesn't pin the contract — only example outputs do.",
+      "Concrete examples like (1000.5, 'en-US') -> '$1,000.50' pin the locale conventions that prose like 'handle locales properly' leaves ambiguous."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "ae945f25-c0c0-4c99-8d37-08ffd67d5038"
+  },
+  {
+    "question": "When does the interview pattern add overhead rather than value?",
+    "options": [
+      "When the requirements are ambiguous and the domain is unfamiliar",
+      "When the task is tightly scoped and well-specified, like renaming a variable across three known files",
+      "When designing a retry policy in a distributed system",
+      "When migrating a schema with subtle edge cases"
+    ],
+    "explanations": [
+      "Ambiguous + unfamiliar is exactly when the interview pays off most.",
+      "Well-specified, tightly-scoped tasks have no hidden design surface; the interview's questions become noise rather than insight.",
+      "Retry policies are full of subtle constraints (idempotency, dedup window, partial failure) — interview pays off.",
+      "Schema migration edge cases are precisely the kind of hidden constraint the interview surfaces."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "35becd5e-70b9-4805-be48-6d8bd5f21267"
+  },
+  {
+    "question": "A test for a CSV parser fails with: 'expected [\"a\", \"b,c\", \"d\"] but got [\"a\", \"b\", \"c\", \"d\"]' for input 'a,\"b,c\",d'. What's the best way to share this failure with Claude?",
+    "options": [
+      "Paste the assertion verbatim, including the input, expected, and actual output",
+      "Say 'the parser is still wrong on quoted fields' and let Claude figure it out",
+      "Paste only the input string and expect Claude to deduce the rest",
+      "Open a new session and re-explain the requirement from scratch"
+    ],
+    "explanations": [
+      "Pasting the assertion gives Claude the input that triggered the bug, the expected output, and the actual output — every piece of information needed to fix the specific case.",
+      "Vague 'still wrong' messages strip away exactly the information (expected vs actual) that drives a targeted fix.",
+      "Without the expected output, Claude would have to re-derive the spec for quoted fields.",
+      "Restarting throws away the diagnostic context the failing test produced."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "994f1877-e1c5-4da3-b415-fe93158037ff"
+  },
+  {
+    "question": "Two issues in the same job runner: 'tasks are retried too many times' and 'the success rate metric is over-counting because retried tasks are double-counted'. They both touch the retry-completion path. Single message or sequential?",
+    "options": [
+      "Sequential — start with the metric so the diagnosis is reliable",
+      "Sequential — fix retries first and the metric will fix itself",
+      "Open a new session for the metric to keep contexts clean",
+      "Single detailed message — the fixes interact (changing retry behaviour changes what the metric counts)"
+    ],
+    "explanations": [
+      "Even in sequence, the two fixes share state on the retry-completion path; sequential iteration causes Claude to re-derive the joint constraints each turn.",
+      "Retry behaviour changes won't automatically fix the over-counting logic in the metric path.",
+      "Fresh sessions discard the very joint context that makes a coherent fix possible.",
+      "Interacting issues — fixing retries changes how the metric should be computed — go together so Claude reasons jointly. Classic 'does fixing A change how I'd fix B?' = yes case."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "f4a94077-d9d9-447c-8bec-f294ea370f9f"
+  },
+  {
+    "question": "A developer's edge-case fix message says: 'Make sure the parser handles malformed dates more gracefully.' What's the most effective revision of that message?",
+    "options": [
+      "Add 'please' and 'thank you' for politeness",
+      "Increase max_tokens so Claude can write more code",
+      "Provide a specific test case: an example malformed-date input, the exact expected output, and explicit notes on whether to raise, return null, or fall back to a default",
+      "Tell Claude to consult external documentation"
+    ],
+    "explanations": [
+      "Tone doesn't address the ambiguity of 'gracefully'.",
+      "Token budget has no bearing on which behaviour is correct.",
+      "A concrete test case removes interpretation: the exact malformed input, the exact expected output, and the explicit policy on errors. 'Gracefully' means many things; the test case means one.",
+      "External documentation may have multiple conventions; the developer needs to specify which one applies."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "2e5537fc-1847-422f-b567-378144a256e5"
+  },
+  {
+    "question": "Which of these is most consistent with the iterative-refinement playbook?",
+    "options": [
+      "Treat the first prompt as final; if the output is wrong, escalate to a different model",
+      "Iterate by sharing concrete artifacts: I/O examples, failing tests, and joint-fix messages for interacting issues",
+      "Always use plan mode regardless of task complexity",
+      "Always batch fixes across an entire sprint into one mega-message"
+    ],
+    "explanations": [
+      "Escalating to a different model leaves the prompt-format problem unfixed.",
+      "The playbook centres on high-signal artifacts (examples, failures) and on grouping fixes by whether they interact.",
+      "Plan mode is one tool among many; mandating it ignores when direct execution is appropriate.",
+      "Sprint-level batching produces unreviewable mega-diffs and masks regressions."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "df471317-d9e7-45df-87f8-6d79328f1f4f"
+  },
+  {
+    "question": "What's the deciding question when choosing between a single message and sequential messages for multiple fixes?",
+    "options": [
+      "How many lines of code are involved?",
+      "Does fixing A change how I'd fix B? Yes -> single message; No -> sequential",
+      "Is the file size above 1000 lines?",
+      "Does the developer have time to review one large diff or many small ones?"
+    ],
+    "explanations": [
+      "Line count is incidental; small interacting fixes still belong together, and large independent fixes still belong apart.",
+      "Interaction is the criterion: if the fixes constrain each other, joint reasoning beats sequential; if not, sequential keeps diffs small and reviewable.",
+      "File size doesn't determine whether fixes interact.",
+      "Reviewer preference is downstream of the decision; the criterion is whether fixes interact, which determines what Claude needs in context."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "114f87e7-84bc-4581-a63b-18ea2ecd0c14"
+  },
+  {
+    "question": "A team is debating whether to write tests before or after Claude implements a function. Which approach is most consistent with iterative refinement?",
+    "options": [
+      "Tests after, derived from the implementation, since they'll match the code more closely",
+      "No tests; rely on code review to catch bugs",
+      "Tests during, written interactively as Claude implements each line",
+      "Tests before — they define the contract, drive implementation, and become the canonical artifact for sharing failures"
+    ],
+    "explanations": [
+      "Tests-after often codify the implementation's bugs because they're derived from the code rather than the spec.",
+      "Code review is downstream of behavioural verification and misses cases reviewers don't think to check.",
+      "Interactive line-by-line test writing usually devolves into testing what was just coded, not what was intended.",
+      "Tests-first defines done, lets Claude work toward a concrete contract, and produces failure outputs that drive the iteration loop."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "0a2b0def-7364-4e4b-bd5a-fd19b50dd0a4"
+  },
+  {
+    "question": "Which of these is the most accurate framing of why I/O examples beat prose for transformations?",
+    "options": [
+      "Examples are a sampling-temperature trick that lowers variance",
+      "Examples make Claude run a simulator that prose doesn't trigger",
+      "Examples pin the contract on the exact boundary cases where prose interpretation drifts; Claude pattern-matches the rule rather than inferring it from possibly-ambiguous prose",
+      "Examples bypass the model's safety filters"
+    ],
+    "explanations": [
+      "Sampling temperature is unrelated to whether the prompt format is examples or prose.",
+      "There's no separate 'simulator' triggered by examples vs prose.",
+      "The mechanism is contract-pinning on boundary cases. Prose has interpretive surface; examples remove it for the cases shown.",
+      "Safety filters are unaffected by example-vs-prose format and are not the relevant mechanism."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "cef64749-230e-48e5-81b4-b119d2344a64"
+  },
+  {
+    "question": "After running tests, a developer messages Claude: 'Still failing.' What's wrong with this message?",
+    "options": [
+      "It's too short to be polite",
+      "It strips the highest-signal artifact (the failure output: input, expected, actual) and forces Claude to guess which case is broken",
+      "It uses the wrong tense",
+      "It triggers safety filters"
+    ],
+    "explanations": [
+      "Politeness isn't the issue; information density is.",
+      "The whole point of TDD-iteration is to feed Claude the failure output, which contains the exact input, expected, and actual values. 'Still failing' carries none of that.",
+      "Tense isn't the issue.",
+      "Safety filters aren't triggered by terse status messages."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "63c0bf6c-258b-4757-8631-fc12835e55ed"
+  },
+  {
+    "question": "An engineer asks Claude to implement a rate limiter and isn't sure what 'rate' should mean (per-user? per-IP? per-endpoint?). Which technique most directly reduces the chance of building the wrong thing?",
+    "options": [
+      "Use the interview pattern: ask Claude to ask clarifying questions about scope, identity, and time windows before implementing",
+      "Have Claude implement all three variants in parallel",
+      "Pick one variant arbitrarily and refactor later",
+      "Skip discussion and ship whatever Claude produces"
+    ],
+    "explanations": [
+      "The interview pattern explicitly surfaces hidden design questions (per-what? sliding vs fixed window? burst behaviour?) before any code is written. That's the highest-leverage move when scope is ambiguous.",
+      "Implementing three variants in parallel multiplies the work without surfacing which one is correct.",
+      "Arbitrary picks create rework when the wrong choice is locked in.",
+      "Shipping unverified output skips the iteration loop entirely."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "9e931a1f-b4f6-4f78-a5b6-b03548416ba4"
+  },
+  {
+    "question": "A developer asks Claude Code: 'Refactor parseInvoice to be more robust.' The output drifts on every iteration — sometimes adding null checks, sometimes adding try/catch, sometimes adding logging. Which is the MOST diagnostic explanation of why the iteration is failing?",
+    "options": [
+      "Claude is sampling too aggressively; lower temperature",
+      "The model is forgetting prior context; summarise the conversation",
+      "'Robust' is interpretable: each iteration codifies a different implicit contract, so without I/O examples or failing tests pinning the actual desired behaviour, every iteration is consistent with 'robust' and drift is expected",
+      "The function name is too long; rename it first"
+    ],
+    "explanations": [
+      "Temperature affects sampling variance, but the deeper issue is that the spec itself is unspecified — even at temperature zero Claude has to pick an interpretation of 'robust'.",
+      "Context loss isn't the issue; the prompt has been ambiguous from turn one.",
+      "'Robust' has no contract. Each iteration interprets it differently, and ALL the interpretations are valid readings of the prose. The fix is to switch format: provide failing-test output or I/O examples that pin the actual behaviour wanted.",
+      "Function name length doesn't determine model output."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "abf26067-2679-4fc5-a744-ee361bc3dfa7"
+  },
+  {
+    "question": "Two bugs in the same date library: (a) timezone offsets get dropped during parsing, (b) the formatter sometimes prints offsets and sometimes prints 'Z'. The formatter consumes the parser's output. The developer batches them. Which framing is correct?",
+    "options": [
+      "Sequential is correct because they're in the same file, so Claude can find both",
+      "Single message is correct because the fixes interact: if parser drops offsets, the formatter has no offset to print, so the formatter fix depends on the parser fix being correct first",
+      "Sequential is correct because the parser fix happens first by definition",
+      "Either approach is fine; batching has no effect on quality"
+    ],
+    "explanations": [
+      "Same-file isn't the criterion; interaction is. Two unrelated bugs in the same file are still independent.",
+      "The formatter consumes the parser's output, so the correct formatter behaviour depends on whether the parser preserves offsets. That's interaction, and joint reasoning produces a coherent fix.",
+      "'Parser first' is reasonable in implementation order, but the fix design must consider both jointly — otherwise the formatter spec is written against the wrong contract.",
+      "Batching choice DOES affect quality — Claude either reasons jointly or has to re-derive constraints each turn."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "e20219c7-9662-47bd-928b-8208356fed3d"
+  },
+  {
+    "question": "A developer pastes a 6-line prose spec for a transformation, then 2 input/output examples, then a third paragraph qualifying the prose. The output drifts on a case the prose covers but the examples don't. What's the most plausible diagnosis?",
+    "options": [
+      "Claude can't read the third paragraph because it's too far from the start",
+      "Claude prioritises prose over examples by default",
+      "The examples pin the contract for the cases they cover; for cases not covered by examples, Claude falls back to interpreting the prose, which on this case is ambiguous. The fix is to add a third example covering the failing case, not to lengthen the prose",
+      "The output is actually correct; the developer is misreading it"
+    ],
+    "explanations": [
+      "Position-based reading isn't the mechanism; Claude reads the whole prompt.",
+      "There's no fixed prose-over-example precedence rule; both are inputs.",
+      "Examples cover what they cover; cases outside the examples fall back to prose interpretation. The leverage point is to add an example for the failing case rather than rewording the prose.",
+      "Dismissing the developer's diagnosis without evidence isn't useful."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "7ecb3cb2-a885-482e-a173-175fa51fdeee"
+  },
+  {
+    "question": "A developer running test-driven iteration says: 'I'll just describe the failure in my own words; it's faster than pasting the test output.' Which is the most accurate critique?",
+    "options": [
+      "Pasting test output is too verbose and exceeds the context window",
+      "Self-described failures violate Claude's safety policies",
+      "The two approaches are equivalent in practice",
+      "Self-described failures lose two things: the exact input that triggered the bug, and the precise expected vs actual values. Without those, Claude can only guess which case to fix and what 'right' means for it — undoing the main advantage of TDD-iteration"
+    ],
+    "explanations": [
+      "Test output is rarely large enough to threaten the context window in normal iteration; this is a strawman.",
+      "There's no policy against self-described failures.",
+      "They're not equivalent; one carries strictly more information than the other.",
+      "The whole point of sharing failures is to feed Claude the highest-signal artifact: input, expected, actual. Self-description loses all three to varying degrees, and Claude has to re-derive the spec."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "a8122359-0a93-4149-a26a-508dc070324f"
+  },
+  {
+    "question": "An engineer wants to use the interview pattern but asks 'do you have any questions?' as the entire prompt. The interview yields nothing useful. What's the most likely cause?",
+    "options": [
+      "Claude is broken and needs a model upgrade",
+      "The interview was unscoped — without naming the design surface (cache invalidation, failure modes, ordering, etc.), Claude has nothing concrete to surface questions about. The pattern works best when the developer names the dimensions to interview on",
+      "The interview pattern doesn't actually work",
+      "Temperature was too high"
+    ],
+    "explanations": [
+      "Model capability isn't the issue; the prompt is.",
+      "An unscoped 'any questions?' produces generic answers. The pattern is most effective when the developer names the dimensions ('ask me about cache invalidation, failure modes, edge cases') so Claude has a concrete surface to probe.",
+      "The pattern works; it just needs scope.",
+      "Temperature doesn't change whether the prompt names the design surface."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "97960a59-02ab-423d-89ef-ad81af2dcc7b"
+  },
+  {
+    "question": "A developer fixes a parser bug by adding an I/O example, then fixes a separate config bug in the next message. A third bug emerges later that turns out to interact with the parser fix. What's the right next move?",
+    "options": [
+      "Send the third bug as another sequential message, since that pattern worked before",
+      "Roll back the parser fix and start over",
+      "Send only the third bug in isolation; previous fixes don't matter",
+      "Combine the third bug with a re-statement of the parser fix in a single detailed message, because the third bug interacts with the parser fix and joint reasoning is needed"
+    ],
+    "explanations": [
+      "The fact that sequential worked for an unrelated config bug doesn't mean it's right here — the new bug interacts with the parser fix, which is the criterion that matters.",
+      "Rolling back loses progress; the parser fix may be correct in its own terms.",
+      "'Previous fixes don't matter' is wrong precisely because the new bug interacts with one of them.",
+      "Interaction with the parser fix means Claude needs the parser-fix context to reason jointly. A single detailed message restating the relevant parser-fix details and the new bug produces a coherent fix."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "2e8c75cf-ca14-4291-a65b-d8b1bd7e65a1"
+  },
+  {
+    "question": "Which pair best captures why both 'concrete I/O examples beat prose' AND 'share test failures, not re-stated prose' are true?",
+    "options": [
+      "Both rely on the same underlying principle: pin the contract on a specific, mechanical artifact rather than restating ambiguous natural language",
+      "Both are about token efficiency",
+      "Both are about politeness in prompts",
+      "They are unrelated principles that happen to appear in the same checklist"
+    ],
+    "explanations": [
+      "The unifying principle is mechanical contract-pinning. I/O examples pin the contract before implementation; failing tests pin it after. In both cases the artifact is concrete, specific, and unambiguous compared to prose.",
+      "Token efficiency is incidental and sometimes goes the wrong way (a failing test can be longer than 'still wrong').",
+      "Politeness is irrelevant.",
+      "They share a single mechanism — pinning interpretation on a mechanical artifact — and the playbook treats them as two faces of the same idea."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "5a9302a4-3304-4825-b00a-fa7e015cd8b4"
+  },
+  {
+    "question": "A developer applies the interview pattern, then implements based on Claude's questions and the developer's answers. After implementation, an edge case still fails. What does iterative refinement say to do next?",
+    "options": [
+      "Conclude that the interview pattern was wasted and skip it next time",
+      "Continue with the rest of the playbook: capture the edge case as a specific test (input + expected output), share its failure verbatim, and let Claude fix the specific case",
+      "Re-run the entire interview from scratch",
+      "Switch to a different language"
+    ],
+    "explanations": [
+      "The interview reduces but doesn't eliminate edge cases — it surfaces design questions, not every test case. Discarding it because some edge case slipped through misreads what it does.",
+      "The techniques compose: interview surfaces design constraints; tests + failures pin behavioural ones; I/O examples pin transformations. When one gap remains, fall through to the next layer of the playbook.",
+      "Re-running the entire interview is overkill for a single missed edge case.",
+      "Language has nothing to do with the iteration playbook."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "31078d3e-d80b-4da4-8ffc-e4d0c3cbc489"
+  },
+  {
+    "question": "Of the following, which is the LEAST consistent with the iterative-refinement techniques in the playbook?",
+    "options": [
+      "Switching from prose to I/O examples after two prose iterations stop converging",
+      "Pasting a failing test's expected/actual values verbatim into the next message",
+      "Bundling a typo fix, an unrelated config change, and a doc update into one mega-message because they all happened to come up at once",
+      "Asking Claude to ask clarifying questions before implementing a distributed retry policy"
+    ],
+    "explanations": [
+      "Switching format when prose stops converging is a core move in the playbook.",
+      "Sharing failure output verbatim is the canonical way to drive TDD-iteration.",
+      "Bundling unrelated, non-interacting fixes is exactly the anti-pattern the playbook warns against — large diff, harder review, harder rollback, no compensating benefit.",
+      "Using the interview pattern in an unfamiliar, ambiguous domain is canonical."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "4c87f2a5-3023-4e09-8f45-fbc4ffec3972"
+  },
+  {
+    "question": "A developer says: 'I always send all fixes in a single batch — it's faster.' Under the iterative-refinement playbook, what's the precise problem with that policy?",
+    "options": [
+      "It conflates two cases that should be treated differently: interacting fixes do belong in one message (joint reasoning); independent fixes do not (long diff, hard review, masked regressions). The criterion is interaction, not speed",
+      "Single-batch is always wrong; sequential is the only safe approach",
+      "It violates Claude's tool-use schema",
+      "It uses too many tokens to be cost-effective"
+    ],
+    "explanations": [
+      "The error in the policy is ignoring the interaction criterion. The right rule batches interacting fixes (joint reasoning needed) and serialises independent ones (cleaner diffs and rollbacks). Speed isn't the relevant axis.",
+      "Single-batch is right for interacting fixes; the playbook isn't 'always sequential'.",
+      "There's no schema violation involved.",
+      "Token cost isn't the dominant variable; review and rollback ergonomics are."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "0993c001-5473-45e7-b301-c47399acf4e9"
+  },
+  {
+    "question": "A developer pastes 5 I/O examples but Claude's output is still wrong on a 6th case. Choose the BEST next move.",
+    "options": [
+      "Conclude that I/O examples don't work and revert to prose",
+      "Ask Claude to invent more examples on its own",
+      "Lower temperature to 0 and resend the existing 5 examples",
+      "Add the 6th case as another I/O example (or a failing test for it) — examples pin the contract on the cases they show, so extending the example set is the direct way to extend the contract"
+    ],
+    "explanations": [
+      "Reverting to prose loses the contract-pinning that the existing examples provide. The fix is to extend, not abandon.",
+      "Self-generated examples can codify Claude's current (buggy) interpretation rather than the developer's intent.",
+      "Temperature affects sampling variance, not which cases the examples cover.",
+      "Examples cover what they cover; extending the set with the missing case is the direct, low-effort fix. A failing test for the case works equally well."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.5"
+    ],
+    "phase": "post",
+    "qid": "0d7958db-78db-42f4-abc3-cb3fc4eb33ec"
+  }
+]

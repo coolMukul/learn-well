@@ -1,0 +1,882 @@
+[
+  {
+    "question": "Which property of plan mode is the most accurate one-line description?",
+    "options": [
+      "It stages a diff that you can preview and apply once approved.",
+      "It is a read-only investigation phase where Claude can Read, Grep, and Glob but cannot Write or Edit.",
+      "It runs every Claude turn through an additional safety classifier before execution.",
+      "It forces every tool call to go through a subagent so the main session stays clean."
+    ],
+    "explanations": [
+      "Plan mode does not queue a patch; the plan is text, not staged edits.",
+      "Plan mode disables write tools so exploration cannot mutate files; that is its defining property.",
+      "There is no extra classifier — the mechanism is simply removing write tools from the allowed set.",
+      "Plan mode and the Explore subagent are separate features; plan mode does not route through subagents."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "pre",
+    "qid": "5df3c6b5-1987-41bd-a86f-80ad3cbd51d4"
+  },
+  {
+    "question": "An engineer needs to add a single null-check to one helper function after a clear stack trace pinpoints the bug. Which mode best fits the task?",
+    "options": [
+      "Plan mode, to be safe before any change is made.",
+      "The Explore subagent, so the helper file is read in isolation.",
+      "Plan mode followed by another plan-mode pass, then direct execution.",
+      "Direct execution, because the change is well-scoped and the failure cost is low."
+    ],
+    "explanations": [
+      "Plan mode burns turns on a change that has no design space to explore.",
+      "Explore is for verbose discovery, not for trivial single-file fixes.",
+      "Doubling up plan mode adds cost without any benefit on a one-line change.",
+      "Single-function bug fix with a clear stack trace is the textbook direct-execution case."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "pre",
+    "qid": "564dd978-81b0-472d-a882-861867218d37"
+  },
+  {
+    "question": "A team is restructuring a monolith into microservices. Which workflow does the official guidance recommend?",
+    "options": [
+      "Direct execution from the start; let the natural service boundaries emerge from incremental edits.",
+      "Direct execution with comprehensive upfront instructions describing every service.",
+      "Plan mode first to explore dependencies and design the approach, then exit to direct execution.",
+      "Direct execution, switching to plan mode only if unexpected complexity surfaces."
+    ],
+    "explanations": [
+      "Letting boundaries emerge risks a half-applied refactor when a downstream consumer forces the boundary to move.",
+      "This assumes you already know the right structure — but choosing it is exactly what is in question.",
+      "Plan mode is designed for large-scale, multi-approach, architectural decisions; plan-then-execute is the canonical pattern.",
+      "The complexity is already stated in the requirements; reactive switching ignores known scope."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "pre",
+    "qid": "9a6aeedb-ecdb-41a3-9a80-4b8226e44144"
+  },
+  {
+    "question": "What problem does the Explore subagent primarily solve?",
+    "options": [
+      "It enforces tool-permission rules that the main session cannot apply on its own.",
+      "It runs faster than the main session because it skips the system prompt.",
+      "It isolates verbose discovery output in its own context, returning a summary so the main session is not flooded.",
+      "It exposes a privileged Write tool the main session cannot use."
+    ],
+    "explanations": [
+      "Permissions are a harness-level concern, not specific to Explore.",
+      "Speed is not the design goal; context preservation is.",
+      "Explore exists so verbose Reads / Greps live in a separate context window and the main session sees only the conclusion.",
+      "Explore does not grant write permissions; it is a context-isolation tool."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "pre",
+    "qid": "cc103d76-2aa3-4443-ab3a-83686fc54f5e"
+  },
+  {
+    "question": "Which task most clearly justifies plan mode rather than direct execution?",
+    "options": [
+      "Fixing a typo in a README link.",
+      "Renaming a local variable inside one function.",
+      "Migrating an HTTP client library across 45 call sites with breaking API changes.",
+      "Adding a missing import statement to one file."
+    ],
+    "explanations": [
+      "Typo fixes have no design space and are the textbook direct-execution case.",
+      "Single-function variable rename is well-scoped and low-failure-cost.",
+      "Library migration across 45 sites with breaking API differences is exactly the multi-file, multi-approach, high-rework-cost case plan mode targets.",
+      "Adding an import is a trivial direct-execution change."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "pre",
+    "qid": "afdb2dc5-3e3d-4cb5-96e7-b02fefdbcc39"
+  },
+  {
+    "question": "Inside plan mode, which set of tool calls is allowed?",
+    "options": [
+      "Read, Grep, Glob — but not Write or Edit.",
+      "Write and Edit — Read is restricted to avoid context bloat.",
+      "Bash only — other tools are gated until plan exit.",
+      "Every tool, but each call requires per-call user approval."
+    ],
+    "explanations": [
+      "Plan mode keeps read-only discovery available but disables mutation; that is the mode's defining contract.",
+      "Plan mode is the opposite — writes are disabled, reads are open.",
+      "Bash-only is fictional; plan mode is about read-only exploration via the standard read tools.",
+      "Per-call approval is a different mechanism; plan mode flatly removes write tools rather than gating each."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "pre",
+    "qid": "7439038d-f21b-4c2a-afea-e5e3932d07dc"
+  },
+  {
+    "question": "Which of these is the most exam-tested combined workflow?",
+    "options": [
+      "Direct execution for investigation, then plan mode for implementation.",
+      "Two parallel sessions, one in plan mode and one in direct execution, working on the same files.",
+      "Plan mode kept open through implementation so each edit is reviewed before applying.",
+      "Plan mode for investigation, exit to direct execution for implementation."
+    ],
+    "explanations": [
+      "This reverses the roles — plan mode cannot land writes, so it cannot be the implementation phase.",
+      "Parallel sessions on the same files cause conflict and are not the recommended pattern.",
+      "Plan mode is read-only; you cannot land writes from inside it, so it cannot be kept open during implementation.",
+      "Plan-then-execute is the canonical workflow: investigate read-only, then exit and implement."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "pre",
+    "qid": "822fa89e-45bd-47ea-bdc2-88d87a3a4c76"
+  },
+  {
+    "question": "When is the Explore subagent overkill?",
+    "options": [
+      "When the discovery requires reading 80+ files and walking a sprawling call graph.",
+      "When you want to enumerate the public surface of a barrel-heavy package.",
+      "When the question can be answered with two Greps and one targeted Read.",
+      "When a multi-file dependency map needs to be summarised before planning."
+    ],
+    "explanations": [
+      "That is exactly the case Explore was built for — verbose discovery threatening the main context.",
+      "Public-surface enumeration through many barrels is a canonical Explore use case.",
+      "If the inline path is two Greps and a Read, spinning up a subagent costs more than the work; doing it inline is correct.",
+      "Multi-file dependency maps are a valid Explore case; they tend to flood context."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "pre",
+    "qid": "e8ce2fde-0a69-4e37-8bfe-cc6e0dc160e4"
+  },
+  {
+    "question": "Which two factors should decide between plan mode and direct execution?",
+    "options": [
+      "Number of users on the team and the calendar deadline.",
+      "Scope of the change (files / design space) and failure cost (how expensive is rework).",
+      "Whether the project uses TypeScript and whether tests are present.",
+      "The model version in use and whether MCP servers are connected."
+    ],
+    "explanations": [
+      "Team size and deadlines are project-management concerns; they do not select between the two modes.",
+      "Scope and failure cost are the two drivers — wide scope with high rework cost favours plan mode; narrow scope with low cost favours direct.",
+      "Language and test presence do not change the mode-selection rule.",
+      "Model version and MCP availability are unrelated to plan-vs-direct."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "pre",
+    "qid": "9e31473c-653d-40c7-8a67-1c39a688de85"
+  },
+  {
+    "question": "A developer says: \"I always start in direct execution; if the task gets complicated, I switch to plan mode.\" The current task is described as \"restructure the application into microservices.\" What is the issue with this stance?",
+    "options": [
+      "Plan mode cannot be entered after direct execution has started, so the policy is technically impossible.",
+      "Direct execution does not allow Read or Grep, so investigation is impossible up front.",
+      "Plan mode requires a separate session, which is incompatible with a running direct-execution session.",
+      "The complexity is already stated in the requirements, so reactive switching ignores known scope and risks rework."
+    ],
+    "explanations": [
+      "You can enter plan mode at any point; the technical claim is wrong.",
+      "Direct execution allows the full read toolset; the claim is incorrect.",
+      "Plan mode is a mode, not a separate session; you toggle within the same conversation.",
+      "When the requirements already describe an architectural change, deferring planning is gambling on rework you could have avoided."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "pre",
+    "qid": "2f3b32b7-27b7-4f7b-b714-02573a4d2b5e"
+  },
+  {
+    "question": "Which scenario is the strongest candidate for direct execution rather than plan mode?",
+    "options": [
+      "Splitting a 4,000-line module into three smaller modules with reorganised imports.",
+      "Adding a single date-format validation conditional in one request handler after a clear stack trace.",
+      "Migrating a logging library across the codebase to a new vendor with different APIs.",
+      "Choosing between two viable approaches for introducing background job processing."
+    ],
+    "explanations": [
+      "Reorganising a large module touches many files and admits multiple shapes — plan mode territory.",
+      "One conditional in one handler with a clear stack trace is the textbook direct-execution case.",
+      "Cross-codebase library migration is multi-file with breaking changes — plan mode.",
+      "Choosing between viable approaches is exactly what plan mode is for."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "bf960c21-b0cf-4be4-8b7c-342a811e7d1c"
+  },
+  {
+    "question": "An engineer claims that plan mode is useful because \"it lets me preview the patch before applying it.\" What is the most accurate correction?",
+    "options": [
+      "Plan mode is read-only exploration; nothing is staged or queued, so there is no patch to apply.",
+      "Plan mode does stage a patch but you cannot edit the patch before applying.",
+      "Plan mode applies edits immediately; the preview happens after the fact.",
+      "Plan mode is the same as direct execution but slower, so the framing is right but the cost is misunderstood."
+    ],
+    "explanations": [
+      "The plan is design text. Exiting plan mode runs a fresh edit pass guided by the plan, not a queued diff.",
+      "There is no staged patch in plan mode at all; the engineer's mental model is wrong.",
+      "Plan mode does not apply edits; it disables write tools.",
+      "Plan mode is not 'slower direct execution'; the modes differ in capability, not just speed."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "a800290c-4c4e-4485-bdeb-8c575ebf9d94"
+  },
+  {
+    "question": "While debugging a bug report tied to one stack trace, an engineer enters plan mode \"out of habit.\" What is the most likely effect on the session?",
+    "options": [
+      "It strictly improves safety with no downsides.",
+      "It corrupts the conversation history because plan mode does not log tool calls.",
+      "It silently disables Read and Grep, blocking investigation entirely.",
+      "It wastes turns on a change with no design space, with no rework benefit to offset the cost."
+    ],
+    "explanations": [
+      "Habits are not strictly safer — they have a token cost and they delay implementation.",
+      "Plan mode logs the same tool calls; nothing is corrupted.",
+      "Plan mode keeps read tools available; it disables write tools.",
+      "On a stack-trace bug there is no architectural risk plan mode would prevent; the time cost has no payoff."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "a40caf61-7c7a-4458-8349-2a3ce7473273"
+  },
+  {
+    "question": "A coordinator delegates a verbose dependency-graph enumeration to the Explore subagent. What does the main session ultimately receive from that delegation?",
+    "options": [
+      "Every Read and Grep call from the subagent, replayed into the main message history.",
+      "A short summary of findings, with the verbose intermediate calls living in the subagent's own context.",
+      "An empty result, because the Explore subagent runs entirely off-record.",
+      "The raw assistant turn from the subagent including all tool_use blocks, for auditability."
+    ],
+    "explanations": [
+      "Replaying every intermediate call defeats the whole purpose of using a subagent for context isolation.",
+      "Explore exists so the noisy reading is absorbed by the subagent and the main session sees only the conclusion.",
+      "The subagent does return a result; it is just summarised, not empty.",
+      "Returning the raw turn would re-flood the main context — that is the opposite of the design goal."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "24411d32-5092-4c41-8799-dedca5b1952e"
+  },
+  {
+    "question": "Which of the following is a good reason NOT to delegate a discovery task to the Explore subagent?",
+    "options": [
+      "The discovery answer is two targeted Greps and one Read away.",
+      "The discovery would otherwise produce hundreds of lines of output across many files.",
+      "The main conversation is already near its context budget.",
+      "The discovery requires reading every barrel re-export across the package."
+    ],
+    "explanations": [
+      "If the inline path is cheap, spinning up a subagent costs more than the work; do it inline.",
+      "Voluminous output is exactly when delegation pays off.",
+      "Tight context budget is one of the strongest reasons TO delegate, not to skip it.",
+      "Barrel-export traces are a canonical Explore case."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "c89dea60-f6d4-4663-9be5-9fec9683e73d"
+  },
+  {
+    "question": "An engineer plans a library migration in plan mode, then exits and starts implementing. Three files in, they discover a circular import the plan didn't anticipate. What is the recommended response?",
+    "options": [
+      "Continue editing and patch the circular import opportunistically as it appears in each file.",
+      "Abandon the work; once the plan is invalidated, the whole migration must restart from scratch.",
+      "Re-enter plan mode for that sub-decision, refine the plan, exit, and continue executing.",
+      "Switch to the Explore subagent to make the remaining edits in isolation."
+    ],
+    "explanations": [
+      "Opportunistic patching is what plan-then-execute is supposed to prevent; ad-hoc fixes accumulate.",
+      "A late-discovered constraint does not require restarting from zero; it requires re-planning that piece.",
+      "Re-entering plan mode for a localized sub-decision keeps the workflow disciplined and avoids ad-hoc edits.",
+      "Explore does not perform write edits on behalf of the main session."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "e927b6ad-e8f9-46b5-8c00-af4342bd56d5"
+  },
+  {
+    "question": "Which of these tasks belongs squarely in plan mode based on the official knowledge points?",
+    "options": [
+      "Adding a missing semicolon flagged by a linter.",
+      "Refreshing a single hardcoded API endpoint string in a config file.",
+      "Choosing between two integration approaches that have different infrastructure requirements.",
+      "Renaming a constant inside one helper function."
+    ],
+    "explanations": [
+      "Linter-flagged semicolon is direct execution; trivial scope.",
+      "One string in one config file is direct execution.",
+      "Choosing between approaches with different infrastructure is the canonical 'multiple valid approaches' plan-mode case.",
+      "Renaming a single constant in one function is direct execution."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "811230f3-c0cc-4c07-9548-14ab99571903"
+  },
+  {
+    "question": "After a plan-mode investigation, when does the implementation phase actually run?",
+    "options": [
+      "Inside plan mode, since the plan is now approved.",
+      "In a forked session that branches off the plan-mode session automatically.",
+      "Inside the Explore subagent, which inherits the approved plan.",
+      "After exiting plan mode, in direct execution, guided by the plan."
+    ],
+    "explanations": [
+      "Plan mode disables write tools; it cannot run the implementation.",
+      "There is no automatic fork; the user simply exits plan mode.",
+      "Explore is a discovery tool, not an implementation phase.",
+      "Plan-then-execute means: exit plan mode, then implement in direct execution using the plan as the guide."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "ed216b81-f5bc-47f5-8e8a-9d49346d01f5"
+  },
+  {
+    "question": "Which scenario most clearly justifies the Explore subagent during a plan-mode investigation?",
+    "options": [
+      "Enumerating every alias of a symbol across many barrel files and re-exports before deciding the migration shape.",
+      "Adding a typo fix to one markdown file.",
+      "Editing a single constant once the plan is finalized.",
+      "Reading one route handler implicated by a stack trace."
+    ],
+    "explanations": [
+      "Barrel-trace enumeration produces lots of intermediate output; isolating it in Explore preserves the main context for the design decision.",
+      "Typo fixes do not need a subagent; they do not even need plan mode.",
+      "Editing is a write action; subagents are not where you do the implementation.",
+      "Reading one file is cheap inline; spinning up a subagent is overkill."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "27f9c878-9260-4bc6-9bca-a70c91666697"
+  },
+  {
+    "question": "Which statement most accurately captures the relationship between plan mode and direct execution?",
+    "options": [
+      "They are competing modes; you choose one and stay in it for the whole task.",
+      "Plan mode is a strict superset of direct execution and should always be preferred.",
+      "Direct execution is a strict superset of plan mode and should always be preferred.",
+      "They are complementary phases; plan mode for investigation/design, direct execution for implementation."
+    ],
+    "explanations": [
+      "The exam-tested pattern is precisely to use both in sequence; treating them as exclusive misses the point.",
+      "Plan mode is read-only; it cannot do everything direct execution does.",
+      "Direct execution lacks plan mode's read-only guarantee for safe exploration.",
+      "Plan-then-execute is the canonical workflow."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "27119931-6109-4b35-8a4c-306bbdc35591"
+  },
+  {
+    "question": "An engineer has a 1,200-line module. The task: rename a private helper that is referenced in only this file (no exports). The diff is straightforward. Which mode best fits?",
+    "options": [
+      "Plan mode, because the file is large.",
+      "Plan mode followed by Explore, because the file size threatens context.",
+      "Direct execution but only after the Explore subagent enumerates external usages first.",
+      "Direct execution, because the change is well-scoped to one file with no exported callers."
+    ],
+    "explanations": [
+      "File size alone does not justify plan mode; scope and failure cost do.",
+      "Layering plan mode plus a subagent on a single-file private rename is over-engineering.",
+      "Subagent enumeration is wasted effort when the symbol is provably not exported.",
+      "No exports means no cross-file blast radius; the change is intrinsically well-scoped."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "ac9842af-9550-45cf-b667-9287882083d8"
+  },
+  {
+    "question": "A team lead says: \"We always use plan mode in production work, regardless of task — it's safer.\" What is the strongest counter-argument grounded in the official guidance?",
+    "options": [
+      "Plan mode wastes turns on trivial fixes where there is no design space, and 'safety' is not infinite — it has a cost.",
+      "Plan mode disables Read, so investigation suffers in production.",
+      "Plan mode increases the chance of write conflicts because exits are rate-limited.",
+      "Plan mode is incompatible with version control hooks."
+    ],
+    "explanations": [
+      "The official framing: plan mode prevents costly rework on costly decisions; on trivial fixes there is nothing to prevent and the planning itself burns context.",
+      "Plan mode keeps Read enabled; only writes are disabled.",
+      "There is no rate-limit on plan-mode exit; the claim is fictional.",
+      "Plan mode is mode-level; it does not interact with VCS hooks."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "aeec431e-5a8a-4e43-8de9-c017a947693e"
+  },
+  {
+    "question": "Which task is closest to the official direct-execution example from the knowledge points?",
+    "options": [
+      "Choosing service boundaries for a microservice split.",
+      "Migrating from one ORM to another across many models.",
+      "Refactoring a shared abstraction depended on by several packages.",
+      "Adding a single date-validation conditional to one handler."
+    ],
+    "explanations": [
+      "Service-boundary choice is multi-approach architectural — plan mode.",
+      "ORM migration is multi-file with breaking changes — plan mode.",
+      "Refactoring a shared abstraction with many dependents is plan mode.",
+      "Adding a single date-validation conditional is the example given for direct execution."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "647c4159-2ed6-46e2-9c72-268dea13d9e8"
+  },
+  {
+    "question": "After exiting plan mode and starting implementation, the agent realizes the original plan didn't account for a constraint that surfaced in one specific file. The rest of the plan is still valid. What's the cleanest move?",
+    "options": [
+      "Restart the session from scratch with a fresh plan.",
+      "Discard the plan entirely and continue improvising in direct execution.",
+      "Re-enter plan mode for that local sub-decision, refine, exit, and continue with the rest of the plan.",
+      "Delegate the rest of the implementation to the Explore subagent."
+    ],
+    "explanations": [
+      "Restarting throws away valid investigation work that is still applicable.",
+      "Improvising is exactly what plan-then-execute is meant to prevent.",
+      "Localized re-planning preserves the valid parts of the plan and only revises what changed.",
+      "Explore does not perform write edits; it cannot run implementation."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "5b12038f-e03c-4ed4-9440-9d0902e131e8"
+  },
+  {
+    "question": "Which of these BEST describes when scope alone is enough to justify plan mode?",
+    "options": [
+      "When the task spans multiple files even if each individual edit is trivial.",
+      "Any time the task touches more than one file.",
+      "When the task spans multiple files AND admits multiple valid approaches OR has a high rework cost.",
+      "Any time the task touches code in more than one programming language."
+    ],
+    "explanations": [
+      "Multi-file tasks where each edit is mechanical (e.g., bumping a version number) can still be direct execution.",
+      "Two-file mechanical edits don't need plan mode.",
+      "Plan mode shines when scope is wide AND there is design space or rework cost to manage; that combination is what justifies it.",
+      "Language count is unrelated to mode selection."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "8993664e-edbd-4808-b91a-214e2fa6848e"
+  },
+  {
+    "question": "An engineer wants Claude to enumerate the public surface of an internal package by walking every barrel re-export. The package has many barrels and many wrappers. What is the most context-friendly approach?",
+    "options": [
+      "Read every barrel inline in the main session and let the model summarise at the end.",
+      "Enter plan mode and have the main session walk all barrels inline.",
+      "Delegate the walk to the Explore subagent and consume only its summary in the main session.",
+      "Use Bash 'grep -r' across the package for the literal word 'export'."
+    ],
+    "explanations": [
+      "Inline reading floods the main context with intermediate barrel content the agent never needs again.",
+      "Plan mode does not change context costs; the inline reads still flood the main session.",
+      "Explore is purpose-built for verbose enumeration; the main session sees only the summary, preserving budget.",
+      "Bash recursion via grep duplicates the structured Grep tool and still produces voluminous output in the main context."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "64a6824c-e02c-4386-b545-4455f1aca739"
+  },
+  {
+    "question": "Which of the following statements about plan mode is FALSE?",
+    "options": [
+      "Plan mode disables write-capable tools while keeping Read, Grep, and Glob available.",
+      "Plan mode is the right default for monolith-to-microservices restructuring.",
+      "Plan mode stages a patch that is automatically applied when you exit the mode.",
+      "Plan mode helps prevent rework by surfacing constraints before any edit lands."
+    ],
+    "explanations": [
+      "True — plan mode's contract is read-only investigation.",
+      "True — that's the canonical plan-mode example.",
+      "False — plan mode does not stage a patch; exiting plan mode runs a fresh edit pass guided by the plan, not a queued diff.",
+      "True — early discovery of constraints is exactly the rework-prevention story."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "c6fcc86f-d407-49a0-be44-e715c4c325fa"
+  },
+  {
+    "question": "A reviewer asks: \"Why even bother with plan mode if direct execution can also Read and Grep?\" Which answer is most precise?",
+    "options": [
+      "Plan mode is faster than direct execution at running tools.",
+      "Plan mode invokes a stronger model variant than direct execution.",
+      "Plan mode automatically saves a transcript that direct execution does not.",
+      "Plan mode disables Write/Edit so exploration cannot accidentally mutate files, providing a guaranteed write-free investigation phase."
+    ],
+    "explanations": [
+      "There is no documented speed difference; it is a capability difference.",
+      "The model is the same; only the available toolset changes.",
+      "Transcripts are not specific to plan mode.",
+      "The guaranteed write-free contract is what unlocks aggressive exploration without a half-applied-refactor risk."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "2b3de671-bf87-4f76-bff0-d942736483ac"
+  },
+  {
+    "question": "Which of the following workflows reflects best practice on a 45-file library migration with breaking API changes?",
+    "options": [
+      "Plan mode for the entire migration, including the file-by-file edits.",
+      "Plan mode to map call sites and design the migration, then exit to direct execution to implement file by file (optionally using Explore for the call-site enumeration).",
+      "Direct execution from start, treating each file as an independent isolated change.",
+      "Direct execution, with Explore handling all the writes in parallel."
+    ],
+    "explanations": [
+      "Plan mode cannot land writes; you cannot 'implement' inside plan mode.",
+      "Plan-then-execute, plus Explore for the verbose call-site enumeration, is the textbook combination for this scenario.",
+      "Treating each file as isolated misses the breaking-API alignment; a coordinated plan is required.",
+      "Explore does not perform writes on the main session's behalf."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "469299d3-ba85-472c-abdf-2f31888f0ed3"
+  },
+  {
+    "question": "Which of the following is the strongest indicator that direct execution is appropriate?",
+    "options": [
+      "The change is described in a one-sentence stack trace and is contained in one function with no external callers depending on the new shape.",
+      "The change touches code in multiple services with conflicting conventions.",
+      "The change requires the team to choose between two infrastructure approaches.",
+      "The change is described as 'restructure' or 'redesign'."
+    ],
+    "explanations": [
+      "Single function, single stack trace, no cross-file blast radius — the classic direct-execution case.",
+      "Multi-service with conflicting conventions has design space; plan mode.",
+      "Choosing between infrastructure approaches is the canonical plan-mode case.",
+      "'Restructure' / 'redesign' wording almost always signals plan mode."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "adaa3186-43f9-406f-8e7b-57e21b6c286c"
+  },
+  {
+    "question": "Plan mode is sometimes described as enabling 'safe codebase exploration.' Which corollary does NOT follow from that framing?",
+    "options": [
+      "You can let Claude poke around an unfamiliar area aggressively without risking accidental writes.",
+      "Constraints surface during exploration, before any edit lands.",
+      "Plan mode produces a queued diff that you preview and apply on exit.",
+      "The plan is a text artefact, useful as design rationale you can paste into a PR description."
+    ],
+    "explanations": [
+      "Direct corollary of the read-only contract.",
+      "This is the rework-prevention story.",
+      "Does NOT follow — plan mode does not stage a diff; the plan is design text. This is the most common candidate misconception.",
+      "True — plans double as PR-description rationale."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "34789369-91a1-4a09-afd9-2421bb60f8d7"
+  },
+  {
+    "question": "An engineer in plan mode discovers the requested change can be implemented in two structurally different ways with different blast radii. They want Claude to commit one of the two implementations immediately. What's wrong with that idea?",
+    "options": [
+      "Plan mode disables write tools, so no edit can be committed from inside it; they need to exit and pick the approach in direct execution.",
+      "Plan mode forces Claude to implement the safer of the two automatically.",
+      "Plan mode requires unanimous approval from all open sessions before any edit lands.",
+      "Plan mode silently picks an approach if the user does not specify one."
+    ],
+    "explanations": [
+      "Plan mode is read-only; the engineer must exit to direct execution to land any edit, after picking the approach.",
+      "Plan mode does not 'auto-pick'; the design choice is the user's.",
+      "There is no multi-session approval gate.",
+      "Plan mode does not implement anything silently — it cannot implement at all."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "3dd995cc-7cf7-4c14-a784-9cce749a64c0"
+  },
+  {
+    "question": "Which of the following pairings is correct?",
+    "options": [
+      "Plan mode → for architectural / multi-approach / high-rework-cost work; direct execution → for simple, well-scoped, low-cost changes.",
+      "Plan mode → for trivial fixes; direct execution → for architectural changes.",
+      "Plan mode → for any task where the user is uncertain; direct execution → only when tests are present.",
+      "Plan mode → only when MCP servers are connected; direct execution → otherwise."
+    ],
+    "explanations": [
+      "Correct: scope and failure cost decide; wide/high → plan, narrow/low → direct.",
+      "Reversed — this is exactly backwards.",
+      "Test presence does not select between the modes; uncertainty is a soft signal but not the rule.",
+      "MCP connectivity is unrelated to mode selection."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "0681a367-6ecc-4e6b-a446-bcae38e70343"
+  },
+  {
+    "question": "An engineer is mid-implementation in direct execution and realises that two of the remaining files admit multiple valid shapes that interact. The rest of the work is mechanical. What is the cleanest move?",
+    "options": [
+      "Push through; whatever shape the agent picks first will define the convention for the rest.",
+      "Abandon the direct-execution session and restart everything in plan mode from scratch.",
+      "Delegate the remaining work to Explore so it can pick the shape autonomously.",
+      "Re-enter plan mode for the two interacting files, refine the local approach, exit, finish the mechanical remainder in direct execution."
+    ],
+    "explanations": [
+      "Letting the first guess become the convention is exactly the rework risk plan mode prevents.",
+      "Restarting throws away valid mechanical work; over-corrects.",
+      "Explore is a discovery tool, not a decision-maker for design shape.",
+      "Localised re-planning of the interacting files preserves the rest of the work and prevents the wrong-shape lock-in."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "a2505a20-56f7-4e84-b6f3-acda68e08014"
+  },
+  {
+    "question": "Which statement about the Explore subagent is most accurate?",
+    "options": [
+      "Explore runs verbose discovery in its own context window; the main session sees only the summary, which composes well with plan mode.",
+      "Explore replaces plan mode for any task that needs read-only investigation.",
+      "Explore is a separate API tier with stricter rate limits.",
+      "Explore is the only mechanism that can read across multiple files in one task."
+    ],
+    "explanations": [
+      "Correct — Explore's job is context isolation for verbose discovery, and it pairs naturally with plan mode's investigation phase.",
+      "Explore and plan mode address different problems (context isolation vs write-free exploration); they compose, neither replaces the other.",
+      "Explore is not a separate API tier with different limits.",
+      "The main session can also Read multiple files; Explore is for context isolation, not for unique cross-file capability."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "73674e02-70d3-45c3-b168-3eab686e7c8c"
+  },
+  {
+    "question": "A senior engineer says: \"Plan mode is just direct execution with extra steps. Skip it.\" Which counter is most precise to the official knowledge?",
+    "options": [
+      "Plan mode is faster than direct execution at the same task, so skipping it is a speed loss.",
+      "Plan mode invokes a different model checkpoint with better reasoning.",
+      "Plan mode is required by Claude Code for any task touching more than one file.",
+      "Plan mode's defining contract is read-only — Write/Edit are disabled — so it offers a write-free investigation phase that direct execution cannot guarantee, which is what prevents costly rework on large-scale changes."
+    ],
+    "explanations": [
+      "Speed is not the differentiator; capability is.",
+      "Models do not differ across modes.",
+      "Plan mode is not required by the tool; it is a recommended workflow for certain shapes of task.",
+      "Correct — the read-only guarantee is the unique value proposition; that's what surfaces constraints before a half-applied refactor."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "d785e55a-bb47-4221-b007-a8237cd6d76b"
+  },
+  {
+    "question": "Which of the following is the WORST justification for using plan mode on a small task?",
+    "options": [
+      "Habit and 'safety as a default,' even when the failure cost is low and there is no design space.",
+      "The task touches a high-stakes file (release script, billing logic) where reverting may not be cheap.",
+      "Two distinct approaches are viable and the team needs to pick one before any edit lands.",
+      "The change requires reading a verbose dependency tree before deciding."
+    ],
+    "explanations": [
+      "WORST — 'safety as a default' is the anti-pattern: it wastes turns when there is no design space and no real rework risk.",
+      "High-stakes files are a legitimate failure-cost reason to plan even when scope is small.",
+      "Multiple viable approaches is a valid plan-mode trigger.",
+      "Verbose reading is a legitimate reason to plan (and possibly to delegate to Explore)."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "8788f3fa-ee29-4bee-84f3-55d7d1cb9c6c"
+  },
+  {
+    "question": "An engineer wants to verify their understanding. Which statement most accurately distinguishes plan mode from the Explore subagent?",
+    "options": [
+      "Plan mode and Explore are aliases for the same feature with different naming conventions.",
+      "Plan mode runs in a subagent; Explore runs in the main session with extended permissions.",
+      "Plan mode is a write-disabled mode of the main session; Explore is a separate subagent that absorbs verbose discovery and returns a summary. They address different problems and can be composed.",
+      "Plan mode requires Explore to function; Explore can be used standalone."
+    ],
+    "explanations": [
+      "They are distinct features, not aliases.",
+      "Reversed — plan mode is a mode of the main session; Explore is the separate subagent.",
+      "Correct — plan mode = read-only main session; Explore = context-isolated subagent. Both can be used independently or together.",
+      "Plan mode does not require Explore; the two compose but are independent."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "1cf3def7-6027-4502-92b5-8ce84073cafa"
+  },
+  {
+    "question": "A team adds a rule: \"always run direct execution because it's the production default.\" The next ticket is: 'Choose between Kafka and Redis Streams for our new event pipeline and implement.' What's the disciplined response?",
+    "options": [
+      "Follow the team rule and dive straight into direct-execution edits picking whichever fits the first prototype.",
+      "Run Explore to pick the right technology autonomously.",
+      "Skip the ticket; this is not a Claude Code workflow at all.",
+      "Push back: the ticket explicitly states two viable approaches with different infrastructure — that is a textbook plan-mode case, regardless of any default policy."
+    ],
+    "explanations": [
+      "A defaults-policy doesn't override stated multi-approach scope; this is exactly the plan-mode trap the exam tests.",
+      "Explore is for discovery, not architectural decision-making.",
+      "Architectural choice + implementation IS a Claude Code workflow.",
+      "Correct — plan mode is for multiple valid approaches with different infrastructure requirements; this is its canonical use case."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "9b6154ac-c965-4c33-9c8d-6dd149bdc814"
+  },
+  {
+    "question": "Which is the strongest critique of using a custom slash command to 'force plan mode for every task automatically'?",
+    "options": [
+      "Slash commands cannot enter plan mode; the suggestion is technically impossible.",
+      "Forcing plan mode globally wastes turns on the bulk of trivial tasks where there is no design space — plan mode's value is conditional on rework risk.",
+      "Plan mode is incompatible with custom slash commands.",
+      "Plan mode requires manual user approval that scripts cannot provide."
+    ],
+    "explanations": [
+      "There is no technical reason a command couldn't toggle the mode; the issue is workflow value, not capability.",
+      "Correct — the anti-pattern is 'always plan mode to be safe'; it has a non-trivial cost on tasks with no design space.",
+      "Slash commands and plan mode are not incompatible.",
+      "Even granting the approval friction, that is not the load-bearing critique; the load-bearing one is wasted turns on trivial work."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.4"
+    ],
+    "phase": "post",
+    "qid": "4fd22604-d784-4947-87fe-8e2272c0069c"
+  }
+]

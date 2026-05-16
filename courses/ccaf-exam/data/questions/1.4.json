@@ -1,0 +1,882 @@
+[
+  {
+    "question": "A customer support agent's system prompt says 'always call get_customer before process_refund.' Production traces show that 2 out of 100 sessions still issue refunds without a prior get_customer call. The team has tightened the prompt three times. Which change actually drives the failure rate to zero?",
+    "options": [
+      "Add a programmatic prerequisite (e.g., a PreToolUse hook on process_refund) that denies the tool call unless session.verified_customer_id is set by a prior get_customer success.",
+      "Add a few-shot example of correct ordering to the system prompt and clarify the wording further.",
+      "Lower the model temperature so the agent follows instructions more deterministically.",
+      "Move the instruction from the system prompt to the user prompt for greater salience."
+    ],
+    "explanations": [
+      "Correct — prompts give probabilistic compliance; gates/hooks give deterministic compliance. For sensitive operations like refunds, only programmatic enforcement eliminates the failure rate.",
+      "Wrong — few-shot helps reduce error rate but cannot eliminate it. The question explicitly says three prompt iterations have not closed the gap.",
+      "Wrong — temperature affects sampling but does not turn probabilistic compliance into deterministic compliance. The 1-in-50 failure path remains.",
+      "Wrong — instruction salience is still prompt-based ordering. It changes the failure rate marginally; it does not make the rate zero."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "pre",
+    "qid": "aef39a96-d599-4290-b518-ade4ccbf9ecd"
+  },
+  {
+    "question": "Which best describes the difference between programmatic enforcement and prompt-based ordering?",
+    "options": [
+      "Programmatic enforcement is faster; prompt-based ordering is slower.",
+      "Programmatic enforcement uses runtime gates or hooks that prevent disallowed tool calls before they execute, regardless of model behaviour; prompt-based ordering instructs the model and relies on it choosing to comply.",
+      "Programmatic enforcement is only for read-only tools; prompt-based ordering is for write tools.",
+      "Programmatic enforcement is for free-text outputs; prompt-based ordering is for tool calls."
+    ],
+    "explanations": [
+      "Wrong — neither is materially faster than the other. The distinction is determinism vs probabilism, not latency.",
+      "Correct — gates/hooks deny disallowed tool calls deterministically; prompt instructions ask the model to comply and have a non-zero failure rate. That's the central exam intuition.",
+      "Wrong — enforcement is most often applied precisely to write tools (refunds, transfers). The read/write split isn't the distinction.",
+      "Wrong — both apply to tool calls. Free-text outputs aren't gated by either mechanism."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "pre",
+    "qid": "2bc0c9a9-f0a5-477a-9617-8bab2ca338cc"
+  },
+  {
+    "question": "Which of the following operations most clearly REQUIRES deterministic (programmatic) enforcement rather than prompt-based ordering?",
+    "options": [
+      "Selecting which built-in tool (Read vs Grep) to use when exploring a codebase.",
+      "Choosing whether to summarise or list a multi-source synthesis.",
+      "Calling process_refund without first verifying the customer's identity.",
+      "Picking the order in which to phrase a user-facing summary."
+    ],
+    "explanations": [
+      "Wrong — tool selection on read-only built-ins has no compliance impact. Prompt guidance is sufficient.",
+      "Wrong — summarisation style is a stylistic prompt concern; failures are cosmetic, not compliance-relevant.",
+      "Correct — refunds without identity verification are a financial/compliance failure. The acceptable failure rate is zero, so a hook or prerequisite gate is required.",
+      "Wrong — phrasing order is stylistic, not a compliance-grade requirement."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "pre",
+    "qid": "26d52870-5e59-447b-ba14-c30986e8ee99"
+  },
+  {
+    "question": "An agent escalates to a human queue with the payload: { message: 'Customer is frustrated and wants a refund. Please help.' }. The human queue regularly responds with 'who is this customer?' What's the most accurate diagnosis?",
+    "options": [
+      "The escalation tool is misconfigured; the human queue should accept any payload shape.",
+      "The agent should attach the entire conversation transcript instead of a short message.",
+      "The model temperature is too low; raise it for more expressive escalations.",
+      "The handoff is unstructured — it lacks customer_id, root cause, refund amount, and recommended action. The fix is a structured payload with those fields."
+    ],
+    "explanations": [
+      "Wrong — the receiving system needs structure to act on; accepting any shape would push the burden onto humans to interpret prose every time.",
+      "Wrong — humans don't read 40-turn transcripts reliably and the transcript may not even be accessible. Structured fields are the right artifact for handoff.",
+      "Wrong — temperature has no bearing on the structural problem. The payload schema is the issue.",
+      "Correct — structured handoffs (customer_id verified, root_cause, refund_amount, recommended_action) let the human queue act immediately without re-investigation. Free-text escalations force them to re-investigate."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "pre",
+    "qid": "3b6f6bb3-fb43-499c-8dd7-9a177c797c27"
+  },
+  {
+    "question": "A customer messages: 'I was double-charged on INV-7732, the headphones I ordered (O-991) arrived damaged, and my login isn't working.' Which approach best matches Task 1.4's pattern?",
+    "options": [
+      "Resolve the billing issue first, then ask the customer to re-mention the other concerns later.",
+      "Verify the customer once, decompose the message into three concerns, and investigate them in parallel via multiple Task calls in a single coordinator turn — each subagent receives the verified customer_id as shared context.",
+      "Ignore the secondary concerns and respond only to the most severe one (the duplicate charge).",
+      "Escalate the entire message to a human immediately because multi-concern requests are too complex for an agent."
+    ],
+    "explanations": [
+      "Wrong — that's serial firefighting. The customer has to repeat themselves; trust drops; subsequent concerns get lost.",
+      "Correct — decompose up front, parallel Task calls in one coordinator turn (Task 1.3 mechanics), shared context (verified customer_id) so each sub-investigation operates on the same verified account without re-verifying.",
+      "Wrong — silently dropping concerns is the worst failure mode. The agent must address all three.",
+      "Wrong — multi-concern requests are exactly what coordinator-driven decomposition is for. Escalation is reserved for cases the agent genuinely cannot resolve."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "pre",
+    "qid": "b6317aca-b476-48ed-ab9f-42c5918c871a"
+  },
+  {
+    "question": "Why pass `customer_id` (the verified ID) rather than the customer's name in an escalation handoff?",
+    "options": [
+      "Customer names are too long for the handoff schema.",
+      "The model can't read names reliably.",
+      "Names are ambiguous (multiple John Smiths, typos, nicknames); a verified ID uniquely identifies the account so the receiving human/system operates on the correct one.",
+      "It's a localisation requirement — names don't translate across regions."
+    ],
+    "explanations": [
+      "Wrong — payload size is not a meaningful constraint here.",
+      "Wrong — the model reads names just fine. The issue is unambiguous receiver-side identification.",
+      "Correct — names introduce ambiguity at the human-handoff hop; verified IDs eliminate that. This is exactly the kind of ambiguity Task 1.4 and Task 5.2 (escalation/ambiguity) flag as a structural issue.",
+      "Wrong — there's no localisation rule at play; the pattern applies in any region."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "pre",
+    "qid": "8e81c53f-2708-4d91-a1e8-9505ec081b90"
+  },
+  {
+    "question": "Which of these is correctly described as PROGRAMMATIC enforcement (rather than prompt-based ordering)?",
+    "options": [
+      "A PreToolUse hook on process_refund that denies the call unless session.verified_customer_id is set by a prior get_customer success.",
+      "A system-prompt sentence saying 'always verify identity before processing refunds.'",
+      "A few-shot example showing the correct ordering of get_customer before process_refund.",
+      "Lowering the model temperature to encourage stricter instruction-following."
+    ],
+    "explanations": [
+      "Correct — runtime hooks that intercept and deny tool calls are the canonical example of programmatic enforcement. The model can't route around them.",
+      "Wrong — that's prompt-based ordering. Probabilistic compliance only.",
+      "Wrong — few-shot helps but it's still prompt content. Probabilistic compliance.",
+      "Wrong — temperature is a sampling parameter, not an enforcement mechanism."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "pre",
+    "qid": "9d7f93df-2591-43da-81b3-98970d14734b"
+  },
+  {
+    "question": "Which of the following is most LIKELY to be a wrong-answer distractor on the exam (i.e., an anti-pattern)?",
+    "options": [
+      "Verifying the customer once with get_customer and storing the verified ID in session state, then enforcing it via a PreToolUse gate on process_refund.",
+      "Decomposing a multi-concern message into items and emitting parallel Task calls with shared context.",
+      "Tightening the system prompt yet again to fix an agent that occasionally skips identity verification.",
+      "Building structured escalation payloads with customer_id, root cause, refund amount, and recommended action."
+    ],
+    "explanations": [
+      "Wrong (i.e., this is a correct pattern, not the distractor).",
+      "Wrong (this is a correct pattern, not the distractor).",
+      "Correct — that's the canonical anti-pattern. Repeated prompt iteration on a determinism failure is a sign you're using the wrong tool. The fix is a hook/gate, not yet another prompt edit.",
+      "Wrong (this is a correct pattern, not the distractor)."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "pre",
+    "qid": "35095608-5727-4bf2-a1fd-6786bb649a76"
+  },
+  {
+    "question": "An agent decomposes a multi-concern customer message into three concerns and emits three parallel Task calls. Each Task prompt independently asks the subagent to call get_customer to verify the customer. What's the structural problem?",
+    "options": [
+      "The Task tool doesn't support parallel calls; this design is fundamentally broken.",
+      "The subagents will each call process_refund.",
+      "Re-verifying identity in each subagent wastes tokens and risks divergent interpretations of the customer; the verified customer_id should be passed as shared context once and never re-verified per subagent.",
+      "Subagents must receive the entire conversation transcript to function correctly."
+    ],
+    "explanations": [
+      "Wrong — the SDK supports multiple Task calls in one coordinator turn (Task 1.3). That's not the issue.",
+      "Wrong — they would only call process_refund if their concern requires one and the gate allows it. Refund itself is not the problem here.",
+      "Correct — verify once at the coordinator level, store verified_customer_id, pass it as shared context to each parallel Task. Re-verifying invites divergence and wastes tokens.",
+      "Wrong — subagents need only the verified ID, the specific concern, and quality criteria — not the entire transcript. Task 1.3's isolated-context principle still applies."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "pre",
+    "qid": "f0d74142-d18e-4aa0-a17e-489e587321ec"
+  },
+  {
+    "question": "A `process_refund` PreToolUse gate currently checks only 'is session.verified_customer_id non-null?' During a load test, a refund slipped through where the verified customer was C-48201 but the order belonged to C-49000. What's the gate-composition fix?",
+    "options": [
+      "Remove the gate — it's clearly broken and the model can self-correct.",
+      "Tighten the gate to also verify that the order's customer matches the session's verified customer (i.e., compose preconditions: verified_customer_id non-null AND order.customer_id == verified_customer_id AND amount within policy).",
+      "Replace the gate with a stronger system-prompt instruction.",
+      "Switch from PreToolUse to PostToolUse — denying after the refund issues is safer."
+    ],
+    "explanations": [
+      "Wrong — removing the gate makes the failure mode more frequent, not less. The agent without enforcement is exactly the original problem this task is about.",
+      "Correct — gates should compose all preconditions, not a partial subset. Verified customer + matching order ownership + amount within policy. Each precondition is a small deterministic check.",
+      "Wrong — prompt instructions don't give deterministic compliance. Gate composition does.",
+      "Wrong — PostToolUse fires after the side effect; for financial operations the refund has already issued by then. PreToolUse is the right hook for blocking."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "pre",
+    "qid": "6bf2567c-452c-492f-ac51-ea5becd9710a"
+  },
+  {
+    "question": "Scenario 1: a customer support agent regularly issues small refunds (under $50) without first calling get_customer. The product team has tightened the system prompt twice and added few-shot examples; the failure rate dropped from 4% to 0.5% but never reaches zero. Compliance requires zero. What change to the architecture closes the gap?",
+    "options": [
+      "Add an additional few-shot example to the system prompt; the rate is approaching zero asymptotically and one more example will get it there.",
+      "Add a PreToolUse hook on process_refund that denies the call when session.verified_customer_id is null. Pair with a PostToolUse hook on get_customer that sets the verified_customer_id on success.",
+      "Lower the model's temperature from 0.7 to 0.0 to make instruction-following deterministic.",
+      "Move identity verification responsibilities into a separate subagent that the main agent invokes via Task before any refund."
+    ],
+    "explanations": [
+      "Wrong — few-shot reduces probabilistic failure; it cannot eliminate it. Prompt-based ordering has a non-zero floor.",
+      "Correct — programmatic enforcement (the PreToolUse gate driven by session state set by a PostToolUse hook on get_customer) is the only way to drive the failure rate to zero. This is the canonical Task 1.4 / 1.5 pattern.",
+      "Wrong — temperature 0.0 reduces variance but does not turn probabilistic compliance into deterministic compliance. The model can still emit a refund call without prior get_customer.",
+      "Wrong — pushing the verification into a subagent doesn't enforce ordering. The main agent can still call process_refund without having invoked the verification subagent first."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "0548484f-562b-4a7a-9b37-7be68243d9e7"
+  },
+  {
+    "question": "Which of the following is most clearly an example of a STRUCTURED handoff payload appropriate for a Scenario 1 escalation?",
+    "options": [
+      "{ message: 'The customer Jane Roberts is upset about a billing issue and wants someone to call her back. She gave her phone number in the chat.' }",
+      "{ customer: 'Jane Roberts', issue: 'billing', urgency: 'high' }",
+      "{ customer_id: 'C-48201', root_cause: 'MFA lockout — agent has no permission to clear', refund_amount: null, recommended_action: 'Clear MFA lockout via admin console; verify with customer by call-back', transcript_summary: '...', investigation_state: { verified_customer_id: 'C-48201', concern_id: 'login_issue' } }",
+      "{ description: 'see chat log', priority: 1 }"
+    ],
+    "explanations": [
+      "Wrong — free-text prose with a name (not an ID), no structured fields. Forces the receiver to re-investigate.",
+      "Wrong — uses customer name (ambiguous) instead of verified ID, no recommended action, no root cause, no refund amount. Halfway structured but missing the load-bearing fields.",
+      "Correct — verified customer_id, explicit root cause, refund amount (or null), recommended action, transcript summary, and investigation state. The receiver can act immediately without reading the transcript.",
+      "Wrong — 'see chat log' is the canonical anti-pattern. Receiver has no actionable structure."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "cf297f46-9531-4aa0-a55b-fa3d9a03b3f1"
+  },
+  {
+    "question": "An agent is asked to handle a customer message that contains three independent concerns: a billing dispute, a damaged-goods return, and a login issue. Which orchestration pattern matches Task 1.4's recommendation?",
+    "options": [
+      "Call get_customer once to verify identity, decompose the message into three concerns, emit three Task calls in one coordinator turn (each carrying the verified customer_id as shared context), then synthesise a single response that addresses all three concerns.",
+      "Resolve the concerns one at a time in three separate coordinator turns; the customer can wait while each concern is handled fully before moving to the next.",
+      "Spawn three Task calls but skip the get_customer step in the coordinator; let each subagent verify identity independently to keep responsibilities scoped.",
+      "Pass the entire conversation history to a single mega-subagent that produces a comprehensive response."
+    ],
+    "explanations": [
+      "Correct — verify once, decompose, parallel Task calls with shared context, single synthesised response. This is the textbook Task 1.4 pattern (with Task 1.3 mechanics for the parallelism).",
+      "Wrong — serial firefighting drops concerns 2 and 3, forces the customer to repeat themselves, and degrades trust. Not the recommended pattern.",
+      "Wrong — re-verifying per subagent wastes tokens and risks divergent identity interpretations. The whole point of shared context is to verify once.",
+      "Wrong — single mega-subagent with full history defeats decomposition; you lose parallelism and per-concern scope. It's also inefficient on tokens."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "549dcc31-133c-4d62-8ddb-51bd31f22356"
+  },
+  {
+    "question": "Identify the BEST description of why prompt instructions alone are insufficient for compliance-grade workflow ordering.",
+    "options": [
+      "Prompts are processed only at the start of the conversation; mid-conversation instructions don't apply.",
+      "Prompts are stored on the server and may be lost during failover.",
+      "Prompts can't include conditional logic.",
+      "Prompts give probabilistic compliance — even a well-written instruction has a non-zero failure rate. For operations like identity verification before financial actions, the acceptable failure rate is zero, which only programmatic enforcement (gates/hooks) can guarantee."
+    ],
+    "explanations": [
+      "Wrong — system prompts apply throughout the conversation. Persistence isn't the issue.",
+      "Wrong — prompt persistence isn't the issue. Determinism is.",
+      "Wrong — prompts can include conditionals expressed in natural language. The issue isn't expressiveness; it's that compliance is probabilistic.",
+      "Correct — the central distinction. Probabilistic compliance is fine for stylistic preferences; deterministic compliance via gates/hooks is required when the failure rate must be zero."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "37a9b19a-46a9-4332-97ec-566c1f2e0aea"
+  },
+  {
+    "question": "A senior engineer proposes: 'Let's simplify the refund flow — the gate currently checks verified_customer_id, order.customer_id matches verified_customer_id, AND amount within policy. Let's drop the order-customer match check; the agent's prompt already says it should only refund the customer's own orders.' What's the right pushback?",
+    "options": [
+      "Agree — composing many small checks creates latency and the prompt covers it well enough.",
+      "Disagree — but for unrelated reasons; the real issue is that PostToolUse should be used instead of PreToolUse.",
+      "Disagree — gates must compose ALL preconditions, not a subset. Dropping the order-customer match check reintroduces the failure mode where a verified customer can trigger refunds against orders they don't own. Prompt instructions cannot deterministically prevent this.",
+      "Agree — prompts have improved enough in modern models that the order-customer check is redundant."
+    ],
+    "explanations": [
+      "Wrong — gate latency is negligible; the real reason to keep the check is correctness, not performance.",
+      "Wrong — PostToolUse fires after side effects; for refunds the money has already moved. PreToolUse with composed checks is correct.",
+      "Correct — gate composition is the whole point: each gate must cover all preconditions, otherwise an attacker or a confused agent can route around the missing check. Prompts can't substitute for the missing precondition.",
+      "Wrong — model improvements reduce probabilistic error rates but don't make probabilistic compliance deterministic. Gates are the boundary."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "74271f92-950f-4854-942b-21fe6201fddf"
+  },
+  {
+    "question": "Which of the following is the strongest indicator that a workflow needs PROGRAMMATIC enforcement rather than prompt-based ordering?",
+    "options": [
+      "The workflow has more than five steps.",
+      "A single failure has financial, compliance, or safety consequences (e.g., refund issued to the wrong account, identity-verification skipped before a transfer).",
+      "The workflow involves more than one agent.",
+      "The workflow uses fork_session for divergent exploration."
+    ],
+    "explanations": [
+      "Wrong — number of steps isn't the criterion. A 3-step workflow with a financial action still needs enforcement; a 30-step exploratory workflow may not.",
+      "Correct — when a single failure is unacceptable (financial, compliance, safety), only programmatic enforcement gives a zero failure rate. This is the canonical decision criterion.",
+      "Wrong — multi-agent workflows benefit from coordination patterns but enforcement is decided by failure-cost, not agent count.",
+      "Wrong — fork_session is a session-management primitive, unrelated to whether enforcement is required."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "80b5c710-ea33-4ace-afe2-04933cdc127d"
+  },
+  {
+    "question": "An agent's escalate_to_human payload includes customer_name = 'John Smith' instead of the verified customer_id. The human queue keeps operating on the wrong account. Which fix most directly addresses the root cause?",
+    "options": [
+      "Train the human queue to verify the name against the chat transcript before acting.",
+      "Add a 'last 4 digits of card' field alongside the name to disambiguate.",
+      "Add the customer's email address to the payload as a secondary identifier.",
+      "Replace customer_name with customer_id (the verified ID returned by get_customer). Names are ambiguous; verified IDs aren't."
+    ],
+    "explanations": [
+      "Wrong — pushes the burden onto humans and assumes transcript access. The structural problem is that the payload uses an ambiguous identifier in the first place.",
+      "Wrong — partial fix that still uses name as primary key. Adding more identifiers is fragile compared to using the verified ID directly.",
+      "Wrong — email is also potentially ambiguous (shared accounts, role addresses, typos) and isn't the verified identifier returned by get_customer.",
+      "Correct — the verified customer_id is the canonical, unambiguous identifier. Use it as the primary handoff key. Names go in human-readable summaries, not as routing keys."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "84fdfc5c-5a8f-4084-a2ab-fab51cdf128d"
+  },
+  {
+    "question": "Compare PROMPT-BASED ordering and PROGRAMMATIC enforcement on the dimension that matters most for compliance: failure rate. Which statement is correct?",
+    "options": [
+      "Prompt-based ordering has a non-zero probabilistic failure rate even with strong instructions, few-shot examples, and low temperature; programmatic enforcement (PreToolUse hooks, prerequisite gates) drives the failure rate to zero for the gated tool calls.",
+      "Both have identical failure rates in production; the choice is purely a stylistic preference.",
+      "Programmatic enforcement has a higher failure rate because gates can themselves fail.",
+      "Prompt-based ordering is strictly better because it preserves model agency."
+    ],
+    "explanations": [
+      "Correct — that's the central trade. Prompts give probabilistic compliance; gates give deterministic. For compliance-grade operations, only deterministic compliance is acceptable.",
+      "Wrong — failure rates differ materially. Prompts fail ~1–5% on tightly-instructed sensitive ops; well-written gates fail ~0%.",
+      "Wrong — gate failures are rare and observable (the deny shows up in traces). Prompt failures are silent and recurring.",
+      "Wrong — model agency is preserved on the open parts of the workflow; gates only constrain a small set of sensitive operations. The trade is correctness, not agency."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "e30da566-b7b7-46b5-9a2a-4abe6b471649"
+  },
+  {
+    "question": "An engineer suggests: 'When the customer raises three concerns, just let the agent handle them in order — that way the conversation feels natural.' Which Task 1.4 / Scenario 1 critique is most accurate?",
+    "options": [
+      "Disagree — but only because parallelism is faster. Latency is the only relevant axis.",
+      "Agree — natural conversation flow is paramount; serial handling is fine.",
+      "Disagree — serial firefighting consistently drops later concerns: by the time the agent finishes the first investigation, scope has shifted and concerns 2 and 3 are forgotten or partially addressed. The 1.4 pattern is decompose-up-front, parallel investigations with shared context, single synthesised response.",
+      "Disagree — the agent should escalate any multi-concern message to a human queue."
+    ],
+    "explanations": [
+      "Wrong — latency is a secondary benefit. The primary issue with serial handling is that concerns get dropped, not that it's slow.",
+      "Wrong — a coherent unified response that addresses all three concerns IS natural conversation; what's unnatural is forgetting two of them mid-thread.",
+      "Correct — parallel decomposition with shared context is the pattern precisely because it prevents the drop-of-concerns failure mode that serial firefighting reliably produces.",
+      "Wrong — the agent should attempt to resolve what it can; escalation is reserved for concerns the agent genuinely cannot resolve, not for the multi-concern shape itself."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "6ef916d0-5706-4790-8cf3-43a238b5af7a"
+  },
+  {
+    "question": "Which combination of SDK primitives most directly implements 'no refund without prior verified identity, and refunds must be on the verified customer's own orders'?",
+    "options": [
+      "A system prompt that names the rules clearly; the agent follows them.",
+      "A PostToolUse hook on get_customer that records session.verified_customer_id, plus a PreToolUse hook on process_refund that denies the call unless verified_customer_id is set AND the order's customer_id matches AND the amount is within policy.",
+      "A few-shot prompt with three examples of correct ordering.",
+      "A PreToolUse hook on get_customer to reject malformed inputs."
+    ],
+    "explanations": [
+      "Wrong — system-prompt rules are probabilistic. The two conditions ('verified identity' AND 'order belongs to that identity') are exactly the kind of compliance-grade preconditions that need enforcement.",
+      "Correct — PostToolUse on get_customer sets the session state; PreToolUse on process_refund composes all preconditions (verified, ownership, policy amount). This is the canonical Task 1.4 + 1.5 pattern.",
+      "Wrong — few-shot reduces error rate but doesn't eliminate it. Doesn't satisfy 'no refund without' as a guarantee.",
+      "Wrong — guarding get_customer's input format doesn't enforce ordering or ownership for process_refund. Wrong tool, wrong scope."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "25379b27-0ab2-47af-81b6-21f4739970d7"
+  },
+  {
+    "question": "Two engineers debate where the \"no refund without verified ID\" enforcement logic *belongs*. One says it's a Task 1.5 problem (Agent SDK hooks); the other says it's a Task 1.4 problem (multi-step workflow enforcement). What's the most accurate framing?",
+    "options": [
+      "Task 1.4 — the requirement is a multi-step workflow ordering, so it's purely a 1.4 concern.",
+      "Task 1.5 — hooks are the implementation primitive, so the topic is purely a 1.5 concern.",
+      "Task 1.4 names the *requirement* (programmatic enforcement of multi-step ordering with deterministic compliance for sensitive operations); Task 1.5 names the *implementation primitive* (PreToolUse / PostToolUse hooks). Both speak to the same pattern from different angles. The *design choice* (must this be deterministic?) is 1.4; the *mechanism* (hook + session state) is 1.5.",
+      "Neither — the right framing is Task 1.2 (coordinator-subagent), where the coordinator should enforce ordering by directly invoking subagents in the correct order."
+    ],
+    "explanations": [
+      "Wrong (close call) — 1.4 owns the requirement framing but doesn't itself describe the hook implementation. The exam expects you to recognize that 1.4 and 1.5 are complementary, not exclusive.",
+      "Wrong — 1.5 owns the mechanism but the *decision* to require deterministic compliance comes from 1.4's framing of compliance-grade workflows. Treating it as pure 1.5 misses the 'should we' before the 'how.'",
+      "Correct — the cleanest reading is that 1.4 is the design pattern (when to require deterministic compliance, what the structured-handoff payload looks like) and 1.5 is the SDK primitive (PreToolUse / PostToolUse hooks that intercept tool calls). The 'no refund without verified ID' requirement uses both: 1.4 says it must be deterministic; 1.5 implements the gate.",
+      "Wrong — the coordinator can choose the order of *its own* tool calls, but a model-driven coordinator's choice is probabilistic. Ordering enforcement that must be deterministic lives in hooks, not in coordinator prompt."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "9a6c8ced-12ce-4078-8793-680f1b470b4d"
+  },
+  {
+    "question": "A `process_refund` PreToolUse gate denies a call because `session.verified_customer_id` is null. What should the agent see, and what is the canonical recovery flow?",
+    "options": [
+      "The model sees a structured deny result like `{denied: true, reason: \"missing verified_customer_id\"}`. The agent's recovery is to call `get_customer` to verify identity, then retry the refund. Informative deny messages convert programmatic gates from silent walls into useful runtime guidance — the agent learns *why* and corrects course.",
+      "The model sees nothing — the gate silently swallows the call.",
+      "The model receives a generic API error and should immediately escalate to a human.",
+      "The model retries the same call automatically without seeing any feedback, eventually succeeding."
+    ],
+    "explanations": [
+      "Correct — well-designed deny payloads include a structured reason. The model treats the deny as a tool-result error it can act on: read the reason, identify the missing prerequisite, take the prerequisite step (`get_customer`), then retry. This is the canonical PreToolUse-deny → corrective-flow loop.",
+      "Wrong — silent denies are an anti-pattern. The agent has no feedback to correct course and may keep retrying. Always emit a structured reason on deny.",
+      "Wrong — escalating on every gate denial defeats the purpose of gates. Escalation is for cases the agent genuinely can't resolve, not for retryable preconditions like 'verify identity first.'",
+      "Wrong — the gate doesn't 'eventually succeed' on its own; the prerequisite must be satisfied. The model needs to *see* the deny to drive the correction."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "9691f9f3-23b2-4a85-a948-ebe75e92fa6c"
+  },
+  {
+    "question": "A team configures: PreToolUse hook on `process_refund` denies unless `session.verified_customer_id != null`; PostToolUse hook on `get_customer` sets `session.verified_customer_id` on success. Audit reveals occasional refunds approved despite `get_customer` returning an error in that turn. Diagnose.",
+    "options": [
+      "The gate logic is correct; the bug is in the agent's behaviour and should be fixed via prompt.",
+      "PreToolUse hooks are inherently unreliable; switch the gate to PostToolUse.",
+      "Lower the model's temperature so it stops hallucinating valid customer IDs.",
+      "The PostToolUse hook is firing on `get_customer` *errors* too, setting `verified_customer_id` from a failed result. Restrict the PostToolUse handler to set the field only on a *success* result, and validate that the result body actually contains a customer_id (not an error object). This is the canonical PostToolUse + error-result bug pattern."
+    ],
+    "explanations": [
+      "Wrong — blaming the agent ignores that the gate's invariant is being violated by the hook itself. The model can't be trusted with an invariant the implementation breaks.",
+      "Wrong — PreToolUse is the right hook for blocking refunds; PostToolUse fires *after* the side effect, which is too late for refunds. The bug is in the *paired* hook, not the gating one.",
+      "Wrong — temperature has no bearing on whether the hook reads the result body correctly. The bug is in the hook implementation.",
+      "Correct — PostToolUse fires on every tool result regardless of success. If the handler doesn't check the result for success/error before extracting `customer_id`, it can set state from garbage. The fix is success-check + body-shape validation in the PostToolUse handler. This is the *implementation* failure mode of an otherwise-correct design."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "5e000fb6-b930-4c23-a7d8-ac4b6c47d708"
+  },
+  {
+    "question": "A team has a structured handoff schema (`{customer_id, root_cause, refund_amount, recommended_action, investigation_state}`) for human escalation. They now build a downstream automated subagent that processes manager-approved refunds. Should the same schema be used, or should the automated handoff use a different structure?",
+    "options": [
+      "No — automated subagents should receive raw conversation history; structured handoffs are designed only for human consumption.",
+      "Yes — the same schema. The value of the structured handoff is *receiver-agnosticism*: a verified customer_id is unambiguous to a human, an automated subagent, or a downstream service. The schema serves any receiver that needs to act on the case without re-reading the transcript.",
+      "No — automated subagents need a different schema with a `transcript` field included.",
+      "Yes — but only for refund handoffs; non-refund handoffs need different schemas per receiver type."
+    ],
+    "explanations": [
+      "Wrong — the *whole point* of a structured handoff is that the receiver doesn't need to re-investigate. Sending raw transcripts to automated subagents (which then have to extract structure themselves) reproduces the original problem.",
+      "Correct — a verified customer_id, an explicit root cause, a specific recommended action, and the investigation state are equally useful to a human, an automated downstream agent, or a billing-ops service. Receiver-agnosticism is precisely what makes structured handoffs valuable. The schema may be *extended* per-receiver (e.g., add `manager_approval_token` for the refund-processor) but the core fields stay identical.",
+      "Wrong — adding a `transcript` field re-introduces the unstructured-prose anti-pattern alongside the structured one. Subagents should consume structure.",
+      "Wrong — having a different schema per receiver-type fragments the handoff contract and forces the agent to know *who* will receive the payload before it produces it. The schema should be receiver-agnostic."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "af4fe585-b9b1-4d33-9edc-c8f161804dfc"
+  },
+  {
+    "question": "A customer messages: \"I can't log in (so I can't check my account), my last bill seems wrong, and I want a refund for the wrong charge.\" The login issue blocks the customer from independently verifying details; the bill correction is needed before computing the refund amount. How should the agent apply Task 1.4's parallel-investigation pattern?",
+    "options": [
+      "Run all three concerns in parallel — that's what Task 1.4 prescribes regardless of dependencies.",
+      "Decompose, but recognize that this is *not* a clean parallel-investigation case. Concerns have a dependency order (login → bill correction → refund amount). The right structure is sequential or staged: resolve login first (or escalate that), use the verified login to check the bill, then compute refund. The Task 1.4 parallel pattern applies to *independent* concerns; dependent ones must be sequenced.",
+      "Escalate the entire message to a human because mixed-dependency multi-concern requests are too complex for an agent.",
+      "Pick the most urgent concern (the refund) and resolve it first; defer the others to a follow-up."
+    ],
+    "explanations": [
+      "Wrong — running dependent concerns in parallel produces inconsistent state: the refund subagent computes against an uncorrected bill, the login subagent's outcome doesn't inform anything. Parallelism is a fit only for *independent* concerns.",
+      "Correct — Task 1.4's pattern is decompose-and-investigate-in-parallel for *independent* concerns. The lesson here is to recognize when concerns *aren't* independent. The agent decomposes (good), but the decomposition reveals dependencies, so the orchestration becomes staged — the coordinator runs login first, then bill, then refund — passing each stage's verified state forward.",
+      "Wrong — multi-concern with dependencies isn't beyond agent capability; it's a recognizable pattern that needs sequencing rather than parallelism. Escalation here gives up on the structural fix.",
+      "Wrong — picking one concern and deferring drops the others, which is the failure mode the multi-concern decomposition pattern was designed to prevent. The right move is sequence, not drop."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "e681f0f3-3688-4689-a28c-029cd699717d"
+  },
+  {
+    "question": "A `process_refund` PreToolUse gate requires: (1) verified_customer_id non-null, (2) order ownership matches, (3) amount within policy, (4) at least 24 hours since order placement. Customers complain that legitimate same-day refunds for damaged-on-arrival items are blocked. What's the right design response?",
+    "options": [
+      "Remove the 24-hour rule — it's blocking legitimate refunds.",
+      "Override the gate manually for damaged-on-arrival items — humans approve these case by case.",
+      "Decompose the condition: the 24-hour rule was protecting against a specific abuse pattern. The fix is to add a structured *exception path* (e.g., damaged-on-arrival with photographic evidence is its own gated tool / its own gate composition), not to loosen the original gate. Gates that don't model real-world exceptions become brittle; the right move is *more* gates, each precisely scoped, not fewer.",
+      "Replace the gate with a system-prompt rule and trust the agent to apply it correctly."
+    ],
+    "explanations": [
+      "Wrong — removing the 24-hour rule re-opens the abuse it was designed to prevent. The rule isn't wrong, it's incomplete: it doesn't model legitimate exceptions.",
+      "Wrong — manual override per case scales poorly and reintroduces human-discretion variance into a deterministic-compliance system. The exception belongs in the gate definition, not in human override.",
+      "Correct — gates are the right tool, but they must model the exceptions explicitly. A `process_damaged_arrival_refund` tool with its own gate (verified customer, photo evidence, order age within shipping window, etc.) handles the legitimate case while the original gate keeps protecting against abuse. The principle: when a gate is too strict for legitimate exceptions, add exception-specific tools/gates rather than loosening the universal one.",
+      "Wrong — moving the rule to a prompt re-introduces probabilistic compliance for a compliance-grade requirement. That's the original anti-pattern."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "6ab2704b-369c-4353-8ac0-4130381abcf3"
+  },
+  {
+    "question": "An agent can't determine the root cause of a billing dispute (a database query timed out twice). It produces a structured handoff: `{customer_id: \"C-48201\", root_cause: \"investigation_incomplete: db query timed out\", recommended_action: \"manual investigation needed; retry queries from clean session\", investigation_state: {tried_queries: [...], failed_at: \"2026-05-04T...\"}}`. Is this a *good* structured handoff per Task 1.4?",
+    "options": [
+      "Yes — verified customer_id, explicit root_cause label (`investigation_incomplete` is honest about the agent's state), specific recommended_action, and investigation_state showing what was already tried. The receiver picks up exactly where the agent stopped without redoing the timed-out queries. Honest 'I-don't-know-yet' handoffs with provenance are correct; the schema doesn't require the agent to fabricate diagnoses it doesn't have.",
+      "No — `root_cause` should always be a concrete diagnosis (e.g., \"duplicate charge,\" \"incorrect tax\"); 'investigation_incomplete' is too vague.",
+      "No — `recommended_action` should always be a specific fix; 'manual investigation needed' is too generic.",
+      "No — `refund_amount` must always be present in a handoff payload, even if null."
+    ],
+    "explanations": [
+      "Correct — a structured handoff's value isn't *certainty*; it's *clarity about what is known and what isn't*. An honest `investigation_incomplete` plus the tried-queries log is more useful than a fabricated diagnosis. The receiver knows the agent's state, what's been tried, and what to do next. This is exactly what structured handoff was designed for.",
+      "Wrong — forcing a concrete diagnosis when the agent doesn't have one would push it to fabricate. Honest provenance is a structured handoff principle (it overlaps with Task 5.6 on provenance).",
+      "Wrong — for cases the agent can't resolve, 'manual investigation needed' plus the structured `investigation_state` is the *correct* recommended action. It's specific to the receiver's role (re-investigate from clean state).",
+      "Wrong — `refund_amount` doesn't apply when the dispute hasn't been adjudicated. Forcing a null is fine; pretending it's always meaningful is the wrong rigour."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "99462a33-aabe-4199-8e01-521db6f0a504"
+  },
+  {
+    "question": "Customer-tier policy: refunds up to $100 for any verified customer, up to $500 for `premium` tier, up to $5000 with a manager-approval token. How should this be encoded?",
+    "options": [
+      "In the system prompt: state the rules clearly so the agent applies them.",
+      "Run three different agents (one per tier) and route customers to the right one based on tier.",
+      "Have the model self-check: ask \"is this customer premium?\" before processing each refund.",
+      "A single PreToolUse gate on `process_refund` that reads `session.verified_customer_id`, fetches the customer's tier from a tier-lookup, compares against `amount`, and either denies or allows. Manager approval is a separate verified state (`session.manager_approval_token`) the gate checks for amounts > $500. The tier and approval-token preconditions compose naturally; a single gate captures the entire policy deterministically."
+    ],
+    "explanations": [
+      "Wrong — policies enforced via prompt have probabilistic compliance, which is exactly the failure mode Task 1.4 prescribes against for compliance-grade rules. The model can be 'mostly right' on tier limits, but each violation is real money.",
+      "Wrong — splitting into three agents per tier triples the operational surface, requires routing logic that can itself fail, and doesn't scale (what about a fourth tier?). A composed gate is one place to express the policy.",
+      "Wrong — model self-check is still probabilistic. Even with the right answer most of the time, the failure mode is non-zero, and policy enforcement requires zero.",
+      "Correct — policy preconditions compose: tier-aware amount cap + verified manager-approval token for the high-amount path. One gate, parameterized on session state, is the deterministic encoding. The pattern generalizes: as policy grows (new tier, new exception path), the gate composes more preconditions; the encoding stays in one place."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "48016cdd-1c8f-47c7-b168-92992e1d8d41"
+  },
+  {
+    "question": "A team adds a PreToolUse gate to `process_refund`. Six months later, an audit finds the gate was bypassed in some sessions because a separate `process_payment_adjustment` tool, *not gated*, was used to issue the same effect (a credit back to the customer). What does this teach about programmatic enforcement?",
+    "options": [
+      "Gates are unreliable — switch to system-prompt rules, which apply universally.",
+      "The PreToolUse hook had a bug; re-implement it.",
+      "Programmatic enforcement is only as good as the *coverage* of its gates. Adding a gate to one tool doesn't protect against semantically equivalent tool calls via other tools. The lesson: enforcement must follow the *operation* (refund-equivalent state changes), not just one tool name. Either gate every refund-equivalent tool, or constrain the toolbox so only gated tools can produce that effect (Task 2.3 — scoped tool access).",
+      "Switch from PreToolUse to PostToolUse on the equivalent tool to log refunds after they happen."
+    ],
+    "explanations": [
+      "Wrong — moving from gates to prompts re-introduces probabilistic compliance, which is what gates were chosen to avoid. The lesson is about *coverage*, not about replacing the mechanism.",
+      "Wrong — the PreToolUse hook on `process_refund` worked exactly as designed. The bug is that another tool (`process_payment_adjustment`) wasn't gated. Re-implementing the working hook misses the diagnosis.",
+      "Correct — programmatic enforcement protects the gated tool calls; semantically equivalent operations through other tools route around the protection entirely. The architectural fix is to recognize *all* tools that produce the equivalent effect and gate each, or to scope the toolbox (Task 2.3) so the side-channel tool isn't available. Coverage and toolbox scoping work together.",
+      "Wrong — PostToolUse on `process_payment_adjustment` would log refund-equivalents *after* the side effect, which doesn't prevent them. PreToolUse on the equivalent tool is needed (or remove it from the toolbox)."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "81ad51dd-a027-4e59-a531-57f82fdd3e4e"
+  },
+  {
+    "question": "A coordinator passes shared context to three parallel subagents: `{verified_customer_id, customer_tier, recent_orders, billing_history}`. One subagent — a sentiment-analysis subagent for the chat tone — doesn't actually need the billing history or customer tier. Should the shared context be the same blob for all three?",
+    "options": [
+      "Yes — keep a unified shared-context blob to minimize maintenance complexity; subagents can ignore irrelevant fields.",
+      "No — pass each subagent only what it needs (Task 1.3's isolated-context principle, applied to *what's inside* the shared context). The sentiment subagent receives the customer's recent message and tone signals, not the billing history. Per-subagent briefs scoped to per-subagent need are smaller, more focused, and minimize accidental information leakage into outputs that don't need that information.",
+      "Yes — but encrypt the irrelevant fields the subagent doesn't need.",
+      "No — but for performance reasons (smaller context = faster), not architectural ones."
+    ],
+    "explanations": [
+      "Wrong — \"subagents can ignore irrelevant fields\" sounds harmless but is risky: the model may *use* fields that drifted into its context, e.g., sentiment analysis that mysteriously cites the customer's billing history. Information leakage is the real cost.",
+      "Correct — the Task 1.3 isolated-context principle applies *per field*, not just at the boundary. Shared context is shared *across subagents that need it*, but each subagent's brief should still be scoped. Sentiment needs the message + tone; refund-investigation needs the billing history; one-size shared context blurs the role contracts.",
+      "Wrong — encryption hides values from inspection but the model still has access at runtime; encryption doesn't solve the contamination/leakage concern.",
+      "Wrong (close call) — performance is a real benefit but it's a side effect, not the primary reason. The primary reason is architectural: per-subagent briefs preserve role scoping and prevent leakage."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "f5b0bb95-bd0d-4ece-b096-c955f09cbff5"
+  },
+  {
+    "question": "A team is satisfied with their current PreToolUse gate on `process_refund` (verified_customer_id non-null AND order ownership AND amount within policy). They argue: 'Once a customer is verified at the start of the session, the verified_customer_id sticks for the whole session, so we don't need to re-check across hours-long sessions.' Audit finds a case where a customer-service agent helped Customer A early in the session, then later — same SDK session, after a context handoff — issued a refund to Customer B's order. Both calls passed the gate. Diagnose.",
+    "options": [
+      "PreToolUse hooks don't actually persist session state across long sessions; switch to a database-backed session store.",
+      "The gate's order-ownership check is correct, but `verified_customer_id` is a session-scoped identity assertion, not a per-operation re-check. When a session spans multiple distinct customer interactions (or the agent context shifts mid-session), 'last verified ID wins' gates can mismatch the *current* customer being served. The fix: re-verify identity at customer-context boundaries (or scope verification more narrowly — e.g., per-conversation rather than per-session) and ensure the gate composes against the *current* asserted customer, not just any prior verification.",
+      "Lower the model temperature so the agent stops switching customers mid-session.",
+      "Replace the gate's customer ID comparison with a stronger system-prompt rule about not switching customers."
+    ],
+    "explanations": [
+      "Wrong — session state typically does persist; the bug isn't persistence, it's that 'one verified ID per session' is the wrong granularity when a session can serve multiple customers. Storage backend is irrelevant.",
+      "Correct — the conceptual bug is conflating session-lifetime verification with per-operation verification. A long session can drift away from the originally verified customer. Gates need to be scoped to the *current* asserted-customer context, not the lifetime-of-the-session verified ID. This is a subtle but exam-worthy point: gates compose preconditions, but the preconditions must be scoped to the right unit of work.",
+      "Wrong — temperature isn't the cause. The agent legitimately served two different customers; the gate failed to require re-verification at the customer boundary.",
+      "Wrong — prompt-based 'don't switch customers' is probabilistic; the fix has to be in the gate's scoping of `verified_customer_id`, not in instructions to the model."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "ce9593d8-e3ca-4e02-b1d3-5913fd793f83"
+  },
+  {
+    "question": "A team is debating where to put validation for the structured handoff payload. Option X: validate in the agent's `escalate_to_human` tool implementation (reject incomplete payloads at emit time). Option Y: validate in the receiving human queue's intake (mark incomplete tickets for follow-up). Option Z: validate in both. What's the most accurate Task 1.4 framing?",
+    "options": [
+      "Option Y — receiver-side validation is the only honest contract because the receiver knows what it needs.",
+      "Option X — validate at emit time only. If the payload is incomplete, the agent must fix it before the handoff exists; downstream validation papers over upstream non-compliance and lets bad payloads accumulate.",
+      "Option X — and the receiver should always trust the agent's payload as a tradeoff for simplicity.",
+      "Option Z — both. Validate at emit (so the agent must produce a complete payload) AND on receive (defense in depth: catch any drift between agent and receiver schemas, and catch payloads that came from non-agent paths). The receiver-side check is the safety net; the emit-side check is the contract. Skipping the emit-side check encourages the agent to ship 'mostly correct' payloads and offload validation, which is the upstream-compliance failure mode Task 1.4 warns against."
+    ],
+    "explanations": [
+      "Wrong — receiver-side-only puts all the validation burden downstream and lets the agent produce sloppy payloads. The agent's contract is to emit complete handoffs; that contract should be enforced where it's authored.",
+      "Wrong (close call) — emit-side validation is essential, but skipping receiver-side validation entirely assumes the schema never drifts and that all payloads come from the trusted agent path. Defense in depth is the better engineering posture, and Task 1.4's structured-handoff principle is about the receiver being able to act without re-investigation, which receiver-side validation reinforces.",
+      "Wrong — 'always trust the agent' is exactly the brittle posture that lets a single bug ship malformed payloads to humans. Receiver-side as a safety net costs little and catches real bugs.",
+      "Correct — validate at emit (the agent's contract is to produce complete payloads; incomplete ones should never leave the agent) AND validate at receive (defense in depth: schema drift, non-agent intake paths, and just-in-case sanity). The exam tests the principle that validation in the next agent / queue 'papers over upstream non-compliance' — that critique applies when receiver-side is the *only* validation, not when it's a safety net on top of upstream enforcement."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "a5b2ba12-d032-480f-9242-991690d7caab"
+  },
+  {
+    "question": "An agent decomposes a multi-concern message into four parallel investigations. Three subagents return clean structured findings; the fourth (return-policy lookup) returns `{status: \"error\", reason: \"policy DB unavailable\"}`. Which synthesis approach best fits Task 1.4's pattern for the unified response?",
+    "options": [
+      "Wait and silently retry the failed subagent until it succeeds, then synthesise. The customer should only see a complete response.",
+      "Drop the failed concern from the response — addressing three of four concerns is better than mentioning a failure.",
+      "Synthesise a unified response that resolves the three successful concerns explicitly AND surfaces the fourth concern's failure honestly with a structured next step (e.g., 'I couldn't reach the returns system; I've logged this and a human will follow up — reference CASE-…'). Partial-success synthesis with explicit gaps is the correct pattern; silent drops and indefinite retries are both anti-patterns.",
+      "Synthesise only the failure into the user-facing response and discard the three successful findings until the fourth completes."
+    ],
+    "explanations": [
+      "Wrong — silent retry indefinitely blocks the response and provides no transparency. If a backend is down, the customer should be told what was and wasn't resolved, not left waiting.",
+      "Wrong — silently dropping a concern is precisely the failure mode the multi-concern pattern is supposed to prevent. The customer raised four concerns; ignoring the fourth degrades trust and may mean the customer brings it back later when context is lost.",
+      "Correct — the unified-response synthesis must reflect the truth of the parallel investigations: what was resolved, what wasn't, and what the next step is for the unresolved part. Transparent partial-success with a structured next step (often a structured handoff for the failed concern) is the canonical Task 1.4 pattern. Honest provenance (Task 5.6) reinforces this.",
+      "Wrong — discarding successful findings throws away work and makes the response less useful. The synthesis should reflect both successes and the gap; not collapse to only the gap."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "2302c341-3c79-4c7c-94ed-9c8cc9f63016"
+  },
+  {
+    "question": "A team replaces a deterministic PreToolUse gate (`if session.verified_customer_id is null: deny`) with a hook that calls a second LLM as a 'judge' to decide whether the refund call should proceed. The judge is given the conversation transcript and asked: 'Was the customer adequately verified before this refund? Answer allow or deny.' What's the most accurate Task 1.4 critique?",
+    "options": [
+      "This is a clever modernization; the LLM-judge can catch nuanced verification cases the deterministic gate would miss.",
+      "The LLM-judge is fine for read-only operations but wrong for refunds because of latency.",
+      "The deterministic gate was wrong; LLM-judges are strictly better because they understand context.",
+      "The LLM-judge re-introduces probabilistic compliance into the enforcement layer. Programmatic enforcement requires deterministic checks; replacing the deterministic check with another model judgment turns the gate into 'two prompts agreeing,' which is still probabilistic. The compliance-grade requirement (zero failure rate on refunds without verified ID) is broken. Use the LLM-judge for advisory or audit purposes, not as the gate itself."
+    ],
+    "explanations": [
+      "Wrong — the 'modernization' framing is exactly the trap the exam tests. Sophisticated probabilistic enforcement is still probabilistic. A nuanced LLM judgment on a financial pre-condition is not a substitute for a deterministic check.",
+      "Wrong — latency is a side concern. The fundamental issue is determinism. Even with zero latency, an LLM-judge gate is probabilistic.",
+      "Wrong — 'understands context' doesn't translate to deterministic guarantees. For compliance-grade operations, deterministic-but-narrow beats probabilistic-but-nuanced every time.",
+      "Correct — gates exist to convert probabilistic compliance into deterministic compliance. Substituting an LLM-judge as the gate inverts that purpose: you're back to probabilistic compliance dressed up as enforcement. LLM-judges have legitimate uses (audit, anomaly flagging, advisory layers above deterministic gates) but the gate-of-last-resort for compliance-grade operations must be deterministic. This is one of the trickiest distractors in the topic."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "b8147140-8b7d-48ec-a188-fc7b929e7c0b"
+  },
+  {
+    "question": "A team's process_refund gate is correct and never wrongly approves a refund, but the operations team complains they have *no visibility* into how often the gate denies a call, what reasons it cites, or which agents trigger denies most. They propose: 'Let's just remove the deny logging — we trust the gate.' How should the architect respond?",
+    "options": [
+      "Agree — if the gate is correct, deny logging is noise. Trust the deterministic check.",
+      "Disagree — gates without observability are operationally blind. Deny events are *the most valuable* trace for compliance review and for diagnosing agent regressions: a sudden spike in denies usually signals a model regression, a prompt change, or an upstream verification path that broke. Programmatic enforcement and observability are co-requirements, not alternatives. Keep deny logs (with the structured `reason`) and route them to monitoring; don't silence them.",
+      "Disagree — but only because regulators may audit. Internal observability isn't valuable.",
+      "Agree — and remove approval logs too, since the gate's correctness is the only thing that matters."
+    ],
+    "explanations": [
+      "Wrong — 'gate is correct' addresses the compliance question but not the operational question. Without deny logs, the team has no way to detect when something upstream of the gate (a regression in the verification path, a new tool that bypasses the flow) starts producing more denies than baseline.",
+      "Correct — deny events are the canonical signal that the agent attempted a non-compliant operation. They're invaluable for: detecting model regressions (suddenly more denies means the model is trying to refund without verifying more often), audit (proving the gate fired when expected), and diagnosing customer issues (a customer who 'couldn't get a refund' may have hit a deny the team needs to see). Programmatic enforcement without observability is half-built. Keep the structured deny reasons; route them to monitoring; alert on anomalies.",
+      "Wrong — internal observability is enormously valuable independent of regulatory pressure. Diagnosing an agent regression in a non-regulated domain still depends on these logs.",
+      "Wrong — removing approval logs in addition to deny logs leaves no audit trail at all, which fails both compliance review and operational debugging. The right move is to *keep* both."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "f3deb4af-ff85-4764-a1fd-66ae9634ebb0"
+  },
+  {
+    "question": "An agent makes a `process_refund` call. The PreToolUse gate allows it, the refund tool returns success, and a PostToolUse hook records the refund in `session.refunds_issued`. The same model turn then makes a *second* `process_refund` call for the same order_id (a model glitch — the model 'forgot' it just did this). The second call also passes the gate. Audit reveals duplicate refunds in production. What is the right design fix?",
+    "options": [
+      "Lower the model temperature so it stops emitting duplicate calls.",
+      "Trust that this is rare and add a system-prompt rule: 'Never call process_refund twice for the same order in one turn.'",
+      "Add an idempotency precondition to the gate: each refund call must include an `idempotency_key` (or the gate must check `session.refunds_issued` against the order_id and amount). Duplicate calls are denied with 'already refunded.' Idempotency is a precondition like any other and belongs in the gate composition, not in the prompt or the model's memory. The gate's job is to be deterministic against *all* the relevant preconditions, including 'has this exact operation already happened in this session.'",
+      "Switch from PreToolUse to PostToolUse and rely on after-the-fact reconciliation."
+    ],
+    "explanations": [
+      "Wrong — temperature can reduce the rate of glitches but doesn't eliminate them. And the gate's job is to defend against the model's mistakes, including duplicate calls.",
+      "Wrong — system-prompt rules are probabilistic. A duplicate refund is real money; the failure rate must be zero. Prompt-based duplicate-suppression is exactly the anti-pattern Task 1.4 warns about.",
+      "Correct — idempotency is a precondition that composes into the gate. The gate now checks: verified customer + order ownership + amount within policy + not-already-refunded-this-session. Duplicate calls deterministically deny. This generalizes the 'gates compose all preconditions' principle: 'has this side effect already occurred' is one of the preconditions, not an afterthought. The fix lives in the gate, not in the prompt.",
+      "Wrong — PostToolUse fires after the side effect; for a duplicate refund, the second refund has already issued. PreToolUse with idempotency in the gate composition is the right answer."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "faf1a7bc-f375-4072-9935-e44d6d8ca6df"
+  },
+  {
+    "question": "A team has a working multi-step Scenario 1 implementation: gate-protected refunds, structured handoffs, parallel decomposition. Leadership asks: 'When the next-generation model arrives — much smarter, much better at instruction-following — can we drop the gates and rely on the prompt?' What's the most accurate Task 1.4 framing of this question?",
+    "options": [
+      "Yes — once instruction-following crosses ~99.99%, gates become redundant and adding them is over-engineering.",
+      "Yes — but only for refunds under a certain amount; high-amount gates should remain.",
+      "No — model improvements reduce the *probabilistic failure rate* of prompt-based ordering, but reducing it isn't the same as eliminating it. Compliance-grade operations require *zero* failure rate, which is a categorically different requirement from 'very low rate.' A 99.99% compliant model still fails on the one-in-ten-thousand call that happens to be the regulator's audit case. Programmatic enforcement is the right architecture *because* it's the only mechanism that gives zero, regardless of how good the model is.",
+      "No — but only because new models can't be trusted yet; once trust is established, drop the gates."
+    ],
+    "explanations": [
+      "Wrong — 'crosses ~99.99%' is exactly the trap. Compliance-grade requirements aren't asymptotic; they're categorical. A single failure is one too many for a refund issued to the wrong account. The gate's value isn't 'better than the model'; it's 'guaranteed,' which the model can never claim regardless of capability.",
+      "Wrong — splitting by amount avoids the principle. Even small wrongful refunds, in aggregate, are compliance and trust failures. The threshold isn't dollar amount; it's 'is the failure rate required to be zero.'",
+      "Correct — this is the central exam intuition restated for the future-model case. Probabilistic compliance asymptotes toward but never reaches zero. Deterministic compliance via gates *is* zero. As models improve, the cost of prompt-based failures may drop but never to zero, and the architectural distinction (probabilistic vs deterministic) remains exactly the same. The right answer doesn't depend on model generation.",
+      "Wrong — 'trust' is a probabilistic frame. The architectural argument is that no level of model trust converts probabilistic compliance into deterministic compliance. The framing 'eventually drop the gates' misunderstands what gates are for."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "ab9f992d-182c-4156-a808-6c1db2d266ee"
+  },
+  {
+    "question": "A handoff from Agent A to a downstream automated Agent B uses a structured payload. Agent B receives `{customer_id, root_cause, recommended_action, investigation_state}`. Agent B's prompt says 'review the customer's case and execute the recommended_action.' In production, Agent B occasionally executes recommended_actions that are factually wrong or misaligned with policy. How should the handoff design be hardened?",
+    "options": [
+      "Trust Agent A's recommended_action verbatim — that's the point of structured handoffs.",
+      "Have Agent B fully re-investigate from scratch using the customer_id; ignore recommended_action entirely.",
+      "Treat `recommended_action` as a *recommendation*, not a directive. Agent B should validate it against current state and policy before executing — and Agent B's tool calls remain gated by their own PreToolUse hooks (verified state, policy compliance, etc.). The structured handoff *informs* Agent B without bypassing Agent B's own enforcement boundaries. Handoffs accelerate the receiver's work; they do not transfer authority around the receiver's gates.",
+      "Have Agent A include a cryptographic signature over recommended_action so Agent B knows it's genuine and can execute without checks."
+    ],
+    "explanations": [
+      "Wrong — verbatim trust collapses Agent B into a pass-through executor of whatever Agent A recommended, including mistakes. Structured handoffs are *evidence* the receiver uses; they're not authorization to bypass the receiver's own checks.",
+      "Wrong — full re-investigation negates the value of the structured handoff (which is to let the receiver act without re-investigating). The right pattern is informed action under the receiver's own gates, not blind trust nor full re-investigation.",
+      "Correct — the structured handoff is a *recommendation* and an *information packet*; the receiver's own gates remain authoritative. Agent B reads the recommendation, validates it against current state, and runs through its own PreToolUse gates when executing actions. This preserves the principle that each agent's enforcement boundaries protect *that* agent's tool calls; handoffs don't carry permissions across boundaries. Receiver-agnostic schema + receiver-local gates = composable safety.",
+      "Wrong — signatures verify *origin* but not *correctness*. Agent A's signed recommendation can still be wrong, and signing it doesn't bypass the right of Agent B's gates to enforce policy."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "5908c670-de8d-47ae-b863-907f64f2a795"
+  },
+  {
+    "question": "A coordinator runs three parallel investigations on a multi-concern customer message. Halfway through, subagent A successfully issues a refund (`process_refund` returned success); subagent B then discovers that the customer's account is actually flagged for fraud review and the refund should not have been issued — but the original gate on `process_refund` correctly approved it because the fraud flag was set in a separate system the gate didn't read. How should this be addressed within Task 1.4's framing?",
+    "options": [
+      "Roll back the refund automatically with a compensating action and add the fraud-review check to the refund gate's preconditions. Parallel investigations can produce information that retroactively invalidates an in-flight side effect; the architectural lesson is twofold — (a) gate composition must include all available state, including fraud flags from adjacent systems, and (b) when parallel work uncovers retroactive invalidation, the orchestration needs an explicit compensating-action path (issue a reverse credit + structured handoff to fraud-ops). Parallelism without compensation can leave inconsistent state.",
+      "Don't issue the refund in the first place — run subagents serially so each can see prior subagents' findings before acting.",
+      "Trust the gate as-is; the fraud flag is the fraud team's problem, not the refund flow's.",
+      "Add a system-prompt rule telling the agent to check fraud flags before refunds."
+    ],
+    "explanations": [
+      "Correct — two intertwined points the exam tests. First, gate composition: the gate's preconditions must include all relevant state, including fraud flags held in other systems. A gate that doesn't read fraud-flag state has an incomplete precondition set. Second, parallel orchestration occasionally produces retroactive invalidation — subagent B finds something that should have stopped subagent A's already-issued action. The orchestration must include compensating actions (reverse the refund, structured handoff to fraud-ops with full context) and not pretend the side effect didn't happen. Parallelism is fast but requires this discipline.",
+      "Wrong — serializing parallel work to avoid retroactive invalidation gives up the parallel-decomposition benefit and is a strict regression for cases where concerns are genuinely independent. The fix is gate composition + compensation, not abandoning parallelism.",
+      "Wrong — separation-of-concerns at the team level doesn't excuse the refund gate from incorporating relevant state. If a fraud flag affects refund eligibility, the gate must read it. 'Other team's problem' is the structural failure here.",
+      "Wrong — system-prompt rules give probabilistic compliance. The fraud flag is exactly the kind of compliance-grade precondition that belongs in the gate composition, not the prompt."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "72c976a2-592a-4612-91e1-0d76ccf6bf8b"
+  },
+  {
+    "question": "An engineer argues: 'Our `process_refund` gate denies maybe 200 calls a week. Each deny means the agent had to retry after `get_customer`. That's 200 wasted refund attempts. Let's change the architecture so `process_refund` *automatically* calls `get_customer` first if `verified_customer_id` is missing, then proceeds with the refund — saves the deny-retry cycle.' What's the most accurate Task 1.4 critique?",
+    "options": [
+      "Agree — collapsing get_customer into process_refund is a clean optimization that removes a wasteful round-trip.",
+      "Disagree on performance grounds — auto-calling adds latency to every refund. Keep the deny-retry pattern.",
+      "Disagree on architecture grounds — folding `get_customer` into `process_refund` collapses two distinct operations with two distinct authorities. Identity verification is a separate concern (it has its own audit trail, its own failure modes, and its own legitimate uses outside refunds). Auto-calling `get_customer` inside the refund tool means a refund call without prior verification *appears* to succeed end-to-end, which obscures the deny signal that operationally indicates 'agent skipped verification.' Keep the gate as a deny boundary; the deny-retry cycle is a feature (it surfaces the agent's incorrect ordering) not a cost. Optimization that erases the signal also erases the visibility.",
+      "Agree — but only if the auto-`get_customer` call is itself gated against another precondition."
+    ],
+    "explanations": [
+      "Wrong — 'clean optimization' framing misses that the deny was the architecturally important event. Erasing it makes the system *less* observable and conflates two independent operations into one opaque call. It also creates surprising semantics: callers of `process_refund` no longer know whether identity verification was prior-art or implicit-side-effect.",
+      "Wrong (close call) — latency is a real concern but it's secondary. The primary critique is that the deny was telling the team something operationally important (the agent attempted refund without verification, which signals a regression worth investigating), and folding the call into the refund tool silences that signal.",
+      "Correct — Task 1.4's whole framing is that gates make non-compliance *visible* and *deterministic*. Folding the prerequisite into the gated tool turns the gate from a deny boundary into an implicit dispatcher, losing the deny signal that operations teams use to spot agent regressions. Separation of concerns: `get_customer` is identity verification (with its own audit, semantics, error handling); `process_refund` is the refund operation; the gate composes preconditions that include 'verification has run.' Don't collapse them. The deny-retry cycle is *correct* behaviour, not waste.",
+      "Wrong — gating the auto-call doesn't restore the lost deny visibility on the original `process_refund` call. The composability problem (each tool has clear, separate semantics) is independent of how many gates the auto-call has."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.4"
+    ],
+    "phase": "post",
+    "qid": "cd005b4d-7259-40cb-937e-5aacb6e9ee96"
+  }
+]

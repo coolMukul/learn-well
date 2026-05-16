@@ -1,0 +1,882 @@
+[
+  {
+    "question": "Which of these CLAUDE.md locations is loaded for every project the user opens, regardless of which repository they are in?",
+    "options": [
+      "~/.claude/CLAUDE.md",
+      ".claude/CLAUDE.md at the repo root",
+      "CLAUDE.md at the repo root",
+      "A CLAUDE.md inside any subdirectory of the project"
+    ],
+    "explanations": [
+      "Correct: ~/.claude/CLAUDE.md is the user-level memory file in the developer's home directory and applies to every project that user opens.",
+      "This is project-level memory — it only applies to that one repository, not every project the user opens.",
+      "This is also project-level memory at the repo root and is scoped to that repository only.",
+      "Subdirectory CLAUDE.md files are scoped to that subtree of one project, not all projects."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "pre",
+    "qid": "3e42444e-6fc0-4616-aea0-00d9845d1c1d"
+  },
+  {
+    "question": "A teammate clones your repo and reports that Claude Code is ignoring the project's commit-message rule, even though it works perfectly on your machine. Where does the rule most likely live?",
+    "options": [
+      "In .claude/CLAUDE.md at the repo root",
+      "In ~/.claude/CLAUDE.md on your machine",
+      "In a CLAUDE.md inside the affected subdirectory",
+      "In .claude/rules/commit.md inside the repo"
+    ],
+    "explanations": [
+      "Project-level memory at the repo root is committed to VCS and would be loaded for the teammate identically.",
+      "Correct: user-level memory is in your home directory, never committed to VCS, so teammates never receive it. The fix is to move the rule into project-level memory.",
+      "A subdirectory CLAUDE.md inside the repo is committed and would also be loaded for the teammate.",
+      ".claude/rules/ files are inside the repo and committed; the teammate would see them too."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "pre",
+    "qid": "ce1a2e9d-8348-4041-98ad-90b097fe816c"
+  },
+  {
+    "question": "What does the /memory command do in a Claude Code session?",
+    "options": [
+      "Lists the memory files (CLAUDE.md and imports) currently loaded into the session",
+      "Edits the project CLAUDE.md from inside the session",
+      "Compacts the conversation by summarising prior turns",
+      "Reloads CLAUDE.md after you change it on disk"
+    ],
+    "explanations": [
+      "Correct: /memory is a read-only diagnostic that shows which memory files are in scope right now, including imports.",
+      "/memory does not edit anything — it only reports what is currently loaded.",
+      "That describes /compact, not /memory.",
+      "/memory shows the loaded set; it does not itself reload memory after edits."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "pre",
+    "qid": "089cbe5c-abe6-4376-a12b-0af3b97b0a61"
+  },
+  {
+    "question": "What is the purpose of the @import syntax in a CLAUDE.md file?",
+    "options": [
+      "To declare a runtime dependency that the harness fetches over the network",
+      "To conditionally load a file only when its contents become relevant",
+      "To inline the contents of another file into the importing CLAUDE.md at load time",
+      "To register a slash command from another file"
+    ],
+    "explanations": [
+      "@import resolves a local file path; it is not a network fetcher.",
+      "@import is unconditional — if the importing file is loaded, the imported file is loaded too.",
+      "Correct: @import is a file reference that inlines the imported file's contents into the importing CLAUDE.md so the agent sees one combined document.",
+      "Slash commands are registered via .claude/commands/, not via @import in CLAUDE.md."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "pre",
+    "qid": "056bda84-22d2-4afc-96a5-311ec09df176"
+  },
+  {
+    "question": "Which is the best way to organise a very large set of project conventions instead of putting them all into one CLAUDE.md file?",
+    "options": [
+      "Move them all into ~/.claude/CLAUDE.md so the file isn't checked into VCS",
+      "Split them into topic-specific files under .claude/rules/, or @import them from a slim root CLAUDE.md",
+      "Inline them into every slash command's prompt so they ride along with each command",
+      "Place a copy of CLAUDE.md in every subdirectory so every directory has the full ruleset"
+    ],
+    "explanations": [
+      "User-level memory is per-user and not shared with teammates, so the rules would no longer be team-wide.",
+      "Correct: .claude/rules/ and @import-based modular files keep ownership clear, diffs small, and each rule discoverable.",
+      "Slash command prompts are not the project memory mechanism — duplicating rules into them is brittle and out of scope.",
+      "Subdirectory CLAUDE.md files are loaded additively when working in that tree, so duplicating the full ruleset everywhere creates conflicts and bloat."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "pre",
+    "qid": "55883498-e867-4cb3-acd9-ef2796931e2c"
+  },
+  {
+    "question": "Which statement about user-level CLAUDE.md is correct?",
+    "options": [
+      "It is automatically synced across all of a user's machines",
+      "It is committed to the repo by default but ignored by Claude on other machines",
+      "It is not shared with teammates because it lives in the user's home directory, outside the repo",
+      "It overrides project-level CLAUDE.md silently with no way to detect the override"
+    ],
+    "explanations": [
+      "There is no automatic cross-machine sync — only what the user sets up themselves (e.g., dotfiles).",
+      "User-level memory is not in the repo at all, so nothing is committed.",
+      "Correct: ~/.claude/CLAUDE.md sits in the user's home directory; VCS never tracks it, so teammates do not receive it.",
+      "/memory will list it explicitly, so any precedence effect is visible to the user."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "pre",
+    "qid": "267ce2af-48a0-4f21-8f83-86a73fca9d0c"
+  },
+  {
+    "question": "Your team's React tests live next to source as ComponentName.test.tsx scattered across many directories. You want one set of test conventions to apply to all of them regardless of location. What is the best mechanism?",
+    "options": [
+      "A rule file in .claude/rules/ with YAML frontmatter declaring a glob like **/*.test.tsx",
+      "A CLAUDE.md inside every subdirectory that contains a *.test.tsx file",
+      "A single test convention block in ~/.claude/CLAUDE.md",
+      "A slash command developers run before each test edit"
+    ],
+    "explanations": [
+      "Correct: .claude/rules/ supports filename-pattern scoping via globs in frontmatter, which fits files spread across many directories.",
+      "Subdirectory CLAUDE.md scopes by directory tree, not by filename pattern, and would require duplicating the rules everywhere.",
+      "User-level memory is per-developer and not shared via VCS, so the team would not have a consistent rule.",
+      "A slash command is opt-in per call; project memory should be the source of truth for conventions."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "pre",
+    "qid": "daa32191-3b3c-4d82-8dbd-feb356074347"
+  },
+  {
+    "question": "Which of the following is an anti-pattern when configuring CLAUDE.md?",
+    "options": [
+      "Running /memory to verify which files are loaded before debugging a missing rule",
+      "Splitting a large root CLAUDE.md into .claude/rules/*.md files with focused topics",
+      "Using @import in the root CLAUDE.md to reference per-domain rule files",
+      "Putting team-wide conventions in ~/.claude/CLAUDE.md"
+    ],
+    "explanations": [
+      "/memory is the correct diagnostic first step when a rule isn't being followed.",
+      "This is the recommended pattern for keeping memory readable and ownership clear.",
+      "@import-based modular organisation is supported and recommended for large rule sets.",
+      "Correct: user-level memory isn't shared via VCS, so team-wide rules placed there create silent divergence between teammates."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "pre",
+    "qid": "9a08bbd4-de61-4dbd-92a0-4c5151ec405b"
+  },
+  {
+    "question": "When the agent edits a file under apps/api/ in a monorepo, which CLAUDE.md files are typically loaded into context?",
+    "options": [
+      "Only the root project CLAUDE.md because subdirectory files are deprecated",
+      "Only apps/api/CLAUDE.md because it is the most specific",
+      "User (~/.claude/CLAUDE.md), root project CLAUDE.md, and apps/api/CLAUDE.md if present",
+      "Only ~/.claude/CLAUDE.md because user memory takes precedence"
+    ],
+    "explanations": [
+      "Subdirectory CLAUDE.md is fully supported and loads when the agent works inside that subtree.",
+      "Loading is additive, not exclusive; the more general files are not unloaded when a subdirectory file exists.",
+      "Correct: memory is additive across tiers — user, project, and any in-scope subdirectory CLAUDE.md all load.",
+      "User memory loads alongside, not instead of, project and subdirectory memory."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "pre",
+    "qid": "77dd903b-248c-4b3e-bfad-a74d90d2fa8a"
+  },
+  {
+    "question": "An engineer adds @import .claude/rules/security.md to the project CLAUDE.md. How can they verify the file actually got loaded?",
+    "options": [
+      "Check that the path is listed in package.json under claude.imports",
+      "Open security.md in the editor — if it opens, the import worked",
+      "Look for an @import success log in the terminal where Claude Code started",
+      "Run /memory and confirm security.md appears in the list of loaded memory files"
+    ],
+    "explanations": [
+      "There is no claude.imports field in package.json — @import is configured inside CLAUDE.md itself.",
+      "The file existing on disk doesn't prove the harness loaded it; the path could be wrong relative to the importing file.",
+      "Claude Code does not print per-import success logs; @import failures are silent.",
+      "Correct: /memory is the runtime diagnostic that lists every loaded memory file including imports — broken @import paths simply don't appear."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "pre",
+    "qid": "0b202fc1-7f50-4cfa-859c-694fdab0a556"
+  },
+  {
+    "question": "Two engineers work in the same repo. Engineer A's Claude Code follows a 'no console.log in committed code' rule; Engineer B's does not. Both pull the latest main. What is the most likely root cause?",
+    "options": [
+      "The rule lives in Engineer A's ~/.claude/CLAUDE.md and was never moved to project-level memory",
+      "Engineer B's machine is missing the Claude Code CLI install",
+      "VCS stripped the rule from the project CLAUDE.md during the last merge",
+      "Engineer B's session needs to be restarted before subdirectory CLAUDE.md files load"
+    ],
+    "explanations": [
+      "Correct: differential behaviour between teammates pulling the same code almost always traces to a user-scope file that one has and the other lacks.",
+      "If the CLI weren't installed, Claude Code wouldn't run at all, not run with partial rules.",
+      "VCS does not selectively strip content; if the rule were in the file, both engineers would see it.",
+      "Subdirectory files are loaded automatically when in scope; restarting wouldn't be a known requirement here."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "80f1a9d6-cbaa-49e2-a9ea-a838cd6f9dfe"
+  },
+  {
+    "question": "You want a small root CLAUDE.md that pulls in three domain rule files. Which line is the correct way to reference one of them?",
+    "options": [
+      "include('.claude/rules/testing.md')",
+      "@import .claude/rules/testing.md",
+      "{{ load: .claude/rules/testing.md }}",
+      "<import src=\".claude/rules/testing.md\" />"
+    ],
+    "explanations": [
+      "There is no include() function in CLAUDE.md syntax.",
+      "Correct: @import takes a single relative path and inlines that file's contents into the importing CLAUDE.md at load time.",
+      "Mustache-style template tags are not part of the CLAUDE.md memory format.",
+      "CLAUDE.md is plain Markdown with @import; it does not parse XML-style import tags."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "221a3cda-8f16-4211-beb0-6c43c60155d5"
+  },
+  {
+    "question": "Which of these is the BEST description of .claude/rules/?",
+    "options": [
+      "An organisational pattern: a directory of focused, topic-specific rule files that are still loaded as project memory",
+      "A separate runtime that runs after CLAUDE.md and can override anything in it",
+      "A directory whose files are only loaded when the developer manually invokes them with a slash command",
+      "A user-level alternative to ~/.claude/CLAUDE.md that ships with the repo"
+    ],
+    "explanations": [
+      "Correct: .claude/rules/ is the same memory system as CLAUDE.md, just split into single-purpose files for readability and ownership.",
+      "There is no separate runtime — the rule files are loaded as memory like any other CLAUDE.md content.",
+      "The files are loaded automatically based on scope/glob, not gated behind a slash command.",
+      ".claude/rules/ is project-level (inside the repo, committed to VCS), not user-level."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "1c5baf12-0b8e-4345-ba33-deb6c8b829e5"
+  },
+  {
+    "question": "A junior engineer says 'Claude isn't following our error-handling rule.' What should you do FIRST?",
+    "options": [
+      "Edit the rule to be more explicit and try again",
+      "Run /memory to check whether the file containing the rule is currently loaded",
+      "Move the rule from project-level to user-level memory",
+      "Add @import to several other places in case loading order is the issue"
+    ],
+    "explanations": [
+      "Editing without diagnosis risks 'fixing' a file that isn't loaded at all.",
+      "Correct: /memory is the diagnostic. If the file isn't in the loaded list, no edit to its contents will help.",
+      "User-level memory is not shared with the team — that would make the rule less effective, not more.",
+      "Loading order is not the typical issue; verify scope first."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "5331ddbe-b317-4697-80b7-b2df8c8a5090"
+  },
+  {
+    "question": "Your monorepo has CLAUDE.md at the root saying 'use Prettier defaults' and apps/mobile/CLAUDE.md saying 'two-space indent, no semicolons.' When Claude edits apps/mobile/src/App.tsx, what happens?",
+    "options": [
+      "Only the root CLAUDE.md loads; subdirectory CLAUDE.md is ignored unless explicitly imported",
+      "Only apps/mobile/CLAUDE.md loads; the root CLAUDE.md is unloaded for files inside apps/mobile/",
+      "Both files are loaded, with the more specific subdirectory rules effectively refining the root rules",
+      "An error is raised because the two files contain conflicting instructions"
+    ],
+    "explanations": [
+      "Subdirectory CLAUDE.md is loaded automatically when the agent works in that subtree; no @import needed.",
+      "The root file is not unloaded just because a subdirectory file exists.",
+      "Correct: memory is additive across tiers; both are in scope and the more specific file effectively wins on overlapping rules.",
+      "There is no error mechanism that blocks layered rules — conflicts are resolved by precedence, and the maintainer should remove duplicates."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "37afe334-50d4-42c7-b6bd-115325b4a8be"
+  },
+  {
+    "question": "Which statement about @import is TRUE?",
+    "options": [
+      "It is conditional — the imported file only loads when its content seems relevant to the current task",
+      "It is unconditional inlining — if the importing file is in scope, the imported file is in scope",
+      "It supports glob patterns like @import .claude/rules/*.md to import many files at once",
+      "It runs at agent runtime, fetching the file fresh on every tool call"
+    ],
+    "explanations": [
+      "There is no relevance check; @import is unconditional.",
+      "Correct: @import inlines the file's contents into the parent CLAUDE.md at load time — there is no relevance gating.",
+      "@import takes a single explicit path, not a glob.",
+      "@import resolves at memory load time, not on every tool call."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "8d4d5591-cac8-4d99-9005-56c616bee190"
+  },
+  {
+    "question": "You want a rule to apply only when Claude works on files inside services/payment/. Which is the cleanest fit?",
+    "options": [
+      "A line in ~/.claude/CLAUDE.md prefixed with 'For services/payment only:'",
+      "A rule file in .claude/rules/payment.md with no frontmatter",
+      "A CLAUDE.md placed inside services/payment/",
+      "A single root CLAUDE.md with all domain rules concatenated together"
+    ],
+    "explanations": [
+      "User-level memory is not committed and applies to every project; prefix text alone does not enforce scope.",
+      "Without frontmatter scoping, a .claude/rules file is project-wide; it would apply outside services/payment/ too.",
+      "Correct: subdirectory CLAUDE.md is exactly the directory-tree-scoped memory tier; it loads only when the agent works inside that subtree.",
+      "A monolithic root CLAUDE.md applies its rules everywhere; prose qualifiers are not a real scoping mechanism."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "a8b98f8a-7003-44d9-a443-967c6fcd06af"
+  },
+  {
+    "question": "Which is a legitimate use of ~/.claude/CLAUDE.md?",
+    "options": [
+      "Shared list of forbidden APIs the team is migrating away from",
+      "The team's official commit-message convention",
+      "Repository-specific path aliases that everyone needs to know",
+      "Personal preferences like 'show diffs in unified format' or 'I prefer pnpm over npm'"
+    ],
+    "explanations": [
+      "Anything 'shared' across the team must live in project memory; user memory is not shared.",
+      "Team conventions belong in project-level memory so every clone of the repo gets them.",
+      "Repository-specific information belongs in the repository's CLAUDE.md, not in personal user memory.",
+      "Correct: user-level memory is for personal ergonomics that should not be imposed on teammates and that travel with the user across projects."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "9607d605-efa5-4f08-b7be-362e4b8bc04f"
+  },
+  {
+    "question": "A teammate reports that /memory does not list .claude/rules/security.md, even though it's in the repo. What is the most likely explanation?",
+    "options": [
+      "security.md must be edited before /memory will report it",
+      ".claude/rules files require a special enable flag in package.json",
+      "/memory hides files from the .claude directory by default",
+      "Nothing is importing or otherwise pulling security.md into scope, so the harness doesn't load it"
+    ],
+    "explanations": [
+      "Files don't need to be edited to appear in /memory — they need to be loaded.",
+      "There is no such enable flag in package.json.",
+      "/memory does not hide files based on directory location; if loaded, they appear.",
+      "Correct: a file's existence on disk doesn't load it; it must be referenced (e.g., via @import or by being in a scoped rules directory the harness loads) to appear in /memory."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "de494755-c5da-43d6-8c2c-35770e394c7c"
+  },
+  {
+    "question": "Which of the following best describes the precedence relationship between user, project, and subdirectory CLAUDE.md when they all apply?",
+    "options": [
+      "They load in random order, so behaviour is non-deterministic",
+      "Only the most specific file loads; the others are ignored",
+      "Only the user file loads; project files are advisory",
+      "All three load additively; more specific files effectively override less specific ones on overlapping rules"
+    ],
+    "explanations": [
+      "Order is deterministic by tier; the harness is not random.",
+      "Loading is additive, not exclusive — the broader files remain in scope.",
+      "User-level memory does not override project-level; project-level is the team-shared baseline.",
+      "Correct: loading is additive, and on overlapping rules the more specific (closer-scoped) file effectively wins."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "cdd4925c-07b9-426a-96d2-f2c408a836bd"
+  },
+  {
+    "question": "You moved a rule from a 600-line monolithic root CLAUDE.md into .claude/rules/api-conventions.md to declutter. After the move, the rule no longer seems to apply. What is the MOST likely cause?",
+    "options": [
+      "Nothing is referencing api-conventions.md, so it isn't being loaded — the rule needs an @import or a scoped rules-directory pattern that the harness picks up",
+      "Files inside .claude/ are excluded from memory loading by default",
+      "Markdown files in subdirectories must use .mdx extension to be loaded",
+      "The harness caches the old monolithic CLAUDE.md until the developer's machine is rebooted"
+    ],
+    "explanations": [
+      "Correct: a file in .claude/rules/ doesn't load by magic — it loads either because the harness's rules-directory pattern picks it up or because something @imports it. Cutting and pasting without wiring it up leaves it unreferenced.",
+      "The .claude directory is exactly where Claude Code looks for configuration — it is not excluded.",
+      "Memory files are .md, not .mdx.",
+      "Memory is loaded per session from disk; there is no cross-session OS-level cache requiring a reboot."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "5d0de6d2-0cb0-4637-b7db-1733b5eedfb7"
+  },
+  {
+    "question": "Which scenario most clearly calls for .claude/rules/ with a glob in YAML frontmatter rather than a subdirectory CLAUDE.md?",
+    "options": [
+      "A single legacy folder that should never receive new endpoints",
+      "Tests live next to source as *.test.tsx scattered across the whole repo and need shared conventions",
+      "Personal formatting preferences for one engineer's workflow",
+      "Conventions specific to one Git worktree but not the main checkout"
+    ],
+    "explanations": [
+      "A single legacy directory is best handled by a subdirectory CLAUDE.md inside that directory.",
+      "Correct: glob-scoped rules in .claude/rules/ apply by filename pattern wherever the file lives — exactly the case for *.test.tsx scattered across directories.",
+      "Personal preferences belong in user-level CLAUDE.md, not in shared project rules.",
+      "Worktree-specific conventions are not a scoping tier in the CLAUDE.md hierarchy at all."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "2651a665-eaa6-43ee-b11d-b035df160464"
+  },
+  {
+    "question": "A new contributor checks out the repo and notices the project's coding standards 'don't apply' until they run a particular slash command. Looking at the repo, the rules are in .claude/rules/. What is most likely going on?",
+    "options": [
+      "The rule files are correctly placed but the contributor's session is working on a path the rules' globs don't cover, so /memory would show them as not loaded for that path",
+      "Rule files in .claude/rules/ require explicit per-session activation via a slash command",
+      "Project-level memory is opt-in and contributors must edit ~/.claude/CLAUDE.md to enable it",
+      "Claude Code intentionally suppresses rules until a user has been on the codebase for several sessions"
+    ],
+    "explanations": [
+      "Correct: rules with glob frontmatter only load when the agent is operating on a path that matches; /memory is the diagnostic to confirm whether a file is in scope.",
+      "There is no per-session activation slash command for rules; loading is automatic when in scope.",
+      "Project-level memory is automatic, not opt-in via personal user files.",
+      "There is no warm-up period before rules are honoured."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "63824bcf-9db1-4db7-a1e2-f90382b720ae"
+  },
+  {
+    "question": "Which of these is the strongest argument for using @import in a root CLAUDE.md instead of pasting all rules inline?",
+    "options": [
+      "@import lets the rules apply to teammates who haven't installed the Claude Code CLI",
+      "@import causes the harness to load the imported file lazily, only when needed, saving context window",
+      "Smaller, single-purpose files allow clear ownership and produce cleaner PR diffs when one team updates only their domain",
+      "@import enables runtime fetching of rule updates without requiring a fresh git pull"
+    ],
+    "explanations": [
+      "Teammates without Claude Code don't run any of this regardless; @import doesn't change that.",
+      "@import is unconditional inlining at load time, not lazy loading.",
+      "Correct: the win is maintainability — small focused files with clear ownership, smaller diffs, and lower merge-conflict surface area.",
+      "@import inlines local files; it does not perform network fetches."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "15466045-8e32-4db3-b295-6d8c96bf00e0"
+  },
+  {
+    "question": "/memory shows the project root CLAUDE.md and ~/.claude/CLAUDE.md are loaded, but the file at apps/web/CLAUDE.md is not listed. The agent is working on apps/api/src/server.ts. What does this most likely indicate?",
+    "options": [
+      "Only the closest CLAUDE.md to the user's home directory ever loads",
+      "apps/web/CLAUDE.md has a syntax error preventing it from loading",
+      "Subdirectory CLAUDE.md files require an @import from the root file to load at all",
+      "Subdirectory CLAUDE.md only loads when the agent operates inside that subtree — apps/web is not in scope for an apps/api edit"
+    ],
+    "explanations": [
+      "User-home distance is not how CLAUDE.md scope works.",
+      "A syntax-error explanation is possible but less likely than the simple scoping answer; the agent is in apps/api, not apps/web.",
+      "Subdirectory CLAUDE.md loads automatically when in scope; no @import is required.",
+      "Correct: subdirectory memory is tree-scoped — apps/web/CLAUDE.md isn't loaded when the agent is editing files outside apps/web."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "ce654e63-e95c-41d2-8421-45ff880ad2c7"
+  },
+  {
+    "question": "A team mixes both .claude/rules/ and root-CLAUDE.md @imports. Which statement best describes how these two organisational patterns relate?",
+    "options": [
+      "They are complementary — both end up as project memory; the choice is between a single canonical entry point with @imports and a discoverable directory of self-describing rule files",
+      "They are mutually exclusive — using one disables the other",
+      ".claude/rules/ overrides @import, so any rule in both will use the rules-directory copy",
+      "@import always wins on conflict, so rule files inside .claude/rules/ become advisory"
+    ],
+    "explanations": [
+      "Correct: both load as memory; the difference is organisational/ergonomic, not runtime semantics.",
+      "There is no exclusivity flag; teams routinely use both.",
+      "There is no override hierarchy between the two — they're the same memory system.",
+      "Same — neither is documented as winning over the other; they are the same mechanism organised differently."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "810a2786-63a7-4c31-88c3-310f04cda5f0"
+  },
+  {
+    "question": "An engineer adds @import .claude/rules/*.md to root CLAUDE.md hoping to load every rule file at once. /memory afterwards lists the root CLAUDE.md but no rule files. What is wrong?",
+    "options": [
+      "Memory imports are limited to three files per CLAUDE.md",
+      "@import works only at the top of the file; theirs is probably below other content",
+      "/memory has a known bug where wildcard imports don't appear",
+      "@import takes a single explicit path; it does not expand glob patterns. Each file must be imported individually"
+    ],
+    "explanations": [
+      "There is no documented hard cap of three imports per CLAUDE.md.",
+      "Position within the file is not a constraint on @import.",
+      "The behaviour is by design, not a bug; the harness simply doesn't expand globs in @import.",
+      "Correct: @import resolves to one named file. Glob expansion is not part of the syntax."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "be5aae4d-f0f4-4299-8966-d654d3a21ed1"
+  },
+  {
+    "question": "You want a rule that fires for every file matching apps/**/*.api.ts everywhere they appear. Which approach is correct?",
+    "options": [
+      "An @import at the root CLAUDE.md pointing to the glob",
+      "A subdirectory CLAUDE.md placed at every apps/<package>/ folder",
+      "A file in .claude/rules/ with a glob in YAML frontmatter targeting apps/**/*.api.ts",
+      "A line in ~/.claude/CLAUDE.md describing the convention"
+    ],
+    "explanations": [
+      "@import does not accept globs and does not scope the rule to a glob — it would inline the file unconditionally.",
+      "Subdirectory CLAUDE.md is tree-scoped, not pattern-scoped; you'd have to copy it into every package and it would still apply to all files in that tree, not just *.api.ts.",
+      "Correct: glob frontmatter in .claude/rules/ matches by filename pattern across directories — the only mechanism that scopes by glob.",
+      "User-level memory is per-developer and not shared via VCS, so the team would not share the rule."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "05c691e3-f953-4615-a0c3-a0f4e3e88876"
+  },
+  {
+    "question": "Which combination correctly classifies each scope as either 'shared with teammates via VCS' (S) or 'not shared' (N)?",
+    "options": [
+      "~/.claude/CLAUDE.md = S; .claude/CLAUDE.md = S; root CLAUDE.md = S; subdirectory CLAUDE.md = N",
+      "~/.claude/CLAUDE.md = N; .claude/CLAUDE.md = S; root CLAUDE.md = S; subdirectory CLAUDE.md = S",
+      "~/.claude/CLAUDE.md = N; .claude/CLAUDE.md = N; root CLAUDE.md = S; subdirectory CLAUDE.md = N",
+      "~/.claude/CLAUDE.md = S; .claude/CLAUDE.md = N; root CLAUDE.md = N; subdirectory CLAUDE.md = S"
+    ],
+    "explanations": [
+      "User-level memory is in the home directory and is not shared via VCS.",
+      "Correct: only files inside the repo are tracked by VCS; the user file lives in the home directory and is per-user.",
+      ".claude/CLAUDE.md and subdirectory CLAUDE.md are inside the repo and are shared.",
+      "User memory is not shared; .claude/CLAUDE.md and root CLAUDE.md are shared."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "b5687b73-61fb-4705-959b-87f9ae532011"
+  },
+  {
+    "question": "Two engineers see different /memory output for the same repository, with the same git HEAD. Which explanation is the most precise?",
+    "options": [
+      "The repo's hidden .git/memory.json has drifted between the two clones",
+      "/memory caches output from a previous session; one engineer's cache is stale",
+      "/memory shows what is loaded right now, which depends on per-machine user-scope files and the agent's current working scope — both vary independently of git HEAD",
+      "Subdirectory CLAUDE.md files are randomised across machines for load balancing"
+    ],
+    "explanations": [
+      "There is no .git/memory.json; memory is plain CLAUDE.md files in the working tree and home directory.",
+      "/memory does not cache across sessions; it is a live readout.",
+      "Correct: /memory reports the actual current load, which combines user-scope (per machine) and project/subdirectory scope (depends on the agent's working path), neither of which is fully determined by git HEAD.",
+      "There is no randomisation or load balancing of memory files."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "f4d75028-41e8-45e8-94af-ae93e899e434"
+  },
+  {
+    "question": "A developer reports: 'Adding @import .claude/rules/api.md to my CLAUDE.md silently does nothing — the rule isn't being followed and api.md isn't in /memory.' Which is the MOST likely explanation, given the symptom set?",
+    "options": [
+      "The relative path resolves incorrectly from the importing file's location, and @import failures are silent — the file is simply missing from the loaded set",
+      "@import only works for files outside the repo, so referencing .claude/rules/api.md fails by policy",
+      "/memory deliberately hides files imported by name to reduce noise",
+      "The harness blocks @import when the imported file already exists in .claude/rules/"
+    ],
+    "explanations": [
+      "Correct: @import resolves a relative path from the importing file. A wrong path silently produces no load and no warning, which exactly matches 'silently does nothing' plus the file missing from /memory.",
+      "@import absolutely supports files in the repo; that's the canonical use.",
+      "/memory shows imported files; it doesn't hide them.",
+      "There is no such block; both mechanisms can coexist."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "8b4aae25-50a7-458e-a45a-b705ef18b2ec"
+  },
+  {
+    "question": "A team has 'no any types in TypeScript' written in three places: root CLAUDE.md, .claude/rules/typescript.md (imported from root), and apps/api/CLAUDE.md. Which statement best describes the impact?",
+    "options": [
+      "The harness deduplicates exact-match rules automatically, so there is no maintenance risk",
+      "The rule's effect is not three times stronger; duplication risks divergence over time as one copy is edited and the others aren't — collapse to one source of truth",
+      "The agent treats triplicated rules as critical and obeys them more strictly",
+      "Duplication is required for subdirectory scoping to take effect"
+    ],
+    "explanations": [
+      "There is no documented automatic deduplication of memory content.",
+      "Correct: layering doesn't multiply weight; the real cost is silent drift when only one of the copies is updated.",
+      "Repetition does not encode priority; the agent treats rules by their content, not their count.",
+      "Subdirectory scoping does not require duplicating rules from the parent."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "780dbc70-00cf-45f7-ba77-f3eb00822016"
+  },
+  {
+    "question": "Engineer A and Engineer B clone the same repo. Engineer A's /memory shows seven files; Engineer B's shows five. Both are on the same branch and the same commit. Which is the strongest, single-cause explanation?",
+    "options": [
+      "Engineer B's git index is corrupt and silently skipped two CLAUDE.md files",
+      "Engineer A has additional user-level memory in ~/.claude/CLAUDE.md (and possibly imports from there) that Engineer B doesn't have",
+      "Engineer A's /memory output includes deleted files; the count will reconcile after a session restart",
+      "Engineer B's machine has a different version of Markdown that doesn't recognise CLAUDE.md"
+    ],
+    "explanations": [
+      "Git index corruption causes obvious failures, not silent partial loads of CLAUDE.md.",
+      "Correct: project-level memory is identical for both at the same commit; the divergence almost always comes from user-level files that vary per machine.",
+      "/memory does not list deleted files; it reflects the current load.",
+      "Markdown is not versioned per-machine in a way that would hide CLAUDE.md."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "14fc12de-69e8-426c-ac85-df20513b67cc"
+  },
+  {
+    "question": "Your team is debating whether 'rules that apply to all *.test.ts in the repo' should live in (1) a subdirectory CLAUDE.md inside a tests/ folder, or (2) a glob-scoped file in .claude/rules/. Tests are co-located with source, not in a tests/ folder. Which is the correct answer and why?",
+    "options": [
+      "(2) — subdirectory CLAUDE.md is tree-scoped and cannot pattern-match filenames spread across many directories; .claude/rules/ with a glob is the only mechanism that does so",
+      "(1) — subdirectory CLAUDE.md applies to filename patterns within the repo regardless of directory location",
+      "Either, since both mechanisms scope by filename pattern equivalently",
+      "(2), but only because .claude/rules/ runs after CLAUDE.md and therefore overrides it"
+    ],
+    "explanations": [
+      "Correct: subdirectory memory is bound to a directory tree, not a filename pattern. With co-located tests, only glob-scoped .claude/rules/ matches the spread.",
+      "Subdirectory CLAUDE.md is tree-scoped, not filename-pattern-scoped — and there is no tests/ folder for it to sit in.",
+      "They are not equivalent: one scopes by tree, the other by glob.",
+      "There is no 'runs after' override semantics; .claude/rules/ wins for this case because of glob scoping, not load order."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "5af9eef3-e07c-42dc-94a6-da4c17cb5878"
+  },
+  {
+    "question": "A teammate insists 'the rule is in our repo, so /memory must be wrong if it doesn't show.' What is the most precise correction?",
+    "options": [
+      "Files are loaded only after they are committed and pushed to origin",
+      "/memory is decorative output; it doesn't actually reflect what the agent reads",
+      "The agent reads every Markdown file in the repo, so /memory's list is always incomplete",
+      "/memory shows what is loaded right now; a file existing in the repo doesn't guarantee it is referenced by anything that is in scope for the current session"
+    ],
+    "explanations": [
+      "Push state to origin is irrelevant; loading is from the local filesystem.",
+      "/memory is the canonical diagnostic; it is not decorative.",
+      "The agent does not read every Markdown file — only files that are part of the memory load.",
+      "Correct: /memory is an accurate runtime readout; absence implies non-load, which usually means the file isn't referenced by the active scope chain."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "ec8f662b-7995-4eef-bbba-f7fd405102ca"
+  },
+  {
+    "question": "Which scenario is most uniquely solved by an @import in the project root CLAUDE.md, and not equally well by .claude/rules/ files alone?",
+    "options": [
+      "You want rules to apply only when working under apps/legacy/",
+      "You want filename-pattern scoping for *.test.tsx",
+      "You want a single canonical entry-point file (the root CLAUDE.md) that explicitly lists, in order, the standards the project depends on — including some that live outside .claude/rules/",
+      "You want each developer's personal preferences to override the team's"
+    ],
+    "explanations": [
+      "Tree-scoped rules are best handled by subdirectory CLAUDE.md.",
+      "Filename-pattern scoping is the .claude/rules/ frontmatter strength, not @import's.",
+      "Correct: the unique value of @import is composition with explicit ordering and the freedom to import from arbitrary paths, not just .claude/rules/.",
+      "Personal preferences belong in user-level memory, not in @import or .claude/rules/."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "2a425e81-485e-4b94-a902-176dca332b41"
+  },
+  {
+    "question": "Which of the following is the SHARPEST distinction between a subdirectory CLAUDE.md and a glob-scoped file in .claude/rules/?",
+    "options": [
+      "Subdirectory CLAUDE.md is auto-generated; .claude/rules/ must be hand-written",
+      "Subdirectory CLAUDE.md is loaded before user CLAUDE.md; .claude/rules/ is loaded after",
+      "Subdirectory CLAUDE.md is plain Markdown; .claude/rules/ files must be JSON",
+      "Subdirectory CLAUDE.md scopes by directory tree; .claude/rules/ with frontmatter scopes by filename pattern, which can cross directories"
+    ],
+    "explanations": [
+      "Neither is auto-generated; both are hand-written by maintainers.",
+      "Load order between scopes is not the conceptual difference being tested, and the framing is misleading.",
+      "Both are Markdown; .claude/rules/ files are not JSON.",
+      "Correct: this is the conceptual distinction the exam tests — tree scoping vs filename-pattern scoping."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "f31c7402-df2d-402c-841c-e976302e1782"
+  },
+  {
+    "question": "An engineer says 'I'll prove the rule is loaded by reading CLAUDE.md in the editor.' Why is this insufficient compared to running /memory?",
+    "options": [
+      "/memory parses Markdown faster than an editor",
+      "Reading the file proves it exists on disk, not that the harness loaded it for the current session and scope; /memory is the runtime readout that tells you what's actually in context",
+      "Editors cache CLAUDE.md and may show stale content, while /memory always reads from origin",
+      "Reading CLAUDE.md changes the agent's behaviour because it counts as a tool call"
+    ],
+    "explanations": [
+      "Parsing speed is irrelevant to the diagnosis question.",
+      "Correct: file-on-disk and file-in-context are different states. /memory tells you the latter; the editor only tells you the former.",
+      "/memory reads from local files, not 'origin'; the editor caching framing is a red herring.",
+      "Reading a file in the editor doesn't directly modify agent behaviour or count as a tool call."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "fb97f61c-7bc2-4977-a99e-39462d6a92ad"
+  },
+  {
+    "question": "Which scenario most clearly demands that a rule live in user-level memory rather than project-level memory?",
+    "options": [
+      "A project-specific deployment runbook that everyone needs",
+      "The team has a coding standard that all PRs must be in TypeScript strict mode",
+      "A shared linter configuration that should apply to every contributor",
+      "An individual developer prefers verbose explanations in chat output, but their teammates prefer terse — only the developer wants this default applied to every project they open"
+    ],
+    "explanations": [
+      "Project-specific runbooks belong in the project, not in personal user memory.",
+      "Team coding standards belong in project-level memory so every clone of the repo gets them.",
+      "Shared linter rules belong in project memory or in the linter config — never user memory.",
+      "Correct: per-developer preferences that should travel across all of that user's projects belong in ~/.claude/CLAUDE.md — exactly the user-scope use case."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "641bd452-dd57-4007-a9f1-7e87d59aef14"
+  },
+  {
+    "question": "Which is the SHARPEST reason 'just put everything in one big CLAUDE.md' is discouraged for large teams?",
+    "options": [
+      "Monolithic files make /memory display incorrect line numbers",
+      "Claude Code refuses to load CLAUDE.md files larger than 50 KB",
+      "Single-owner monoliths produce frequent merge conflicts, obscure ownership, and bury rules — splitting via .claude/rules/ or @import gives focused files with clear owners and clean diffs",
+      "@import is required by the harness — a CLAUDE.md without imports is silently ignored"
+    ],
+    "explanations": [
+      "/memory listings aren't about line numbers; this distractor is fabricated.",
+      "There is no documented 50 KB cap; the issue is human maintainability, not a hard size limit.",
+      "Correct: the operational reasons are merge conflicts, unclear ownership, and discoverability — addressed by splitting into focused files.",
+      "@import is optional; a CLAUDE.md with no imports is fully valid."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.1"
+    ],
+    "phase": "post",
+    "qid": "3734fb6c-1722-4be5-9d95-4f9568a7a346"
+  }
+]

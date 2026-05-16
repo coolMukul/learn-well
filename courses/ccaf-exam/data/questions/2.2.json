@@ -1,0 +1,882 @@
+[
+  {
+    "question": "An MCP tool's underlying API call times out. To signal failure correctly to the agent harness and the model, what should the tool return?",
+    "options": [
+      "A normal-shaped response object whose top-level isError flag is set to true and whose content carries a structured error payload.",
+      "A response with a 200-style content block containing the prose 'Error: upstream timeout after 5 seconds.'",
+      "An empty content array so the model infers from the absence of data that the call did not complete.",
+      "A thrown exception that propagates out of the tool implementation so the harness intercepts it as an error."
+    ],
+    "explanations": [
+      "Correct. The MCP isError boolean is the machine-readable signal that turns the response into an error tool_result; the structured payload then tells the agent what kind of failure it was.",
+      "A 200-shaped response with an error string in content is the canonical anti-pattern: the harness sees success, retry middleware never fires, and the model has to parse natural language to detect failure.",
+      "An empty content array reads as a successful empty result; the agent cannot tell the call failed, and any 'no matches' logic will misfire.",
+      "MCP tools are expected to return structured error envelopes with isError: true rather than throwing — exceptions bypass the protocol's typed-error contract and lose the structured metadata."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "pre",
+    "qid": "b21df322-0a77-44c5-a092-5ebb2367998b"
+  },
+  {
+    "question": "A refund tool rejects a request because the amount exceeds the customer's $500 self-service cap. Which error category best describes this failure?",
+    "options": [
+      "Transient — the cap may change later, so the call could eventually succeed.",
+      "Validation — the amount field violated a constraint the tool enforces.",
+      "Business — the input was well-formed but the operation is not allowed by policy.",
+      "Permission — the agent lacks authorization to invoke process_refund at this amount."
+    ],
+    "explanations": [
+      "Caps are policy decisions, not transient infrastructure problems. Marking them transient would cause middleware to retry on a call that will keep failing for the same policy reason.",
+      "Validation describes malformed input (wrong type, missing field, bad format). A correctly-formatted $750 refund is well-formed; it is just not allowed.",
+      "Correct. Business errors are well-formed requests blocked by policy. Recovery is to explain or escalate, not retry — and the envelope should be marked isRetryable: false with a recommendedAction.",
+      "Permission errors mean the caller's role or scope cannot use the tool at all. Here the role can call process_refund; the specific amount happens to violate a business rule."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "pre",
+    "qid": "0de8935b-6c6a-4d02-b249-2a910b746118"
+  },
+  {
+    "question": "A customer support agent calls lookup_order(customer_id='C-48201'). The customer genuinely has no orders on file. What is the most informative response shape for the tool to return?",
+    "options": [
+      "isError: true with errorCategory 'transient' so the agent retries in case the lookup missed an order.",
+      "An empty results array with isError: false, queryExecuted: true, and matchCount: 0.",
+      "A bare empty array [] with no envelope — the agent will infer 'no results' from the empty list.",
+      "isError: true with errorCategory 'validation' to signal that the customer_id may not have matching data."
+    ],
+    "explanations": [
+      "Marking a successful empty query as transient causes pointless retries on every customer who really has no orders, and may trigger over-escalation.",
+      "Correct. The triple isError: false + queryExecuted: true + matchCount: 0 unambiguously signals 'the query ran and the answer is genuinely empty,' so the agent can confidently report no orders.",
+      "A bare [] is the canonical anti-pattern: the agent cannot tell 'no matches' from 'lookup blew up,' and may either confidently report no orders for a customer with three or pointlessly retry on a customer who has none.",
+      "The customer_id is well-formed and the query ran successfully — there is no validation failure. Misclassifying this would force the agent to ask the user to 're-enter' a perfectly valid ID."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "pre",
+    "qid": "562e0c9d-18fe-464d-9776-557096f8cc19"
+  },
+  {
+    "question": "Which field on an error envelope is specifically the machine-actionable shortcut a retry middleware layer reads to decide whether to re-invoke a tool without involving the model?",
+    "options": [
+      "errorCategory",
+      "message",
+      "isRetryable",
+      "policyCode"
+    ],
+    "explanations": [
+      "errorCategory is the semantic signal the model uses to pick its next move (retry, reformat, escalate, report). Middleware can derive retry intent from it, but the dedicated boolean is the canonical shortcut.",
+      "message is human-readable description — useful for logs and the model's reasoning, but not the structured retry decision field.",
+      "Correct. isRetryable is the boolean middleware reads directly to decide retry-with-backoff vs propagate, collapsing model-in-the-loop overhead for common transient cases.",
+      "policyCode is a stable identifier for business-rule violations (e.g., REFUND_CAP_EXCEEDED) — useful for routing and analytics, not for retry decisions."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "pre",
+    "qid": "4651e9aa-d42a-445a-abb3-b21db5e1f702"
+  },
+  {
+    "question": "A research subagent calls news_search and gets a 503 error. Best practice for handling this failure in a coordinator–subagent system is:",
+    "options": [
+      "Immediately propagate the 503 to the coordinator so the coordinator can decide whether to retry.",
+      "Have the subagent retry with backoff locally; only propagate to the coordinator if local recovery fails.",
+      "Silently swallow the error and return an empty result list so the coordinator's synthesis context stays clean.",
+      "Terminate the entire research workflow because one source is unavailable."
+    ],
+    "explanations": [
+      "Bubbling every transient error to the coordinator forces it into the retry-decision business and bloats its context with operational noise instead of findings.",
+      "Correct. Local recovery in the subagent keeps coordinator context clean for the common transient case; only residual unrecoverable failures propagate, and they should carry partialResults plus what was attempted.",
+      "Silently swallowing errors hides the failure from monitoring and causes downstream synthesis to confuse 'access failure' with 'valid empty,' producing confidently-wrong reports.",
+      "Whole-workflow termination on a single subagent failure is an anti-pattern; the right move is local recovery, then propagate with partial results so the coordinator can annotate a coverage gap and continue."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "pre",
+    "qid": "a4fa5fea-77c1-4c3d-87cb-7f9e4ece2e5e"
+  },
+  {
+    "question": "An MCP tool implementation does this: try: return backend.query() except Exception: return []. Why is this an anti-pattern for Task 2.2?",
+    "options": [
+      "It is too slow because exception handling has overhead in Python.",
+      "It does not log the exception, which makes debugging harder.",
+      "It violates the MCP protocol's requirement that all tools must throw exceptions on failure.",
+      "It collapses every failure into a valid-empty result, so the agent cannot distinguish 'no matches' from 'the lookup failed.'"
+    ],
+    "explanations": [
+      "Performance is not the concern here; correctness is. Exception-handling cost is negligible compared to the agent-level bug this pattern causes.",
+      "Logging is a real concern but secondary; the primary 2.2 failure is the loss of the empty-vs-error distinction at the agent's reasoning layer.",
+      "MCP tools are not required to throw — they are required to return structured error envelopes with isError: true. The anti-pattern is returning an empty success, not the absence of an exception.",
+      "Correct. The bare except: return [] turns access failures into valid empty results. The agent then confidently reports 'no orders' for a customer whose lookup actually crashed, suppressing escalations that should have happened."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "pre",
+    "qid": "dbf98fab-4597-46f4-aa3b-253739c38477"
+  },
+  {
+    "question": "When designing an error envelope for a business-rule rejection (e.g., refund over cap) that the agent will surface to the customer, which combination of fields is most appropriate?",
+    "options": [
+      "errorCategory: 'business', isRetryable: true, message: 'Refund cap exceeded.'",
+      "errorCategory: 'business', isRetryable: false, plus a customerMessage string and a recommendedAction.",
+      "errorCategory: 'transient', isRetryable: true, message: 'Refund failed; please try again later.'",
+      "isError: false with results: [] so the agent reports the refund completed but with no payout."
+    ],
+    "explanations": [
+      "isRetryable: true on a business error causes middleware to loop on a call whose policy will not change between attempts; budget burns and the user waits for the same denial.",
+      "Correct. The combination isRetryable: false plus customerMessage (verbatim wording) plus recommendedAction lets the agent route to escalate_to_human and reply in deterministic, on-brand language without leaking internal codes.",
+      "Misclassifying the business rule as transient triggers retries; telling the customer to 'try again later' invites them to retry the same exact request that policy will continue to reject.",
+      "Returning isError: false for a business denial is dishonest about what happened; the customer believes the refund went through and discovers later it did not."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "pre",
+    "qid": "5a87b85d-5b77-49ba-b787-f88e242a22a5"
+  },
+  {
+    "question": "A search subagent has retried news_search three times and exhausted local recovery. When propagating to the coordinator, which information is most important to include?",
+    "options": [
+      "errorCategory, isRetryable, plus partialResults from any successful sub-queries and a list of what was attempted.",
+      "Only the most recent error message string, to keep the propagated payload small.",
+      "A stack trace from the underlying HTTP client so the coordinator can debug.",
+      "Just isError: true and an empty results array, letting the coordinator infer the rest."
+    ],
+    "explanations": [
+      "Correct. Structured error context — category, retryable flag, partial results, and attempted operations — lets the coordinator decide between proceeding with a noted gap, retrying via an alternative subagent, or escalating to the user.",
+      "An error string alone forces the coordinator to choose between failing the whole workflow and pretending the gap doesn't exist; it cannot annotate a coverage gap or pick an alternative without structured context.",
+      "Stack traces are operational debug artifacts that pollute model context with token-heavy detail the coordinator cannot use to make a decision.",
+      "Empty results without an error envelope is the anti-pattern this task warns about: the coordinator cannot distinguish 'access failed' from 'really no matches' and synthesis will be confidently wrong."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "pre",
+    "qid": "23436d91-a0fe-4f88-80cf-2ee39bb9b55f"
+  },
+  {
+    "question": "Which of the following is the WRONG approach to handling errors from an MCP tool?",
+    "options": [
+      "Return a single uniform 'Operation failed' string for all failure modes so the agent always handles them the same way.",
+      "Return a structured envelope with errorCategory, isRetryable, and a human-readable message.",
+      "Distinguish access failures from valid empty results using fields like queryExecuted and matchCount.",
+      "Recover transient errors locally in the subagent before propagating to the coordinator."
+    ],
+    "explanations": [
+      "Correct identification of the anti-pattern. Uniform 'Operation failed' destroys the agent's ability to choose a recovery strategy: it cannot tell retry-with-backoff from reformat-and-retry from explain-and-escalate.",
+      "This is the recommended pattern, not an anti-pattern.",
+      "Distinguishing access failure from valid empty is the correct fix, not a wrong approach.",
+      "Local recovery in subagents is the recommended pattern; bubbling every error up is the anti-pattern."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "pre",
+    "qid": "a279febe-8d9d-44f5-907b-fd1b87d1cc8d"
+  },
+  {
+    "question": "What is the recommended recovery strategy when a tool returns a validation error indicating that order_id 'O991' does not match the expected format O-\\d+?",
+    "options": [
+      "Retry the same call with exponential backoff because validation errors are typically transient.",
+      "Escalate immediately to a human agent because validation failures indicate data corruption.",
+      "Return the validation error verbatim to the customer without attempting any correction.",
+      "Have the agent reformat the call (e.g., to 'O-991') and retry; the original malformed input would keep failing unchanged."
+    ],
+    "explanations": [
+      "Validation errors mean the input itself is wrong — retrying the identical malformed input is guaranteed to fail again. Backoff doesn't change a malformed value into a well-formed one.",
+      "Escalation is overkill for a fixable formatting issue; it wastes a human agent's time when the model can correct the field itself given a descriptive validation error.",
+      "Returning a raw validation error to the customer leaks internal contract details and provides no useful recovery — the customer rarely knows what 'O-\\d+' means.",
+      "Correct. Validation errors require the agent to derive a corrected call. A good validation envelope names the offending field and expected shape so the agent can reformat without re-deriving the entire call."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "pre",
+    "qid": "e04960d2-4ac9-4933-8e34-e208b679ecfe"
+  },
+  {
+    "question": "A multi-agent research system has a synthesis subagent that confidently writes 'no recent regulations on EU AI policy were found.' Investigation reveals the search subagent silently returned an empty list when its primary index was unavailable. Which structural fix in the search tool's error contract addresses the root cause?",
+    "options": [
+      "Add a stronger system prompt to the synthesis subagent telling it to be skeptical when results are empty.",
+      "Have the synthesis subagent always retry the search at least once before drawing conclusions.",
+      "Increase the timeout on the search tool so the upstream index has more time to respond.",
+      "Make the search tool return isError: true with queryExecuted: false on access failures, distinguishing them from isError: false + queryExecuted: true + matchCount: 0 valid empty results."
+    ],
+    "explanations": [
+      "Prompt-level skepticism is probabilistic and the synthesis agent will still occasionally trust an empty list; the bug is structural — empty arrays carry two meanings.",
+      "Blind retry forces every empty result through the retry loop, including legitimate 'no results' cases, and still doesn't tell the synthesizer which empty was real.",
+      "Longer timeouts may reduce the rate of access failures but do not solve the ambiguity — the tool will still return [] for both cases when failures do occur.",
+      "Correct. Typing the empty-vs-error distinction at the tool boundary is the root-cause fix: synthesis can now annotate a coverage gap when queryExecuted is false, and confidently report 'no results' only when matchCount: 0 is paired with queryExecuted: true."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "9b2d382b-b8b4-4389-a78b-f646b8a1704f"
+  },
+  {
+    "question": "A customer support agent's process_refund call fails with errorCategory: 'transient', isRetryable: true. The middleware retries three times with exponential backoff and the call succeeds on the third attempt. What should appear in the coordinator's context after this sequence?",
+    "options": [
+      "All three attempts and their error responses, so the coordinator can audit the retry behaviour.",
+      "Only the successful final response — the local retry was handled inside the subagent and the coordinator does not need to know.",
+      "A summary message 'Refund processed after 3 attempts' so the coordinator notes the instability.",
+      "An isError: true response with partialResults from the first two attempts so the coordinator can decide whether to try a different tool."
+    ],
+    "explanations": [
+      "Surfacing all three attempts bloats coordinator context with operational noise that does not help synthesis or the next decision; logging is a separate channel for audit.",
+      "Correct. Local recovery should be invisible to the coordinator on success — context economy keeps the synthesis agent focused on findings rather than retry chatter.",
+      "Annotating instability is a monitoring concern, not a context-economy one; the coordinator's prompt does not need to reason about transient retry counts on a successful operation.",
+      "There is nothing to propagate — the call ultimately succeeded. Propagating an error envelope after success would mislead the coordinator into thinking the refund failed."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "a9cbccc0-6da5-4eba-a1ae-624005c24291"
+  },
+  {
+    "question": "You are choosing between marking a permission error (API key lacks 'refunds:write' scope) as isRetryable: true vs isRetryable: false. Which is correct and why?",
+    "options": [
+      "isRetryable: true — the permissions might be granted later by an administrator while the session is still active.",
+      "isRetryable: true — retrying with a slightly delayed call may succeed if the auth cache propagates.",
+      "isRetryable: false — the scope will not change between attempts in the same call sequence; retrying wastes budget and delays the right next move (escalate or use a different tool).",
+      "It depends — return isRetryable: null and let the agent decide based on the message string."
+    ],
+    "explanations": [
+      "Even if permissions might change later, they will not change within the agent's retry window. Marking it retryable causes middleware to loop pointlessly while the user waits.",
+      "Auth-cache propagation is rare in practice and not a reliable basis for a retry contract; this rationalization is exactly the kind of subtle bug isRetryable is designed to prevent.",
+      "Correct. Permission errors are unambiguously isRetryable: false — the operation cannot succeed without an out-of-band scope change, so the right next move is escalate or pick a different tool, not retry.",
+      "isRetryable: null defeats the purpose of a machine-actionable shortcut; middleware then has to consult the model on every error, recreating the latency the field was designed to eliminate."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "0397fbbf-21e1-4c63-bda4-37dab54bc4b6"
+  },
+  {
+    "question": "A business-error envelope returns errorCategory: 'business', isRetryable: false, and a message field 'REFUND_CAP_EXCEEDED'. The agent surfaces this verbatim to the customer, who replies 'what does that mean?' What is missing from the envelope?",
+    "options": [
+      "A customerMessage field with deterministic, on-brand wording the agent can lift verbatim into its reply.",
+      "A stack trace so the customer can forward it to support.",
+      "A retryAfterMs hint so the customer knows when to try again.",
+      "A higher cap so the refund would have succeeded."
+    ],
+    "explanations": [
+      "Correct. The customerMessage field carries customer-friendly wording the agent uses verbatim, preventing both leaked policy codes ('REFUND_CAP_EXCEEDED') and brand-voice drift across replies.",
+      "Stack traces are internal debugging artifacts that should never reach customers; they leak implementation details and are useless to a non-technical user.",
+      "Business errors are non-retryable; a retryAfter hint would be misleading and would invite the customer to re-attempt a request that policy will keep rejecting.",
+      "Changing the cap is a policy decision unrelated to the error envelope's design; the structural fix is communication, not policy."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "be1b8c36-45ee-4a88-b032-f6f4607d42e5"
+  },
+  {
+    "question": "Compare two designs for an MCP tool's error response. Design A returns a single 'message' string for all failures. Design B returns errorCategory + isRetryable + message + (when applicable) policyCode, customerMessage, partialResults, and queryExecuted. Why is Design B preferred even though it is more verbose?",
+    "options": [
+      "Design B's verbosity reduces input token costs because structured fields compress better than prose.",
+      "Design B lets the agent select the correct recovery (retry, reformat, escalate, report) and lets retry middleware act without involving the model — Design A forces the model to parse natural language to make every decision.",
+      "Design B is required by the MCP specification; Design A would fail validation.",
+      "Design B improves readability for human developers reviewing logs."
+    ],
+    "explanations": [
+      "Token cost is not the driver here; the field overhead is small and the costly outcomes are wrong recoveries (retry loops on business errors, confidently-wrong empty replies).",
+      "Correct. Design B encodes the failure in fields that map to recovery moves and makes the retry decision machine-actionable. Design A makes every recovery a model-language-parsing problem, which is slower, less reliable, and impossible for non-LLM middleware to act on.",
+      "MCP requires the isError flag but does not mandate the specific extra fields. The reason to use them is correctness and operational reliability, not spec compliance.",
+      "Log readability is a side benefit; the load-bearing reason is correct agent behaviour and middleware automation."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "2f13e745-4641-47a6-86a3-978540fa4e28"
+  },
+  {
+    "question": "An engineering team adds a wrapper that retries any tool returning isError: true up to 5 times. After deployment, refund calls that exceed the policy cap take 30 seconds to fail and customers complain. Which envelope-design change fixes this?",
+    "options": [
+      "Lower the retry count from 5 to 2 and accept the remaining latency.",
+      "Have the retry wrapper inspect isRetryable and skip retry when it is false; ensure business-error envelopes set isRetryable: false.",
+      "Move all error handling into the agent's system prompt and remove the retry wrapper.",
+      "Return business errors with isError: false so the wrapper does not see them as failures."
+    ],
+    "explanations": [
+      "Cutting retries from 5 to 2 reduces the symptom but not the cause; refund-over-cap calls will still incur pointless retries and the design remains fragile.",
+      "Correct. The retry wrapper's contract is to honor isRetryable. Business errors must be marked isRetryable: false so middleware skips retry — that combination is exactly what the structured envelope is for.",
+      "Removing the retry wrapper sacrifices the correct behaviour for transient errors. The right fix is to make the wrapper category-aware via isRetryable.",
+      "Returning isError: false would tell the agent the refund succeeded — a far worse bug than retry latency, since the customer believes their refund went through."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "c6eb3fe7-2749-4a07-97b8-dcd057bc2c15"
+  },
+  {
+    "question": "A subagent fails to fetch one of three required data sources and propagates only the message 'data fetch failed' to the coordinator. The coordinator then aborts the entire workflow. Which 2.2 anti-pattern is in play and what is the fix?",
+    "options": [
+      "Anti-pattern: silent error suppression. Fix: log the error in the subagent.",
+      "Anti-pattern: using isError: true at all. Fix: return isError: false with empty content.",
+      "Anti-pattern: too many subagents. Fix: consolidate the three fetches into one tool call.",
+      "Anti-pattern: propagating an error string with no partialResults or attempted context. Fix: include partialResults from the two successful fetches and the list of what was attempted, so the coordinator can annotate a coverage gap and proceed."
+    ],
+    "explanations": [
+      "Silent suppression would mean the error never propagated at all; here the error did propagate, but without enough structure for the coordinator to make a useful decision.",
+      "isError: true is correct for an unrecoverable failure; switching to isError: false would hide the failure entirely and corrupt downstream synthesis.",
+      "The number of subagents is unrelated; consolidating tools doesn't address the propagation contract that caused the workflow abort.",
+      "Correct. The anti-pattern is propagating a bare string with no partial results and no attempted context — the coordinator is forced into a binary 'fail everything or pretend the gap doesn't exist' choice. The fix is structured propagation with partialResults so synthesis can annotate the gap."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "62882cd9-9698-4e39-93cc-8cf73f3fbaa7"
+  },
+  {
+    "question": "When should a tool author choose to return isRetryable: true vs isRetryable: false for a validation error (e.g., order_id format wrong)?",
+    "options": [
+      "Always isRetryable: true, because the agent can reformat the field and the operation could ultimately succeed.",
+      "Always isRetryable: false, because middleware must not re-invoke the same call without correction.",
+      "Either convention is defensible: business and permission are unambiguously false, but for validation, false forces the model to derive a corrected call rather than letting middleware blindly retry an unchanged input.",
+      "It depends on the network latency: low-latency tools should be true, high-latency tools should be false."
+    ],
+    "explanations": [
+      "If middleware reads isRetryable: true and re-invokes the identical malformed input, every retry will fail with the same validation error. The 'operation can succeed' framing is true only after the agent reformats — which middleware cannot do.",
+      "This is one of the two defensible conventions and is the more conservative choice, but framing it as the only correct answer overstates the certainty.",
+      "Correct. Business and permission are unambiguously false. Validation is a judgment call: setting it false steers the model to reformat (since middleware will not retry); setting it true requires middleware to be smart enough to skip retries it cannot fix. Most production systems pick false for safety.",
+      "Network latency is unrelated — isRetryable is about whether retrying with the same input could succeed, not about how long each attempt takes."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "06b46e61-97a5-480b-a39f-1951d763e597"
+  },
+  {
+    "question": "In Scenario 1 (Customer Support), the agent gets a business-error response with recommendedAction: 'escalate_to_human' and customerMessage: 'I'll transfer you to a specialist who can help.' What is the correct next move?",
+    "options": [
+      "Call escalate_to_human with a structured handoff payload (customer ID, root cause, refund amount, recommended action), and reply to the customer using the verbatim customerMessage.",
+      "Retry process_refund once more in case the cap was raised between calls, then escalate if it fails again.",
+      "Have the model generate its own polite explanation and end the conversation without escalating.",
+      "Surface the policyCode 'REFUND_CAP_EXCEEDED' to the customer so they understand the technical reason."
+    ],
+    "explanations": [
+      "Correct. The recommendedAction field tells the agent which tool to invoke (escalate_to_human with a structured Task 1.4 handoff payload), and the customerMessage gives deterministic, on-brand wording the agent can use verbatim — no improvisation, no leaked codes.",
+      "Business errors are isRetryable: false for this exact reason — the cap will not change between back-to-back attempts, so retry burns budget and delays the escalation.",
+      "Skipping the escalation leaves the customer with a soft refusal and no path forward; the recommendedAction field exists precisely so the agent routes to the right next tool.",
+      "Internal policy codes leak implementation detail and are confusing to non-technical customers; the customerMessage field exists specifically to keep that wording out of customer-facing replies."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "9c3a82df-c34c-4650-a1ab-1dc2e356b3dd"
+  },
+  {
+    "question": "A coordinator receives this from a search subagent: { isError: true, errorCategory: 'transient', isRetryable: false, partialResults: [...4 items...], attempted: ['news_search', 'industry_db (3x 503)'], alternatives: ['archive.fetch with broader date range'] }. What is the most appropriate coordinator response?",
+    "options": [
+      "Discard the partialResults and retry the entire search workflow from scratch.",
+      "Pass the partialResults to synthesis with a coverage-gap annotation and consider the suggested alternative archive.fetch for the missing source.",
+      "Abort the workflow and return an error to the user since one source could not be reached.",
+      "Treat partialResults as final and let synthesis report 'comprehensive coverage' across all sources."
+    ],
+    "explanations": [
+      "Discarding partial results wastes the work that already succeeded and forces a redundant network round-trip; the envelope explicitly carried partialResults so the coordinator could use them.",
+      "Correct. Structured propagation with partialResults + alternatives is exactly so the coordinator can proceed with what it has, annotate the gap (Task 5.6 provenance), and optionally pursue the suggested alternative — instead of failing the whole workflow.",
+      "Whole-workflow abort on a single residual failure is the anti-pattern this contract exists to prevent; the coordinator should annotate the gap and continue with partial coverage.",
+      "Reporting 'comprehensive coverage' when one source explicitly failed is a confidently-wrong synthesis bug; the gap must be annotated so downstream consumers know the report is partial."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "163663e5-7a26-4d86-99d5-821f20b68f0c"
+  },
+  {
+    "question": "An upstream API returns HTTP 429 (Too Many Requests) with a `Retry-After: 30` header. Which envelope shape is MOST appropriate for the MCP tool to surface to the agent?",
+    "options": [
+      "errorCategory: 'validation', isRetryable: false — the request itself was rejected, so the agent must reformat.",
+      "errorCategory: 'permission', isRetryable: false — the API has revoked access for now.",
+      "errorCategory: 'business', isRetryable: false — rate-limit policy denied the call as out-of-quota.",
+      "errorCategory: 'transient', isRetryable: true, with `retryAfterMs: 30000` so middleware can wait the recommended interval before retrying."
+    ],
+    "explanations": [
+      "Wrong — the request is well-formed and not malformed; rate limiting has nothing to do with input shape, and marking it validation would force the agent to pointlessly reformat a perfectly valid call.",
+      "Wrong — permission errors describe a scope/role failure that will not change between attempts in the same session. Rate limits clear after the cooldown, so they are recoverable, which permission errors are not.",
+      "Wrong — business errors are well-formed requests blocked by domain policy (refund cap, age restriction). Rate limits are infrastructure throttling, not domain policy, and they do clear with time.",
+      "Correct — rate limits are the canonical transient case; isRetryable: true with a retryAfterMs hint lets middleware honor the cooldown without involving the model, exactly the structured-envelope pattern the lesson recommends."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "698ead13-015a-4543-9ade-4d2f72692fbd"
+  },
+  {
+    "question": "An MCP tool's harness has automatic OAuth token refresh middleware. The upstream API returns 401 (token expired) on one call and 403 (insufficient scope) on another. Which envelope mapping is MOST aligned with how each should be handled?",
+    "options": [
+      "Both as errorCategory: 'permission' / isRetryable: false — the agent will route both to escalation.",
+      "Both as errorCategory: 'transient' / isRetryable: true — the harness will retry either way.",
+      "401 as errorCategory: 'transient' / isRetryable: true (so the harness's auth-refresh middleware can rotate the token and retry); 403 as errorCategory: 'permission' / isRetryable: false (since scope cannot self-rotate within the session).",
+      "401 as errorCategory: 'validation' (the request was malformed without a fresh token); 403 as errorCategory: 'permission'."
+    ],
+    "explanations": [
+      "Wrong — collapsing 401 to permission ignores that token expiry is recoverable inside the harness via refresh, which is the entire point of the auto-refresh middleware. The agent would unnecessarily escalate every expired token.",
+      "Wrong — marking a missing scope as transient causes pointless retry loops; no number of retries can grant a scope the caller doesn't have. The two cases need different envelopes precisely because their recovery moves are different.",
+      "Correct — errorCategory should mirror what kind of recovery is possible. 401 with auto-refresh is genuinely transient (can succeed after token rotation), while 403 is unambiguously permission (no in-session recovery exists).",
+      "Wrong — a 401 from token expiry is not a malformed input; the request shape is fine, the credential is stale. Misclassifying it as validation would push the agent to reformat the call rather than rely on the auth-refresh path."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "068f48ca-098a-452b-83f1-7fd452da22fa"
+  },
+  {
+    "question": "What contents make a validation-error envelope MOST useful for the agent to recover from autonomously without escalating?",
+    "options": [
+      "errorCategory: 'validation', isRetryable: false, plus the offending field name and the expected format/shape (e.g., `field: 'order_id'`, `expected: 'O-' + digits`, `received: 'O991'`).",
+      "errorCategory: 'validation', isRetryable: true, plus a generic message: 'Invalid input — please retry.'",
+      "errorCategory: 'validation', isRetryable: false, plus a stack trace from the schema validator so the agent sees the exact validation rule that fired.",
+      "errorCategory: 'validation' alone — the model is capable of inferring the corrected call from any human-readable message."
+    ],
+    "explanations": [
+      "Correct — naming the offending field and the expected shape gives the agent enough structure to derive a corrected call (e.g., reformat `O991` → `O-991`) without escalating; isRetryable: false steers it away from blind retry on the same malformed input.",
+      "Wrong — isRetryable: true on a validation error invites middleware to retry the same malformed input, which is guaranteed to fail again. A generic 'Invalid input' message gives the agent nothing to act on.",
+      "Wrong — stack traces are debug artifacts, not recovery context; they bloat the agent's context with implementation detail (file paths, validator internals) that doesn't help derive a corrected call.",
+      "Wrong — relying on the model to infer corrections from prose is unreliable. Structured fields (`field`, `expected`, `received`) are the cheapest way to make recovery deterministic across model versions."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "a768bd27-35e0-4159-b249-ba6871da9ca0"
+  },
+  {
+    "question": "A coordinator receives `{ isError: true, errorCategory: 'transient', isRetryable: false, attempted: ['vector_db_search (4× timeout)'], alternatives: ['keyword_search'] }`. What is the BEST next move?",
+    "options": [
+      "Retry vector_db_search a fifth time at the coordinator level — local recovery may have under-counted or transient conditions may have cleared.",
+      "Abort the workflow and return an error to the user, since one transient failure means the system is degraded.",
+      "Invoke the suggested alternative `keyword_search` as a fallback path; if it succeeds, annotate provenance noting that the primary source (vector_db_search) was unavailable.",
+      "Wait 60 seconds and retry vector_db_search at the coordinator level."
+    ],
+    "explanations": [
+      "Wrong — isRetryable: false explicitly tells the coordinator that further retry of the same tool is not the right move at this layer; the subagent already exhausted local recovery (4 timeouts), so re-attempting at the coordinator is pure budget burn.",
+      "Wrong — aborting the workflow on a single residual failure when the envelope explicitly carried an alternative is exactly the anti-pattern the structured-error contract exists to prevent. Continue with the gap annotated, not abandon.",
+      "Correct — the alternatives field is the actionable hint for exactly this case; pursuing the suggested fallback keeps coverage as wide as possible, and annotating provenance makes the partial-coverage status visible downstream (Task 5.6 territory).",
+      "Wrong — a fixed 60-second wait is a heuristic that ignores the envelope's explicit isRetryable: false signal. The contract says 'don't retry at this layer; consider alternatives,' and the coordinator should honor it."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "3e327d6f-3dc1-4a3a-97fe-222c2f40ae74"
+  },
+  {
+    "question": "An MCP tool's backend crashes mid-query. The author wraps it as `{ isError: false, results: [] }` to keep the downstream parser from breaking. Why is this WRONG even though it produces a parseable response?",
+    "options": [
+      "The MCP harness will throw a runtime error because isError is required to be true on any backend failure.",
+      "The agent confuses access-failure with valid-empty-result; subsequent synthesis becomes confidently-wrong because the empty array reads as 'no matches found' instead of 'the lookup did not complete.'",
+      "The MCP spec requires every error envelope to populate isRetryable; isError: false bypasses the schema-required field.",
+      "There is nothing wrong — defensive programming dictates suppressing internal failures at the tool boundary so callers see clean responses."
+    ],
+    "explanations": [
+      "Wrong — the harness will not crash; isError: false is a valid response shape. The bug is at the agent's reasoning layer, not the protocol layer.",
+      "Correct — this is the canonical empty-vs-error confusion the lesson warns about. Synthesis confidently reports 'no orders' / 'no regulations' for a query that actually crashed, suppressing escalations that should have happened.",
+      "Wrong — the MCP spec requires isError; it does not require isRetryable. The structural problem is that the failure has been disguised as a successful empty result, not a missing field.",
+      "Wrong — 'defensive programming' that silently converts failure to a clean empty response is precisely the anti-pattern this lesson defines. Defense-in-depth requires preserving the failure signal, not erasing it."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "f50ed500-8941-4c1f-82e0-e22742559a4c"
+  },
+  {
+    "question": "An error envelope includes a structured `recommendedAction` field that the agent uses to pick a recovery move. Which set of values is MOST aligned with the lesson's coverage of recovery moves?",
+    "options": [
+      "log / ignore / continue / abort",
+      "http_200 / http_400 / http_500 / http_503",
+      "urgent / high / medium / low",
+      "retry / reformat / escalate / report"
+    ],
+    "explanations": [
+      "Wrong — these are operational verbs not tied to the lesson's failure-mode framework. 'Ignore' and 'continue' explicitly contradict the lesson's emphasis on preserving the failure signal so the agent can react.",
+      "Wrong — these are HTTP status code labels, not recovery moves. The recommendedAction field is meant to drive agent behavior, not to tell it what status code to mimic.",
+      "Wrong — priority labels do not correspond to recovery moves; they describe how urgently a human should review, which is a logging / monitoring concern, not an agent-action one.",
+      "Correct — these are the four recovery moves the lesson maps each error category to: transient → retry, validation → reformat, business → escalate (with customerMessage), and any unrecoverable failure → report (with partialResults / attempted)."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "55a847f4-d2fd-470e-b81d-29f28ae214ef"
+  },
+  {
+    "question": "A subagent successfully fetches 3 of 5 sources; the other 2 timed out after local retry. It must propagate to the coordinator. Which envelope shape best fits the lesson's structured-propagation pattern?",
+    "options": [
+      "isError: false with the 3 successful results — the subagent recovered the workflow as much as possible, so do not surface an error.",
+      "isError: true with `partialResults: [3 items]`, `attempted: ['source_4 (timeout ×3)', 'source_5 (timeout ×3)']`, optional `alternatives: ['archive_index']`, errorCategory: 'transient', isRetryable: false (since local retry was exhausted).",
+      "isError: true with only the errorCategory and an empty results array; the coordinator should rerun the entire fetch from scratch.",
+      "Multiple separate responses, one per source, so the coordinator gets line-by-line status."
+    ],
+    "explanations": [
+      "Wrong — pretending the workflow fully succeeded when 2 of 5 sources are missing is the empty-vs-error anti-pattern. Synthesis will confidently report 'comprehensive coverage' and the partial-coverage gap is invisible.",
+      "Correct — this is the canonical structured-propagation pattern: isError: true preserves the failure signal, partialResults carries the work that did succeed, attempted lists what was tried (so the coordinator doesn't repeat it), and isRetryable: false honestly reports that local retry is exhausted.",
+      "Wrong — discarding the 3 successful results forces the coordinator to redo work that already succeeded, wasting tokens and time. The partialResults field exists exactly so this work isn't thrown away.",
+      "Wrong — fragmenting into 5 messages bloats the coordinator's context with operational structure. A single structured envelope summarising all 5 outcomes is the lesson's pattern, not per-source streams."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "913707f9-a067-497c-b45c-7afc68315c4b"
+  },
+  {
+    "question": "A tool wraps every failure mode as `isError: true, message: 'Operation failed.'` — the same string for timeouts, malformed inputs, denied policy, and missing scope. What is the practical consequence?",
+    "options": [
+      "The agent cannot pick an appropriate recovery (retry / reformat / escalate / report) because the four failure modes look identical, so it defaults to a single strategy that is wrong for three of them.",
+      "The MCP harness will reject the response because uniform messages fail schema validation.",
+      "Retry middleware fires on every failure because uniform messages default to isRetryable: true.",
+      "There is no practical issue — the agent can usually infer the failure type from the user's prior message context."
+    ],
+    "explanations": [
+      "Correct — uniform messages collapse the four failure modes into one indistinct shape; the agent loses the ability to differentiate, and its default recovery (often retry) is wrong for validation, business, and permission failures, wasting budget and producing wrong outcomes.",
+      "Wrong — there is no schema rule against duplicate message strings; the harness accepts the response. The bug is at the agent-reasoning layer, not the protocol layer.",
+      "Wrong — isRetryable is a separate field; uniform messages do not implicitly set isRetryable: true. The bug is that without the structured fields, no layer (model OR middleware) can pick the right move.",
+      "Wrong — relying on conversation context to infer the failure type is fragile and error-prone; the structured envelope exists exactly so the agent doesn't have to guess."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "02050044-b99a-4947-bbf4-036195ebb334"
+  },
+  {
+    "question": "A failure envelope includes BOTH `errorCategory` and `isRetryable`. Which statement BEST captures the relationship between the two fields in a well-designed system?",
+    "options": [
+      "Only one is needed — `isRetryable` is the boolean shortcut and `errorCategory` is redundant verbosity.",
+      "The agent always reads `errorCategory` first; `isRetryable` is purely for analytics dashboards and operational monitoring.",
+      "They serve different layers: `isRetryable` is the machine-actionable shortcut for retry middleware (no model in the loop, so it can act on transient failures fast); `errorCategory` is the semantic signal the model uses to choose retry / reformat / escalate / report.",
+      "They must always agree — `errorCategory: 'transient'` ↔ `isRetryable: true`, and any mismatch is a contract violation."
+    ],
+    "explanations": [
+      "Wrong — the two fields serve different consumers; isRetryable alone gives middleware its shortcut but loses the semantic signal the model needs to pick reformat vs escalate vs report. Both are load-bearing.",
+      "Wrong — isRetryable is used by retry middleware in the request path, not just analytics. It exists to let middleware decide retry-with-backoff without involving the model, which is the latency win the field is designed for.",
+      "Correct — this is the lesson's two-consumer framing: isRetryable is read by a non-model layer for fast retry decisions; errorCategory is read by the model to pick its broader recovery move. Both must be present because they answer different questions.",
+      "Wrong — validation errors are a counter-example: errorCategory: 'validation' is conventionally paired with isRetryable: false (since middleware retrying the same malformed input is guaranteed to fail), but transient errors are the only category where retryable: true is the default. The fields are correlated, not equal."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "1f985a83-0ddc-48f8-ab26-e8602bc0e6dd"
+  },
+  {
+    "question": "You're designing a validation-error envelope for the case where the agent CAN reformat the call (e.g., normalize `O991` → `O-991`). Which is the BEST design and why?",
+    "options": [
+      "isRetryable: true, since reformatting will likely succeed and middleware can drive the loop.",
+      "isRetryable: null, leaving the decision entirely to the agent's runtime discretion.",
+      "isRetryable: true paired with a separate `requiresReformat: true` flag so middleware knows not to blindly retry.",
+      "isRetryable: false with a structured `expected` field and offending `received` value, so the agent does not blindly retry the same input but instead derives a corrected call from the structured fields."
+    ],
+    "explanations": [
+      "Wrong — isRetryable: true invites middleware (which cannot reformat) to retry the identical malformed input, which will fail in the same way. The agent must be the one to derive the new call, and isRetryable: false steers it correctly.",
+      "Wrong — isRetryable: null defeats the purpose of a machine-actionable shortcut; middleware then has to consult the model on every error, recreating the latency the field was designed to eliminate.",
+      "Wrong — adding a parallel `requiresReformat` flag splits the contract across two booleans that must agree; the simpler and equivalent design is isRetryable: false, which already tells middleware to skip the retry.",
+      "Correct — this is the conservative production convention for validation: isRetryable: false ensures middleware doesn't retry blindly, while the structured `expected` / `received` fields give the agent everything it needs to derive a corrected call on its own."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "6dd3e241-8eed-4f7f-aee6-3e6e843817f8"
+  },
+  {
+    "question": "An MCP tool `process_refund` wraps a NON-idempotent payment-processor API — a retried call could double-process the refund. The first attempt times out before a response arrives. Given the harness has retry middleware that honors `isRetryable`, which envelope is the SAFEST to return?",
+    "options": [
+      "errorCategory: 'transient', isRetryable: true — timeouts are the canonical transient case and the middleware retry is most likely to succeed.",
+      "errorCategory: 'transient', isRetryable: false, with `attempted: ['process_refund (timeout — refund may have processed)']` and `recommendedAction: 'reconcile_via_status_check'`, so the agent reconciles via a status query rather than risk a double-charge.",
+      "errorCategory: 'business', isRetryable: false — the call cannot be safely repeated, so the failure is policy-shaped.",
+      "isError: false with `results: { status: 'unknown' }` — let the agent reconcile via a follow-up status check on a non-error path."
+    ],
+    "explanations": [
+      "Wrong — this is the textbook transient classification, but on a non-idempotent operation it is dangerous. Middleware retry will re-fire the same call that may have already succeeded, causing a double refund. Idempotency, not category, governs the retryable flag here.",
+      "Correct — when the underlying operation is non-idempotent and the post-timeout state is unknown, the safe pattern is to keep the category honest (transient) but block middleware retry (`isRetryable: false`) and steer the agent to a reconciliation path. The structured `attempted` and `recommendedAction` make the next move explicit.",
+      "Wrong — timeouts are not policy denials. Misclassifying as business removes the transient signal (so an eventual successful retry path is lost) and routes the agent to the wrong recovery family (escalate rather than reconcile).",
+      "Wrong — `isError: false` with a `status: 'unknown'` payload disguises a real failure as a successful result. The agent's reasoning loses the failure signal, and downstream synthesis (or middleware) can't treat 'unknown' the way it would treat an error."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "5f63bc85-6840-4013-b180-f07f990f1285"
+  },
+  {
+    "question": "A subagent calls `news_search` and gets HTTP 429. The lesson recommends local retry-with-backoff for transient errors. However, in this system, `news_search` is shared across 5 sibling subagents that ALL hit the same provider rate-limit budget. Which handling is BEST?",
+    "options": [
+      "Local retry with exponential backoff in this subagent — 429 is transient and the lesson's local-recovery default applies.",
+      "Skip local retry; return the 429 as `isError: true, errorCategory: 'transient', isRetryable: true, retryAfterMs: <hint>` to the coordinator so it can throttle ALL siblings centrally rather than have each retry independently and amplify the contention.",
+      "Reclassify as `errorCategory: 'business'` since the provider's policy is denying the call.",
+      "Suppress the error and return `[]` so synthesis sees a clean empty result while the rate limit recovers."
+    ],
+    "explanations": [
+      "Wrong — local retry is the lesson's default for ISOLATED transient failures. With a SHARED rate-limit ceiling, 5 subagents independently retrying will compound the throttle and potentially trip a circuit-breaker; local recovery is the wrong layer for shared-budget coordination.",
+      "Correct — the coordinator is the right layer to centralize throttling across siblings. The structured envelope (transient + retryAfterMs) lets the coordinator pause all siblings cooperatively for the cooldown window, instead of each subagent fighting for the same budget.",
+      "Wrong — rate limits are infrastructure throttling, not domain policy. Misclassifying as business loses the transient signal that 'this will clear in N seconds,' and the agent escalates instead of waiting.",
+      "Wrong — empty results dressed as success is the canonical empty-vs-error anti-pattern; synthesis confidently reports 'no news' for a query that didn't even run."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "cbaf3412-994f-498b-9135-a95e0be94d75"
+  },
+  {
+    "question": "A `transfer_funds` tool's backend processes the debit successfully but the response times out before the credit confirmation arrives. The post-timeout state is genuinely inconsistent (debit done, credit unconfirmed). Which envelope is BEST?",
+    "options": [
+      "errorCategory: 'transient', isRetryable: true — let the middleware retry; if the credit already happened, the second attempt will be a no-op.",
+      "errorCategory: 'business', isRetryable: false — the operation has crossed a policy boundary because the system is in a half-applied state.",
+      "errorCategory: 'transient', isRetryable: false, with `state: 'inconsistent'`, `attempted: ['transfer_funds (timeout after debit — credit unconfirmed)']`, and `recommendedAction: 'reconcile_via_status_check'` so the agent invokes the status-check tool rather than retrying.",
+      "errorCategory: 'permission', isRetryable: false — the agent currently lacks the verification scope to proceed safely."
+    ],
+    "explanations": [
+      "Wrong — assuming idempotency on a transfer is dangerous; if the credit did NOT happen, retry could re-debit. The 'no-op' framing only holds when the underlying API is idempotent, which is exactly the assumption the question rules out.",
+      "Wrong — half-applied state is not a policy violation. Business is for well-formed requests blocked by domain rules (refund cap, age check); a partially-completed write is an infrastructure / consistency concern, not a policy one.",
+      "Correct — keep the category honest (transient — it's an infrastructure timeout), suppress middleware retry to avoid double-debit risk, and structure the envelope to direct the agent to reconcile. This is the textbook 'unknown post-timeout state' pattern.",
+      "Wrong — there is no permission issue; the agent had the scope to invoke the call. Inventing a permission classification for a consistency problem misroutes the agent to escalation rather than reconciliation."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "26385e70-2e06-4fe0-876b-66887781639a"
+  },
+  {
+    "question": "Two business-error envelopes from `process_refund`: (a) refund amount exceeds the customer's policy cap; (b) the customer's account is flagged for fraud review. Both correctly carry `errorCategory: 'business', isRetryable: false`. Which statement BEST describes the design of their envelopes?",
+    "options": [
+      "They share `errorCategory` and `isRetryable` but differ in `recommendedAction` (escalate-with-explanation vs escalate-with-fraud-team-handoff) and `customerMessage` (on-brand cap explanation vs safe non-tipping-off wording for the fraud case); the envelope encodes the same failure family but different recovery moves.",
+      "They should be identical — same category, same retryable status, so finer differentiation would just bloat the envelope.",
+      "They MUST have different `errorCategory` values; collapsing them under 'business' loses information the agent needs.",
+      "The fraud case should be `errorCategory: 'permission'` since the customer cannot use the refund tool right now."
+    ],
+    "explanations": [
+      "Correct — `errorCategory` answers 'what family of failure' and `isRetryable` answers 'should middleware retry'; both are the same here. The recovery MOVE (which tool to invoke next, what to say to the customer) differs, and that difference belongs in `recommendedAction` and `customerMessage` — not in a different category.",
+      "Wrong — making them identical erases the agent's ability to choose between regular escalation and the fraud-handoff path, and loses the safe-wording protection on the fraud case (telling a fraudster their account is flagged is itself a security risk).",
+      "Wrong — both ARE business-class failures (well-formed requests blocked by policy). Splitting into distinct categories would distort the taxonomy; the right structural place for the difference is `recommendedAction` and `customerMessage`.",
+      "Wrong — the customer's account state is not the AGENT's permission scope; the agent has the right to invoke `process_refund`, the operation is just denied for THIS customer at THIS time. Permission is about the caller, not the subject."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "aa33a4b5-969d-4cac-a3f7-c611f42ea932"
+  },
+  {
+    "question": "Earlier you saw that `isError: false, results: []` is the empty-vs-error anti-pattern. When is `isError: true, results: []` actually the CORRECT shape for an error envelope, and when is it not?",
+    "options": [
+      "`isError: true, results: []` is always wrong — an error envelope should never carry an empty results array, since `[]` is reserved for valid empties.",
+      "`isError: true, results: []` is correct ONLY when the tool partially completed AND the partial result is genuinely empty; otherwise omit the `results` field entirely from error envelopes.",
+      "`isError: true, results: []` is preferred over `isError: true` with no results field, since the latter is a schema violation in MCP.",
+      "`isError: true, results: []` is appropriate when the failure is residual after local recovery and there are no partial successes worth carrying — the empty array communicates 'tried, nothing usable.' If partial successes DO exist, use `partialResults: [...items]` instead so the carried work is named for what it is."
+    ],
+    "explanations": [
+      "Wrong — `isError: true` paired with `results: []` is unambiguous: the failure flag is on, so the empty array cannot be misread as a valid empty result. The empty-vs-error anti-pattern is specifically about `isError: false` + `[]`.",
+      "Wrong — 'omit `results` entirely' is a different convention but not the lesson's pattern. Omission complicates downstream parsers that always read the field; an explicit empty array on the error path is the cleaner shape.",
+      "Wrong — there is no MCP schema rule forcing an empty `results` array on errors. Inventing a schema-violation framing for what is really a stylistic choice is misleading.",
+      "Correct — the partition is: error + nothing salvageable → `results: []` is honest and unambiguous; error + some salvageable work → use `partialResults` so the carried items are named for what they are. The naming distinction is what lets the coordinator decide whether to use them in synthesis."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "aaafdf43-a175-4f35-9625-d28954ed643c"
+  },
+  {
+    "question": "An upstream API returns HTTP 200 with body `{\"status\": \"denied\", \"reason\": \"rate_quota_exceeded\"}`. The MCP tool wrapping it must decide what envelope to surface. Which is BEST?",
+    "options": [
+      "Map to errorCategory: 'transient', isRetryable: true with `retryAfterMs` hint — the upstream's `denied` reason is functionally a rate-limit, which is the canonical transient case regardless of the 200 transport status.",
+      "isError: false (HTTP was 200) with `content: { status: 'denied' }` — let the agent read the upstream contract directly and decide what to do.",
+      "Map to errorCategory: 'business', isRetryable: false — the upstream denied for a quota policy.",
+      "Map to errorCategory: 'validation', isRetryable: false — the request was technically fine but the upstream rejected its content."
+    ],
+    "explanations": [
+      "Correct — HTTP status is a transport-layer signal; the envelope must reflect the SEMANTIC failure type the agent reasons about. `rate_quota_exceeded` is functionally identical to a 429, so transient + retryable + retryAfterMs is the right surface — the agent (and middleware) get the same treatment as a real 429.",
+      "Wrong — wrapping a 200-with-error-body as `isError: false` is the canonical anti-pattern. The agent's harness will treat the response as success, retry middleware will never fire, and the model has to parse natural language to detect failure.",
+      "Wrong — quota throttling is infrastructure, not domain policy. Marking it business causes the agent to escalate to a human for a condition that will clear automatically with the cooldown.",
+      "Wrong — the request was well-formed; it wasn't a malformed-input failure. Validation is the wrong family, and `isRetryable: false` would tell the agent to reformat (futile — the input is already correct)."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "1c508bbd-a922-41ab-8b20-98fce7904136"
+  },
+  {
+    "question": "An MCP tool `validate_address` returns `{ valid: false, reasons: ['invalid_postal_code'] }` for an unverifiable address. The tool's call SUCCEEDED — the validation API responded as expected. Should the envelope be `isError: true` or `isError: false`, and why?",
+    "options": [
+      "`isError: true` — any negative outcome (`valid: false`) counts as an error and should be flagged for the agent.",
+      "`isError: false` — the tool's job was to validate, and it returned a successful validation result. The negative outcome is the answer, not a tool failure; the agent reads the structured `valid: false` to decide next steps.",
+      "`isError: true` with `errorCategory: 'validation'` since the address failed validation.",
+      "`isError: false` with `results: []` to indicate no addresses matched."
+    ],
+    "explanations": [
+      "Wrong — `isError` flags TOOL failures (the tool could not produce a verdict), not OUTCOME negativity. Conflating the two is the empty-vs-error confusion in reverse: the agent now thinks the tool failed when it actually delivered the answer it was supposed to.",
+      "Correct — the tool's contract is to return a validation verdict, and a negative verdict IS the contract being satisfied. The agent reads the structured `valid: false` and routes accordingly (e.g., ask the customer for a corrected ZIP). `isError` stays false because the tool worked.",
+      "Wrong — `errorCategory: 'validation'` is for malformed inputs to THIS tool, not for negative validation results from the tool's domain logic. Marking it validation would push the agent to reformat its own input, which is fine — but the input wasn't wrong; the address was.",
+      "Wrong — `results: []` for a validation that produced a verdict erases the verdict entirely. The structured `{ valid: false, reasons: [...] }` is the useful answer; replacing it with an empty array discards the diagnostic the agent needs."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "7545bc3b-1e39-4196-9bf5-e5f8aa6033d6"
+  },
+  {
+    "question": "A business-error envelope returns `errorCategory: 'business', isRetryable: false, message: 'REFUND_CAP_EXCEEDED for customer C-48201; cap=$500, requested=$750', customerMessage: 'I'm not able to refund that amount through this channel — let me connect you with a specialist.'` Which statement BEST explains the field split?",
+    "options": [
+      "`message` and `customerMessage` are duplicated for redundancy; the agent picks whichever it prefers based on the conversation tone.",
+      "`customerMessage` is purely for analytics dashboards; the agent doesn't read it in the request path.",
+      "The two fields are merged into `message` at runtime if `customerMessage` is null; the dual fields exist only to support legacy clients.",
+      "`message` is the diagnostic signal (with policy code, customer ID, exact amounts) used by logs and the agent's reasoning step; `customerMessage` is the on-brand wording the agent uses verbatim in the customer reply, keeping policy codes and PII out of customer-facing text."
+    ],
+    "explanations": [
+      "Wrong — they serve different consumers. The agent does not 'pick whichever' between two equivalent strings; it uses each for a different purpose (reasoning vs replying), and choosing the wrong one leaks internal codes to the customer or denies the model useful diagnostics.",
+      "Wrong — `customerMessage` is consumed in the request path so the agent can lift it verbatim into a reply. Treating it as analytics-only would leave the agent free-styling customer replies, which is exactly what deterministic on-brand wording is meant to prevent.",
+      "Wrong — there is no merge semantics in the lesson's pattern. Inventing a runtime fold-into-`message` rule conflates the two fields' purposes and makes the contract opaque.",
+      "Correct — the two-consumer split lets the model reason on the diagnostic message (with policy codes and exact amounts) while replying in deterministic, on-brand wording from `customerMessage`. The split prevents leaked codes (REFUND_CAP_EXCEEDED) and brand-voice drift in customer replies."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "4092aaa5-b61d-4924-accd-45366bd795ab"
+  },
+  {
+    "question": "An agent runs a 3-step workflow: (1) `charge_card`, (2) `reserve_inventory`, (3) `create_shipment`. Step 2 fails after step 1 succeeded. Which envelope/propagation pattern is BEST for `reserve_inventory`'s failure response?",
+    "options": [
+      "`reserve_inventory` returns `isError: true` with no reference to the prior charge; the orchestration layer separately tracks transaction state.",
+      "`reserve_inventory` returns `isError: true` with `partialResults: { charge_id: 'ch_...', amount_charged: 5000 }` even though the charge happened in a different tool, so the agent has the data it needs to issue a refund.",
+      "`reserve_inventory` returns `isError: true` with no partialResults from the prior tool (that was not its work), but includes `recommendedAction: 'compensate_prior_charge'` to make the compensating move explicit; the coordinator already has the prior turn's `charge_id` and uses it to invoke a refund.",
+      "Step 1's `charge_card` should preemptively return `isError: true` if any subsequent step might fail."
+    ],
+    "explanations": [
+      "Wrong — silent on the recovery move means the coordinator must infer what to do from prose. `recommendedAction: 'compensate_prior_charge'` is cheap to add and makes the right next move explicit, which is the lesson's structured-recovery principle.",
+      "Wrong — bleeding another tool's results into this tool's envelope blurs tool boundaries. `partialResults` is meant for partial work THIS tool did, not data borrowed from a prior tool's response. The right place for the prior charge_id is the prior tool's turn, which the coordinator can read directly.",
+      "Correct — error envelopes describe the failing tool's work, not the broader transaction state. The compensating action lives in coordinator logic which already has the `charge_id` from step 1's tool_use turn; `recommendedAction` makes the move explicit without bloating the envelope with cross-tool data.",
+      "Wrong — preemptive failure is nonsensical. Step 1 succeeded; flagging it as failed would corrupt the workflow state and tell the agent the charge didn't happen when it did."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "7554cc4e-7a44-4e06-899f-c4395b05970e"
+  },
+  {
+    "question": "Given the typical MCP agent pattern where the agent constructs tool calls from conversation context (not directly from customer-typed strings), for which envelope is `customerMessage` LEAST necessary to include?",
+    "options": [
+      "A business error: refund cap exceeded — the agent must surface a denial to the customer and needs deterministic wording.",
+      "A business error: account flagged for fraud review — safe non-tipping-off wording for the customer is critical to avoid telling a fraudster they're flagged.",
+      "A transient error: upstream payment processor 503 — if local recovery is exhausted, the agent will surface a 'having trouble, please retry shortly' message to the customer, where deterministic wording helps.",
+      "A validation error: malformed `order_id` — the agent reformats its OWN call internally and retries; the customer never sees this error."
+    ],
+    "explanations": [
+      "Wrong — refund cap is a customer-facing terminal denial. `customerMessage` is most useful here for deterministic on-brand wording the agent lifts verbatim, exactly as the lesson's Scenario 1 illustrates.",
+      "Wrong — fraud-review denial is exactly the case where `customerMessage` is most critical. Without deterministic safe wording, the model could leak diagnostic detail ('your account is flagged for fraud review') to a potentially-malicious user.",
+      "Wrong — even when local recovery exhausts, the agent's customer-facing fallback ('we're having trouble — please retry in a few minutes') benefits from deterministic wording carried in `customerMessage`. Less critical than the business cases, but still useful.",
+      "Correct — validation errors are agent-internal: the agent receives the structured `expected` / `received` fields, reformats its own call, and retries — the customer never sees the validation error. `customerMessage` adds zero value because there is no customer-facing path. (This changes if the customer is the direct source of the malformed input, but that's not the typical MCP agent pattern.)"
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.2"
+    ],
+    "phase": "post",
+    "qid": "e8fa5300-48ab-49cd-9f05-173cb8610b42"
+  }
+]

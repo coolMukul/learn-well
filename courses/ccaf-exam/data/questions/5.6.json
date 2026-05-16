@@ -1,0 +1,882 @@
+[
+  {
+    "question": "A web-search subagent in a research pipeline returns a single paragraph: \"Recent estimates put global EV sales at roughly 14M units in 2024, with strong growth in China.\" The synthesis stage now has to feed the report-writer. What has been irreversibly lost?",
+    "options": [
+      "The structured claim-source mapping (URLs, publication dates, excerpts) needed to cite the figures",
+      "The agentic loop's stop_reason signal",
+      "The model's system prompt",
+      "The MCP server connection"
+    ],
+    "explanations": [
+      "Correct. Free-form prose drops the source URL, publication date, and excerpt fields the report-writer needs to cite; downstream stages cannot reconstruct what was deleted.",
+      "Wrong layer — stop_reason is unrelated to claim-level provenance.",
+      "The system prompt is not affected by a subagent's output format.",
+      "MCP infrastructure is unrelated to this provenance loss."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "pre",
+    "qid": "8d0d2879-b052-4ffd-be13-08143230b7d9"
+  },
+  {
+    "question": "Two credible sources give different Q3 revenue figures: Source A reports $4.20B, Source B reports $4.18B. What should the synthesis subagent do?",
+    "options": [
+      "Pick whichever source is more recent",
+      "Average the two values into $4.19B",
+      "Keep both values, annotated with attribution, and let the reader judge",
+      "Drop the conflict and use a placeholder \"approximately $4.2B\""
+    ],
+    "explanations": [
+      "Recency is not authority; a recent derivative summary can override the older primary source.",
+      "Averaging hides the disagreement and creates a third number no actual source endorses.",
+      "Correct. Synthesis preserves disagreement with attribution; rendering communicates it.",
+      "Placeholder text loses both values and the source records — strictly worse."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "pre",
+    "qid": "948c09e5-53a8-48e9-ae8c-d646c96c2e01"
+  },
+  {
+    "question": "Why must claim records carry a publication or data-collection date in a multi-source synthesis pipeline?",
+    "options": [
+      "Dates are optional metadata and not required",
+      "So temporal differences (different periods) are not misread as contradictions, and \"current\" facts don't go stale silently",
+      "So the model can prefer newer sources automatically",
+      "So the synthesis agent can drop sources older than 12 months"
+    ],
+    "explanations": [
+      "Dates are required, not optional, for any temporal claim.",
+      "Correct. Without dates, time-series points masquerade as conflicts and the report ages silently.",
+      "Auto-preferring recent sources is itself an anti-pattern.",
+      "Age-based filtering is a credibility-gate concern, not the reason dates are required in claim records."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "pre",
+    "qid": "9fc00a57-4705-4f7d-bd82-beb792dc6e3e"
+  },
+  {
+    "question": "A quarterly briefing must combine Q3 financial metrics, regulatory news, and a technical incident report. Which rendering strategy follows the topic's guidance?",
+    "options": [
+      "Render everything as prose for stylistic consistency",
+      "Render everything as a single JSON document and let the reader parse it",
+      "Render financials as a table, news as prose, technical findings as a structured list",
+      "Render everything as a bulleted list for scannability"
+    ],
+    "explanations": [
+      "Uniform prose buries financial precision and turns technical steps into walls of text.",
+      "JSON is for machine consumption; reports must be human-readable per content type.",
+      "Correct — content-type-appropriate rendering: financial → tables, news → prose, technical → lists.",
+      "Bulleted lists destroy the comparison value of financial tables and the narrative flow of news."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "pre",
+    "qid": "4cf1e6ec-f497-4a81-b74f-090d496ee097"
+  },
+  {
+    "question": "What is the synthesis subagent's actual job in a research pipeline that also has a report-writer downstream?",
+    "options": [
+      "Re-fetch the original sources and verify each claim independently",
+      "Choose the rendering format for each section",
+      "Write a narrative summary of the findings",
+      "Merge, deduplicate, and annotate structured claim records — preserving structure, not flattening it to prose"
+    ],
+    "explanations": [
+      "Re-fetching is a re-run of the search subagent, not synthesis.",
+      "Rendering is the report-writer's responsibility, not synthesis's.",
+      "That's the report-writer's job; asking synthesis to do it discards structure.",
+      "Correct — merge + dedupe + annotate over structured records."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "pre",
+    "qid": "04cbea81-f5c3-4e66-b0cf-976eac3480f1"
+  },
+  {
+    "question": "What minimum field set should each subagent claim record carry to preserve provenance through synthesis?",
+    "options": [
+      "claim and the agent's tool-call ID",
+      "Just the claim text — sources can be inferred from context",
+      "claim and a confidence score",
+      "claim, source_url, source_title, published_at, and an excerpt (plus data_period and content_type where applicable)"
+    ],
+    "explanations": [
+      "Tool-call IDs are loop-internal — they don't identify external sources.",
+      "Inferring sources is exactly the hallucination this topic warns against.",
+      "Confidence scores don't carry provenance; URLs and dates do.",
+      "Correct — these are the fields downstream synthesis and the report-writer rely on."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "pre",
+    "qid": "9d7e3b29-b80d-4db0-a8bc-9178b618b943"
+  },
+  {
+    "question": "Source A (a quarterly press release) says US unemployment was 4.1% in Q3 2024; Source B (a monthly jobs report) says 3.9% in January 2025. How should synthesis treat this?",
+    "options": [
+      "Annotate as a real conflict and present both with attribution",
+      "Recognise this as a time-series gap (different data_period values) and render as a table with a period column",
+      "Pick the more recent figure (3.9%) and discard the other",
+      "Drop both — the disagreement is unresolvable"
+    ],
+    "explanations": [
+      "Different periods aren't a conflict — they're two points in a time series.",
+      "Correct — different data_periods = time-series points, not conflicts; render with a period column.",
+      "Discarding loses the historical context.",
+      "Dropping both loses all information."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "pre",
+    "qid": "19997de0-6092-434f-add9-36dcab0a16aa"
+  },
+  {
+    "question": "What's a useful test that structure was preserved through the synthesis stage?",
+    "options": [
+      "The output is exactly 500 words",
+      "The output uses the same vocabulary as the original sources",
+      "The output can be re-rendered into a different format (table, list, prose) without going back to the original sources",
+      "The output passes a JSON-schema validator"
+    ],
+    "explanations": [
+      "Word count is unrelated to structural preservation.",
+      "Vocabulary similarity doesn't imply structural fields were kept.",
+      "Correct — re-renderability without re-fetching is the litmus test.",
+      "Schema validity is necessary but not sufficient — a valid schema can still flatten claims to prose fields."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "pre",
+    "qid": "ab13ce82-0a95-4409-a1df-beba6ab7b670"
+  },
+  {
+    "question": "Why is \"always pick the most recent source\" a problematic rule for synthesis?",
+    "options": [
+      "It violates the agentic loop contract",
+      "Recency is not authority — a recent derivative summary can override an older, more authoritative primary source",
+      "It uses too many tokens",
+      "Newer sources are always less credible"
+    ],
+    "explanations": [
+      "Source selection is unrelated to the agentic loop.",
+      "Correct — primaries can predate their derivatives; recency alone misranks them.",
+      "Token usage isn't the issue.",
+      "The opposite of A is also wrong — there's no monotonic relationship between age and credibility."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "pre",
+    "qid": "a33e5eec-5819-4470-8487-682e90977128"
+  },
+  {
+    "question": "Where in the pipeline does the rendering decision (table vs prose vs list) belong?",
+    "options": [
+      "In the report-writer, driven by a content_type hint carried through synthesis",
+      "In the synthesis subagent, before merging",
+      "In the search subagent, when the source is fetched",
+      "In the coordinator's system prompt as a global format"
+    ],
+    "explanations": [
+      "Correct — rendering is downstream of synthesis and uses content_type metadata to decide format per group.",
+      "Synthesis is merge + annotate, not render — putting rendering here loses structure for downstream stages.",
+      "The search subagent doesn't know what will be merged with what.",
+      "A global format mandate is exactly the \"convert everything to prose\" anti-pattern."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "pre",
+    "qid": "4f924f03-8caf-4d15-9ef8-8331d6466b3d"
+  },
+  {
+    "question": "A research coordinator instructs the synthesis subagent: \"Produce a clean 800-word narrative summary of the findings.\" The report-writer downstream then has nothing structured to cite from. What's the root-cause fix?",
+    "options": [
+      "Change the synthesis instruction so it emits a merged structured claim array (preserving source/date fields), and let the report-writer render prose",
+      "Increase the synthesis agent's context window",
+      "Add a citation-checker step after the report-writer",
+      "Switch the model to one with better citation training"
+    ],
+    "explanations": [
+      "Correct — the fix is to move rendering downstream and keep synthesis structural.",
+      "Context size doesn't change the instruction's structural error.",
+      "A post-hoc checker can't reconstruct provenance that was thrown away upstream.",
+      "Model choice doesn't repair a pipeline that deletes its own provenance."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "ad9ef619-cc9a-46a7-810d-7763934a7fd7"
+  },
+  {
+    "question": "A document-analysis subagent emits structured records with claim, source, and an excerpt. Why is also requiring published_at on each record important for the synthesis stage?",
+    "options": [
+      "So the report-writer can sort claims chronologically",
+      "So apparent contradictions across sources can be distinguished from time-series differences, and stale facts can be flagged",
+      "So the agent can refuse to merge claims older than 6 months",
+      "Publication dates are only useful for legal compliance"
+    ],
+    "explanations": [
+      "Sorting is a side benefit; the substantive reason is interpretive.",
+      "Correct — without dates, time-series gaps look like conflicts and \"current\" facts go stale silently.",
+      "Hard cutoffs are an anti-pattern; the right move is annotation.",
+      "The interpretive benefit applies regardless of legal context."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "ce5fdb87-ce34-476b-85f0-17d434bbdb1b"
+  },
+  {
+    "question": "Two equally credible sources give different values for the same metric in the same reporting period. What is the synthesis subagent's correct output shape?",
+    "options": [
+      "A single value with the higher-reputation source attached",
+      "A claim record with the average of the two values",
+      "A claim record listing both values, each with its own source attribution",
+      "A claim record marking the metric as \"unknown\""
+    ],
+    "explanations": [
+      "Reputation rules silently override information the reader needs.",
+      "Averaging fabricates a third value no source endorses.",
+      "Correct — preserve disagreement with attribution.",
+      "\"Unknown\" loses both real values and their sources."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "e2b3213e-3872-46b6-9493-3f15eb8b1a9c"
+  },
+  {
+    "question": "Which content type is rendered most appropriately as a structured list in a final report?",
+    "options": [
+      "Quarterly revenue and margin figures",
+      "Narrative news coverage of a regulatory event",
+      "Step-by-step technical remediation instructions for an incident",
+      "A single one-sentence executive summary"
+    ],
+    "explanations": [
+      "Financial figures render as tables (precision, comparison).",
+      "News renders as prose (narrative).",
+      "Correct — technical steps render as ordered lists.",
+      "A one-line summary stays prose; a list of one is meaningless."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "30a1f969-ad5c-4368-923a-60be85685bb0"
+  },
+  {
+    "question": "What's the cleanest description of \"provenance\" in this multi-agent context?",
+    "options": [
+      "The order in which subagents executed",
+      "The model version used by each subagent",
+      "The traceable mapping from each claim in the final report to the specific source record (URL, title, date, excerpt) that produced it",
+      "The cost of each tool call"
+    ],
+    "explanations": [
+      "Execution order is a loop concern, not a provenance one.",
+      "Model version is a separate metadata concern.",
+      "Correct — provenance is the audit trail from claim to source.",
+      "Cost is unrelated to source attribution."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "526acf7e-e0a5-4d62-8cef-b0a33ed26e33"
+  },
+  {
+    "question": "Why is asking synthesis to produce \"a clean narrative summary\" structurally wrong?",
+    "options": [
+      "Narrative output uses too many tokens",
+      "It implicitly asks synthesis to do the report-writer's job — flattening structured records to prose and losing the provenance trail downstream stages need",
+      "Narrative output can't be cached",
+      "It violates the Anthropic Messages API contract"
+    ],
+    "explanations": [
+      "Token cost isn't the structural error.",
+      "Correct — synthesis must preserve structure; rendering belongs to the next stage.",
+      "Caching has no bearing on this decision.",
+      "There's no API-level constraint involved."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "a52bc546-d575-41e0-9c79-567026327405"
+  },
+  {
+    "question": "A claim record has a published_at field but no data_period field. The data is a quarterly economic indicator. What problem can this cause downstream?",
+    "options": [
+      "None — publication date alone is sufficient for any temporal interpretation",
+      "The report-writer will refuse to render the claim",
+      "The agentic loop will not terminate",
+      "Synthesis can't tell whether two figures are conflicting reports of the same period or two snapshots of different periods"
+    ],
+    "explanations": [
+      "Publication and data-collection dates routinely diverge by months for quarterly data.",
+      "There's no automatic refusal; the report just becomes wrong.",
+      "Loop termination is unrelated.",
+      "Correct — both fields are needed; without data_period, time-series points masquerade as conflicts."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "04bcf272-78d1-4102-9626-d8614203c6fd"
+  },
+  {
+    "question": "Which of these is a valid \"credibility gate\" — a place where filtering sources is acceptable in this pipeline?",
+    "options": [
+      "Inside synthesis, dropping the lower-reputation of two conflicting sources",
+      "Inside the report-writer, rephrasing to omit minority-source claims",
+      "Before sources enter the pipeline at all (e.g., whitelisting publishers); once admitted, all credible sources are first-class",
+      "There is no acceptable place to filter sources"
+    ],
+    "explanations": [
+      "In-synthesis filtering silently overrides peer claims — the anti-pattern.",
+      "The report-writer must render preserved disagreement, not hide it.",
+      "Correct — gating happens upstream of admission; downstream, all admitted sources are first-class.",
+      "Some upstream filtering is legitimate; the constraint is on where."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "a7119483-250b-4a7a-9fcc-96eefc50a45d"
+  },
+  {
+    "question": "What should the document-analysis subagent emit when it pulls Q3 revenue from a 10-Q PDF?",
+    "options": [
+      "A short executive summary of the entire 10-Q",
+      "A sentence: \"AcmeCorp's Q3 2025 revenue was $4.2B according to the 10-Q.\"",
+      "Just the number $4.2B",
+      "A structured record: {claim, source_url, source_title, published_at, data_period, excerpt, content_type: \"financial\"}"
+    ],
+    "explanations": [
+      "An exec summary at the wrong stage; this subagent's job is structured extraction.",
+      "Sentence form drops the structured fields synthesis needs.",
+      "Bare numbers lose all context.",
+      "Correct — full structured record preserves provenance and metadata for downstream stages."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "4fab4243-5d52-4d5f-8a6a-338a33244d80"
+  },
+  {
+    "question": "Which sentence best captures the topic's principle?",
+    "options": [
+      "Always summarise findings as prose for readability",
+      "The most recent source is always authoritative",
+      "Conflicting sources should be averaged when within 1%",
+      "Synthesis preserves structure (claim-source mappings, dates, content_type); rendering happens downstream and varies by content type"
+    ],
+    "explanations": [
+      "The exam's classic wrong-answer phrasing.",
+      "Recency is not authority.",
+      "Averaging fabricates a value no source endorses.",
+      "Correct — the central principle of the topic."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "722ee4c5-3176-4ca8-9fd9-b334ef4b2480"
+  },
+  {
+    "question": "A coordinator's system prompt says: \"All subagents must produce concise prose summaries to keep the report consistent in style.\" The team is surprised when the final report has no usable citations. Diagnose the failure mode.",
+    "options": [
+      "The model isn't capable of citing sources",
+      "Concise prose between subagents flattens claim-source mappings; the citation trail is destroyed before the report-writer ever runs",
+      "The coordinator should have used parallel tool calls",
+      "The system prompt should be moved to the user-role message"
+    ],
+    "explanations": [
+      "Capability is fine; the architecture is wrong.",
+      "Correct — the failure is structural: prose at every handoff erases provenance.",
+      "Parallelism doesn't fix the data-shape problem.",
+      "Message-role is irrelevant to claim-record preservation."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "3fc55376-d9cd-4aad-873d-360111fc3c84"
+  },
+  {
+    "question": "Two government statistical bureaus issue Q3 GDP estimates: a press release on Oct 30 and a revised final estimate on Dec 15. Both are real, both cover Q3. The synthesis stage receives both. What's the right output shape?",
+    "options": [
+      "A single record with the Dec 15 figure (most recent wins)",
+      "A single record with the average",
+      "Two records (or a single record with two values), each carrying its own source, published_at, and revision-stage metadata, so the reader sees both with attribution",
+      "Drop the Oct 30 figure as superseded"
+    ],
+    "explanations": [
+      "Recency-wins silently overrides the earlier figure; the reader can't see the revision.",
+      "Averaging fabricates a third number.",
+      "Correct — preserve both with attribution; the user can interpret \"preliminary vs final\" themselves.",
+      "Dropping is the synthesis-picks-winner anti-pattern."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "1fe3373a-b4b7-49df-9907-c85825c36437"
+  },
+  {
+    "question": "A subagent returns 50 financial metrics. The synthesis stage adds a content_type: \"financial\" hint to each. The report-writer then renders them as a single dense paragraph for \"narrative flow.\" What rule has been violated?",
+    "options": [
+      "Content-type-appropriate rendering: financial data should be rendered as tables, not prose, so precision and side-by-side comparison are preserved",
+      "The agentic-loop termination contract",
+      "Tool-result correlation by tool_use_id",
+      "Subagent isolation"
+    ],
+    "explanations": [
+      "Correct — financial → tables; prose flattening hides decimal precision and comparability.",
+      "Loop termination is unrelated.",
+      "Correlation is unrelated.",
+      "Isolation has no bearing on rendering choices."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "9132abae-6c46-4f3a-ad7e-e4ab4b353d8a"
+  },
+  {
+    "question": "A subagent reports {claim: \"X went up 12%\", source_url: \"https://example.com/x\"} with no published_at. Why is this a quality defect even though the URL is present?",
+    "options": [
+      "URLs are unreliable — only DOIs count as provenance",
+      "The claim is too short",
+      "The URL must be HTTPS to count",
+      "Without a date, downstream synthesis cannot distinguish a stale claim from a current one or interpret apparent contradictions correctly"
+    ],
+    "explanations": [
+      "URL form is not the issue.",
+      "Length is unrelated.",
+      "Protocol is unrelated.",
+      "Correct — date is part of minimum provenance; without it, temporal interpretation breaks."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "249e946b-43fa-4b6f-ab57-e72e9cdde86d"
+  },
+  {
+    "question": "Which of these is the strongest signal that a research pipeline preserves provenance correctly?",
+    "options": [
+      "The final report is under 1,000 words",
+      "Every claim in the final report can be traced back to a specific structured source record carried through every stage of the pipeline",
+      "The pipeline uses fewer than 10 tool calls",
+      "The synthesis agent runs in parallel with the search agent"
+    ],
+    "explanations": [
+      "Length is unrelated.",
+      "Correct — that's the definition of preserved provenance.",
+      "Tool-call count is unrelated.",
+      "Parallelism doesn't imply provenance preservation."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "e6e186bb-f61c-4988-9a06-4a3427b0aefd"
+  },
+  {
+    "question": "A briefing combines financial metrics, news commentary, and a technical incident timeline. Which mix of rendering choices is most consistent with the topic?",
+    "options": [
+      "All prose for stylistic consistency",
+      "All bullets for scannability",
+      "All JSON for machine parseability",
+      "Financial as a table, news as prose, incident timeline as a structured list — three rendering modes within one document"
+    ],
+    "explanations": [
+      "Uniform-style mandate is the anti-pattern.",
+      "Bullets ruin tables and prose.",
+      "JSON is for machines, not human reports.",
+      "Correct — content-type-appropriate rendering, mixed within one document."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "fb89a323-5b09-466b-9f97-a15c56bdb611"
+  },
+  {
+    "question": "What's the difference between a real conflict and a time-series gap in synthesis?",
+    "options": [
+      "Real conflict = same data_period, different values; time-series = different data_periods → render as a table with a period column",
+      "Real conflict = different sources; time-series = same source",
+      "Real conflict = quantitative; time-series = qualitative",
+      "There's no meaningful distinction"
+    ],
+    "explanations": [
+      "Correct — period equality is the discriminator.",
+      "Both can involve different sources; that's not the distinguishing field.",
+      "Both are usually quantitative.",
+      "The distinction matters for rendering choice."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "24bdeee2-ce19-456d-a09d-5ffb3b6d3d28"
+  },
+  {
+    "question": "Why is preserving the original source's wording (excerpt) inside each claim record valuable, beyond just the URL?",
+    "options": [
+      "Excerpts let the model retrain itself",
+      "Excerpts allow the synthesis stage to pick a winner faster",
+      "Excerpts are only useful for legal review",
+      "It lets downstream stages and human auditors verify the claim wasn't paraphrased into a different meaning, and supplies methodological/qualifying language the source attached"
+    ],
+    "explanations": [
+      "Retraining isn't part of the loop.",
+      "Synthesis shouldn't be picking winners.",
+      "The verification benefit is broader than legal.",
+      "Correct — excerpts protect against silent meaning drift and carry source-side caveats."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "da29ba9c-8330-4891-979b-48a5b24b35a0"
+  },
+  {
+    "question": "A research system ships a report dated \"as of today\" with claims based on sources collected three months ago. Which design fix prevents this kind of silent staleness?",
+    "options": [
+      "Always re-fetch every source on every request",
+      "Require every claim record to carry retrieved_at, published_at, and (where applicable) data_period; render those dates alongside the claim so the reader sees the actual recency",
+      "Add a footnote that says \"recency varies\"",
+      "Limit reports to news older than 1 year"
+    ],
+    "explanations": [
+      "Re-fetching solves part of the problem but doesn't address the rendering — the reader still needs visible dates.",
+      "Correct — the structural answer is dates carried through and rendered visibly.",
+      "Generic footnotes don't tell the reader which claim is stale.",
+      "Arbitrary age cutoffs miss the point."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "80b6de35-dc6d-4b68-a48f-83fd383dfb2e"
+  },
+  {
+    "question": "A team wants to enforce \"every claim cites its source\" but their synthesis agent emits prose. They add a regex post-check that flags any sentence without a citation. Why does this band-aid usually fail?",
+    "options": [
+      "Regex is too slow",
+      "Regex can't handle Unicode",
+      "By the time the prose is generated, the structured source records are gone — the post-check can only flag the symptom, not reconstruct provenance; the model is then tempted to invent citations to satisfy the regex",
+      "The check should be a hook instead"
+    ],
+    "explanations": [
+      "Performance isn't the issue.",
+      "Unicode isn't the issue.",
+      "Correct — the structural trail is gone; downstream checks invite fabrication. Fix it at the synthesis stage.",
+      "Mechanism (hook vs script) doesn't help once the data is lost."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "72a0027e-be3f-47f1-a1a4-aa5e3af05768"
+  },
+  {
+    "question": "Two sources agree on a fact but use slightly different phrasings: Source A says \"the merger closed on March 1\"; Source B says \"the deal completed March 1.\" Synthesis dedupes them. What does the merged record look like?",
+    "options": [
+      "Drop one; both are essentially the same",
+      "An averaged claim text: \"the merger/deal closed/completed March 1\"",
+      "A new claim that combines both phrasings into a paragraph",
+      "A single claim with sources: [{record_for_A}, {record_for_B}] — both source records preserved so citations can list both"
+    ],
+    "explanations": [
+      "Drops a source — anti-pattern.",
+      "Frankenstein-phrasing fabricates wording.",
+      "A combined paragraph hides which source said which phrasing.",
+      "Correct — dedupe collapses the claim, not the source list; both sources stay attached."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "1a06dd75-4499-456a-9ff2-a2b57de26ee4"
+  },
+  {
+    "question": "Source A is a Reuters press summary dated yesterday; Source B is the underlying SEC 10-Q filing dated three weeks ago. They report different revenue figures. A team's synthesis rule says \"newest source wins.\" What's the most likely failure?",
+    "options": [
+      "The pipeline runs slower",
+      "The Reuters summary (a derivative) silently overrides the SEC primary — the more authoritative source is dropped because it happens to be older",
+      "The 10-Q won't fit in context",
+      "The model will refuse to answer"
+    ],
+    "explanations": [
+      "Latency is unrelated.",
+      "Correct — recency-wins picks the derivative over the primary; this is the canonical reason the rule is wrong.",
+      "Context size is unrelated.",
+      "There's no refusal."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "e155a7dd-fc63-4a08-bce9-1fa76c766bb4"
+  },
+  {
+    "question": "A coordinator wants the system to \"feel decisive\" so it instructs synthesis: \"When sources disagree, rephrase the claim so it reads as a single confident statement.\" What does this break?",
+    "options": [
+      "Nothing — confidence is desirable",
+      "It violates the agentic loop's stop_reason contract",
+      "It causes the synthesis agent to time out",
+      "It hides legitimate disagreement from the reader, fabricates an apparent consensus that no actual source endorses, and removes their ability to evaluate the underlying conflict"
+    ],
+    "explanations": [
+      "Confidence at the cost of fabricated consensus is a serious failure mode.",
+      "Loop signalling is unrelated.",
+      "Timeouts are unrelated.",
+      "Correct — the rule manufactures false agreement; the right move is annotated attribution."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "c7a71f65-fa2e-475d-992a-04a6af3b5228"
+  },
+  {
+    "question": "A research pipeline's synthesis output is a JSON object with a \"key_findings\" array of strings — each string a one-line summary with the source name parenthesised at the end (e.g., \"EV sales hit 14M in 2024 (BNEF)\"). Why is this still inadequate provenance even though sources are named?",
+    "options": [
+      "Source names alone aren't URLs; the parenthesised string format also loses published_at, data_period, retrieved_at, and excerpt — the report-writer can't reliably cite, can't disambiguate temporal data, and can't quote",
+      "JSON arrays are not allowed by the spec",
+      "Source names should always be in square brackets",
+      "Strings can't carry numerical data"
+    ],
+    "explanations": [
+      "Correct — naming a source is one field of many; the rest of the record is still missing.",
+      "JSON arrays are fine.",
+      "Bracket style is irrelevant.",
+      "Strings can carry numbers; that's not the issue."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "17cd65e8-2932-4adb-8373-b2693b555c8f"
+  },
+  {
+    "question": "Source A (a peer-reviewed paper, published 2023) reports an effect size of 0.42; Source B (a 2024 popular-science article that cites Source A) reports 0.4. A synthesis rule \"prefer the most recent source\" picks B. Which is the *most complete* description of what went wrong?",
+    "options": [
+      "Only that the precision was lost",
+      "Only that recency-wins picked the derivative over the primary",
+      "Nothing went wrong — the rule worked as designed",
+      "(1) Recency picked the derivative over the primary; (2) the rule silently dropped the more authoritative source; (3) the precision (0.42 vs 0.4) was rounded away; (4) the reader has no way to see that A and B are not independent corroboration"
+    ],
+    "explanations": [
+      "Underestimates; multiple failures compound.",
+      "Underestimates; the precision and (non-)independence failures also matter.",
+      "The rule failed at every level.",
+      "Correct — every listed failure is real; recency-wins is multiply broken here."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "ae304b89-32ca-497a-9ac0-ee8381bbeb8a"
+  },
+  {
+    "question": "A team argues: \"If we annotate every conflict with attribution, our reports will be cluttered. Let's apply attribution only when sources disagree by more than 5%.\" What's the deepest problem with that rule?",
+    "options": [
+      "5% is too small a threshold",
+      "Annotation slows rendering",
+      "Attribution is a function of *whether the claim was sourced*, not of *how much sources agree*; selectively dropping attribution destroys provenance for the majority of claims and tempts the reader to assume the unattributed ones are facts of nature",
+      "Reports look ugly with citations"
+    ],
+    "explanations": [
+      "Threshold tuning misses the point.",
+      "Rendering speed isn't the issue.",
+      "Correct — attribution isn't a disagreement marker; it's the audit trail for every claim.",
+      "Aesthetic concerns are subordinate to correctness."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "f6880acc-03af-40aa-9fe1-43e1ddc7e9e5"
+  },
+  {
+    "question": "Two equally credible Q3 unemployment figures: Source A says 4.1% (data_period 2024-Q3), Source B says 3.9% (data_period 2025-Q3). The synthesis agent annotates this as a \"conflict between Source A and Source B.\" What did it get wrong?",
+    "options": [
+      "It correctly annotated a conflict",
+      "It misclassified a time-series gap as a conflict — the data_periods differ, so this is two snapshots of a moving series and should be rendered as a table with a period column, not as two competing claims",
+      "It should have averaged the two values",
+      "It should have picked the more recent value"
+    ],
+    "explanations": [
+      "Wrong classification — the periods differ.",
+      "Correct — different data_periods means time series, not conflict.",
+      "Averaging fabricates a value.",
+      "Recency-wins still hides the historical point."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "9c8e55b3-4aac-4070-90ef-c79ce9034278"
+  },
+  {
+    "question": "A coordinator's prompt insists \"all output sections must be prose paragraphs for executive readability.\" Financial metrics, news, and a step-by-step incident remediation are now all prose. What's the most accurate diagnosis?",
+    "options": [
+      "The prompt is correct — executives need prose",
+      "The synthesis agent should produce HTML instead",
+      "Markdown must be disabled",
+      "Uniform-style rendering destroys content-type-appropriate formatting: financial loses tabular comparison/precision, technical loses scannability of ordered steps; only news genuinely belongs as prose"
+    ],
+    "explanations": [
+      "Executives still benefit from tables for numerics and lists for steps.",
+      "Output format choice is unrelated.",
+      "Markdown availability is unrelated.",
+      "Correct — the rule is the classic anti-pattern; rendering must vary by content type."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "4b0b7be7-fa71-4311-a9e5-6be365951c24"
+  },
+  {
+    "question": "Synthesis emits a structured array. The report-writer flattens it into a single prose paragraph and adds footnotes by mapping claim sentences back to the structured array via fuzzy match. Sometimes the footnotes are wrong. What's the most resilient fix?",
+    "options": [
+      "Increase the fuzzy-match threshold",
+      "Have the report-writer iterate over the structured array directly and emit each claim with its source attached — rather than first generating prose and then trying to retro-attach citations by string match",
+      "Add a citation-validation regex",
+      "Switch to a different model"
+    ],
+    "explanations": [
+      "Threshold tuning addresses the symptom, not the cause.",
+      "Correct — the report-writer should consume structured records and render with citations attached, not retro-attach.",
+      "Regex post-checks share the same fragility.",
+      "Model swap doesn't repair the architecture."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "5cf25e09-ffdb-4c34-b8b9-3823a23080ba"
+  },
+  {
+    "question": "A research pipeline has a \"news\" subagent that pulls 10 articles, all reporting the same headline event. Synthesis dedupes to a single claim: \"X happened on Tuesday.\" The team then learns one of the 10 sources had a *different* timeline detail (Wednesday, not Tuesday) — but it was deduped away. Where in the pipeline did the failure actually occur?",
+    "options": [
+      "The news subagent (it should have hidden the dissenter)",
+      "The report-writer (it should have used a different font)",
+      "The synthesis stage's dedupe step treated divergent claims as duplicates because the dedupe key was too coarse — the right fix is to dedupe only on exact-match claim text and treat any divergence (even a date detail) as a conflict to annotate, not to silently merge",
+      "The coordinator (it should have rejected the report)"
+    ],
+    "explanations": [
+      "Hiding dissenters is exactly the failure mode.",
+      "Font is irrelevant.",
+      "Correct — a coarse dedupe key silently picks a winner; tighten the key and annotate divergence.",
+      "Rejection downstream doesn't repair the structural error."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.6"
+    ],
+    "phase": "post",
+    "qid": "6008dd00-3824-44ea-b488-b9d5bb702e04"
+  }
+]

@@ -1,0 +1,882 @@
+[
+  {
+    "question": "Three MCP tools used by a research agent return `published_at` in three different formats: ISO 8601 string, Unix epoch seconds, and a human-readable date. The synthesis subagent occasionally sorts findings incorrectly. Which Agent SDK pattern most directly fixes this?",
+    "options": [
+      "A `PostToolUse` hook (one per tool, or a shared hook that branches by tool name) that normalizes `published_at` to a canonical format (ISO 8601 UTC) before the result is appended to the conversation.",
+      "A `PreToolUse` hook on each tool that rewrites the tool input to request ISO 8601 explicitly.",
+      "A stronger system prompt that tells the synthesis subagent to interpret each format correctly.",
+      "Adding a few-shot example showing how to compare the three formats."
+    ],
+    "explanations": [
+      "Correct — `PostToolUse` runs after the tool executes and can rewrite the response before it enters context. Normalizing at the boundary means the model only ever sees the canonical format. Synthesis-stage interpretation is too late.",
+      "Wrong — `PreToolUse` modifies the call, not the response. The MCP tools return the formats they return; you can't generally rewrite their inputs to change the output schema.",
+      "Wrong — prompt-based interpretation is probabilistic. The model usually gets it right; the times it doesn't are silent bugs. A normalization hook removes the heterogeneity from context entirely.",
+      "Wrong — few-shot reduces but doesn't eliminate the failure rate. Heterogeneity at the boundary is a structural problem; structural fixes use hooks."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "pre",
+    "qid": "68fb5b8d-6cdf-464c-acdf-0596fdcb8ebc"
+  },
+  {
+    "question": "A `PreToolUse` hook on `process_refund` returns `{ permissionDecision: 'deny', reason: 'policy' }`. The model keeps re-emitting the same `process_refund` call on subsequent turns. What's the most accurate diagnosis?",
+    "options": [
+      "The model is malfunctioning; switch to a different model.",
+      "The deny reason is too terse to redirect the model. Replace it with a corrective instruction that names the alternative workflow (e.g., 'Refunds over $500 require manager approval; use escalate_to_human with a structured payload').",
+      "`PreToolUse` denies are not actually surfaced to the model; use a `PostToolUse` hook instead.",
+      "The hook should silently allow the call and log the violation for later review."
+    ],
+    "explanations": [
+      "Wrong — the model is behaving as expected: it tried, got an opaque deny, and tried again. Model swap doesn't fix the missing redirect.",
+      "Correct — the deny reason is the model's next-turn input. A useful reason names what the model should do instead (alternative tool, redirect path). Terse reasons leave the model stuck retrying.",
+      "Wrong — `PreToolUse` deny reasons ARE surfaced to the model. The redirect signal flows through that reason field.",
+      "Wrong — silent allow defeats the safety boundary. The whole point of the hook is to block the policy-violating call."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "pre",
+    "qid": "aa30a8c3-8452-490a-bf24-02319571d5f4"
+  },
+  {
+    "question": "Which best describes the difference between `PreToolUse` and `PostToolUse` hooks?",
+    "options": [
+      "`PreToolUse` is for read tools; `PostToolUse` is for write tools.",
+      "`PreToolUse` is synchronous; `PostToolUse` is asynchronous.",
+      "`PreToolUse` fires before a tool call executes (and can deny or modify the call); `PostToolUse` fires after the tool has executed (and can transform the result before the model sees it).",
+      "`PreToolUse` runs once per session; `PostToolUse` runs once per turn."
+    ],
+    "explanations": [
+      "Wrong — both hooks apply across read and write tools; the read/write split isn't the distinction.",
+      "Wrong — sync/async isn't the structural distinction. Both can be implemented synchronously.",
+      "Correct — that's the lifecycle difference. `PreToolUse` is the enforcement point on the call; `PostToolUse` is the transform point on the response.",
+      "Wrong — both hooks fire per tool call, not per session or turn."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "pre",
+    "qid": "3fe49b00-f5c0-4762-a34d-9f80664ade55"
+  },
+  {
+    "question": "An exam scenario describes: 'The agent must NOT issue refunds over $500 under any circumstance, even if the customer is persistent.' The available options include three prompt-engineering tweaks and one Agent SDK approach. Which is the right answer?",
+    "options": [
+      "Add a few-shot example of refusing a $700 refund.",
+      "Tighten the system prompt to forbid refunds over $500.",
+      "Lower the model's temperature to make it more compliant.",
+      "Add a `PreToolUse` hook on `process_refund` that denies the call when amount > 500 and redirects via the deny reason to `escalate_to_human`."
+    ],
+    "explanations": [
+      "Wrong — few-shot reduces the failure rate but doesn't make it zero. 'Under any circumstance' rules out probabilistic compliance.",
+      "Wrong — system-prompt prohibitions are probabilistic. The phrase 'under any circumstance' signals a guarantee requirement.",
+      "Wrong — temperature affects sampling; it doesn't turn probabilistic compliance into deterministic compliance. A non-zero floor remains.",
+      "Correct — `PreToolUse` interception with a redirect is the deterministic answer. The question stem ('must not... under any circumstance') is the canonical 'use a hook' signal."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "pre",
+    "qid": "797919c1-4f12-4356-98c7-edeaa8bc8561"
+  },
+  {
+    "question": "A `PostToolUse` hook on a search tool drops 35 of 40 returned fields, keeping only `id`, `title`, `url`, `snippet`, `published_at`. What's the primary architectural benefit?",
+    "options": [
+      "It speeds up the network call to the search tool.",
+      "It reduces context bloat and improves the model's attention to the relevant fields, preventing lost-in-the-middle effects (Task 5.1).",
+      "It changes the search tool's behaviour to return fewer fields in subsequent calls.",
+      "It signals to the model that the search tool is unreliable."
+    ],
+    "explanations": [
+      "Wrong — the hook fires after the tool returns; the network call is already done. No speedup.",
+      "Correct — verbose tool output dilutes attention and can push key fields into the lost-in-the-middle zone. Trimming at the `PostToolUse` boundary keeps context lean and relevant.",
+      "Wrong — the hook only affects what the model sees, not the tool's external behaviour. The tool still returns 40 fields; the model just sees 5.",
+      "Wrong — there's no implicit unreliability signal from trimming. Trimming is a context-management discipline, not a quality signal."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "pre",
+    "qid": "9ef37512-d654-4fa3-b1af-58f6573b99eb"
+  },
+  {
+    "question": "Which scenario is BEST handled by a system-prompt instruction rather than a hook?",
+    "options": [
+      "Refunds over $500 must always escalate.",
+      "Identity verification must precede any financial operation.",
+      "Response tone should be friendly and concise.",
+      "Tool outputs with Unix timestamps must always be normalized to ISO 8601."
+    ],
+    "explanations": [
+      "Wrong — 'must always' signals a guarantee. Use a `PreToolUse` hook on `process_refund`.",
+      "Wrong — financial-operation precondition is a guarantee. Use a prerequisite gate (Task 1.4) implemented via `PreToolUse`.",
+      "Correct — tone is a stylistic preference where probabilistic compliance is acceptable. System-prompt instruction is the right level. A hook is overkill.",
+      "Wrong — timestamp normalization is a structural data-shape problem. Use a `PostToolUse` hook so the model never sees the heterogeneous formats."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "pre",
+    "qid": "db17aa94-ef80-4ca4-9770-08ad7ab638e9"
+  },
+  {
+    "question": "The agent's research synthesis is producing inconsistent date sorting because three search-side MCP tools return dates differently. A team lead suggests 'rewrite the synthesis prompt to handle each format.' Which critique most accurately captures why this is the wrong layer?",
+    "options": [
+      "Synthesis-stage normalization is too late: by the time data reaches the synthesis prompt, the heterogeneous formats have already entered context across multiple turns. Normalize at the `PostToolUse` boundary so the model never sees raw heterogeneity.",
+      "Synthesis subagents in the SDK don't support date arithmetic at all; the team should pre-compute dates before invocation.",
+      "The team should remove dates from the synthesis altogether — they aren't required for the report.",
+      "Date heterogeneity is a non-issue; it only feels broken because the synthesis prompt is too short."
+    ],
+    "explanations": [
+      "Correct — normalize at the source (the `PostToolUse` boundary), not at the consumer. Synthesis can't reliably reconstruct what the boundary should have homogenised in the first place.",
+      "Wrong — synthesis subagents reason over text; they can do date arithmetic when the format is consistent. The issue is the inconsistency, not the capability.",
+      "Wrong — dates are part of the user's request (chronological reporting). Removing them ducks the structural issue.",
+      "Wrong — heterogeneity is a real, repeatable bug. Prompt length doesn't fix it."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "pre",
+    "qid": "eeb7424f-5a58-48bf-a342-356c733475ca"
+  },
+  {
+    "question": "A team writes ten near-identical `PostToolUse` hooks, one per MCP tool, each normalizing the same `published_at` field to ISO 8601. What's the recommended refactor?",
+    "options": [
+      "Disable normalization in nine of the ten and let the model handle the others probabilistically.",
+      "Move normalization into a `PreToolUse` hook on each tool.",
+      "Move normalization into the system prompt and remove the hooks.",
+      "Replace the ten hooks with a single shared `PostToolUse` hook that branches by tool name (or by field heuristics) and applies the canonical format in one place."
+    ],
+    "explanations": [
+      "Wrong — that reintroduces heterogeneity for nine of ten tools. The whole point is consistency.",
+      "Wrong — `PreToolUse` operates on the input, not the response. It cannot retroactively rewrite output formats.",
+      "Wrong — prompt instructions give probabilistic compliance, not deterministic. Hooks are the right layer.",
+      "Correct — a shared hook with one canonical-format definition is easier to evolve and less prone to copy-paste drift between tools. The branching keeps it generic without losing per-tool specificity."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "pre",
+    "qid": "c3c1710d-ec71-431c-8a01-1508af299707"
+  },
+  {
+    "question": "Which hook lifecycle position is correct for BLOCKING a tool call before any side effect occurs (e.g., before a refund actually issues)?",
+    "options": [
+      "`Notification` — fires when the user is notified of an action.",
+      "`Stop` — fires when the agent stops running.",
+      "`PreToolUse` — fires before the tool executes; can deny the call and prevent the side effect.",
+      "`PostToolUse` — fires after the tool executes; can transform the response."
+    ],
+    "explanations": [
+      "Wrong — `Notification` is unrelated to tool execution.",
+      "Wrong — `Stop` fires at session termination; far too late to block a tool call.",
+      "Correct — `PreToolUse` is the enforcement point. Deny here and the side effect never happens.",
+      "Wrong — `PostToolUse` fires after the side effect. For a refund, the money has already moved by then. Use `PreToolUse` for blocking."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "pre",
+    "qid": "ab953d1b-7757-4da6-aff0-96c3019d2f31"
+  },
+  {
+    "question": "Which is an ANTI-PATTERN for `PreToolUse` hook design?",
+    "options": [
+      "Composing multiple preconditions in the gate (verified customer + ownership match + amount within policy).",
+      "Returning a deny reason that names the alternative workflow the model should pursue.",
+      "Using `PreToolUse` for prerequisite gates (e.g., requiring `verified_customer_id` before `process_refund`).",
+      "Returning a deny reason like `'reason': 'policy'` with no redirect — leaving the model to retry the same call repeatedly."
+    ],
+    "explanations": [
+      "Wrong (this is a correct pattern, not an anti-pattern).",
+      "Wrong (this is a correct pattern, not an anti-pattern).",
+      "Wrong (this is a correct pattern, not an anti-pattern).",
+      "Correct — terse reasons without redirects leave the model stuck. The deny reason is the model's next-turn input; use it to redirect to an allowed path."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "pre",
+    "qid": "8bf1498f-ce7d-412a-aa4b-d5f31aa9556a"
+  },
+  {
+    "question": "Scenario 1: a customer requests a $750 refund. Policy: refunds over $500 require manager approval. The agent currently has no `PreToolUse` hook on `process_refund`. Which is the production-ready fix?",
+    "options": [
+      "Add a few-shot example of refusing a $700 refund and lower the model temperature to 0.0.",
+      "Add a `PreToolUse` hook on `process_refund` that denies when amount > $500, with a deny reason like: 'Refunds over $500 require manager approval. Use escalate_to_human with a structured handoff (customer_id, root_cause, refund_amount=750.00, recommended_action).'",
+      "Remove `process_refund` from the agent's `allowedTools` entirely so it never has access; force every refund through the human queue.",
+      "Add a `PostToolUse` hook on `process_refund` that detects amounts > $500 and emits a warning."
+    ],
+    "explanations": [
+      "Wrong — both are probabilistic. Few-shot reduces failure rate but doesn't eliminate it; temperature 0.0 doesn't change the failure floor for compliance-grade rules.",
+      "Correct — `PreToolUse` interception with a redirect to `escalate_to_human`. The deny reason is the model's next-turn input; naming the alternative workflow makes the redirect graceful for the customer.",
+      "Wrong — over-correction that loses self-service for the 80% of legitimate refunds under $500. The correct boundary is amount-based, not tool-removal.",
+      "Wrong — `PostToolUse` fires AFTER the refund has executed. The money has already moved; a warning is too late."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "c99bd242-5a02-4ae6-ae92-ff269df8b3de"
+  },
+  {
+    "question": "A research coordinator's three search MCP tools return `published_at` in ISO 8601, Unix epoch seconds, and Unix epoch milliseconds respectively. Synthesis sometimes orders findings incorrectly. Which is the BEST architectural fix?",
+    "options": [
+      "Add a per-tool `PreToolUse` hook that rewrites the call to request ISO 8601 explicitly.",
+      "Tell the synthesis subagent in its system prompt to interpret each format and convert internally before sorting.",
+      "Add a `PostToolUse` hook (one shared, branching by tool name or by numeric heuristics) that normalizes `published_at` to ISO 8601 UTC before the response enters context.",
+      "Remove `published_at` from synthesis input — the model can infer recency from the surrounding text."
+    ],
+    "explanations": [
+      "Wrong — `PreToolUse` modifies the input, but most MCP tools don't accept format-selection parameters. You can't generally force the response shape via the call.",
+      "Wrong — synthesis-stage normalization is too late. The heterogeneous formats have already entered context across multiple turns; bugs are subtle and intermittent.",
+      "Correct — normalize at the boundary so the model only ever sees the canonical format. Single shared hook with per-tool branching is easier to evolve than N parallel hooks.",
+      "Wrong — recency inference from prose is unreliable; published_at is structured data and should be respected, not discarded."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "304a7ab4-8ed5-42f8-b2f5-26d88e71fe1a"
+  },
+  {
+    "question": "Which combination of hook events MOST DIRECTLY implements 'no refund without prior verified identity'?",
+    "options": [
+      "A `PostToolUse` hook on `get_customer` that records `session.verified_customer_id` on success, paired with a `PreToolUse` hook on `process_refund` that denies the call when `verified_customer_id` is null.",
+      "A `PreToolUse` hook on both `get_customer` and `process_refund` that logs every call.",
+      "A `PostToolUse` hook on `process_refund` that retroactively reverses refunds without verified identity.",
+      "A system-prompt instruction telling the agent to always verify before refunding."
+    ],
+    "explanations": [
+      "Correct — the `PostToolUse` on `get_customer` lifts the verification result into session state; the `PreToolUse` on `process_refund` reads that state to enforce the precondition. Deterministic guarantee.",
+      "Wrong — logging doesn't enforce. Compliance requires a deny path, not just observability.",
+      "Wrong — retroactive reversal is far worse than blocking. Side effects (refunds, customer notifications, accounting entries) have already happened.",
+      "Wrong — prompt instructions are probabilistic. The exam stem implies a guarantee requirement; only hooks meet it."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "fcfb0ad5-e09a-406e-9cff-aff8fd1c181a"
+  },
+  {
+    "question": "Which best explains why hook deny `reason` text should be a corrective instruction (e.g., 'Use escalate_to_human with the following structured payload...') rather than terse error code text ('policy' / 'denied')?",
+    "options": [
+      "Reasons are logged for compliance audits and need to be human-readable.",
+      "The Agent SDK refuses denies with reasons under five words.",
+      "Customers see the reason text directly in the chat.",
+      "The deny reason is appended as the tool result the model reads on its next turn; a corrective instruction lets the model redirect to an allowed path. Terse reasons leave the model stuck retrying or failing visibly."
+    ],
+    "explanations": [
+      "Wrong — audit logging is a side benefit but not the primary design driver. The model-facing function dominates.",
+      "Wrong — there's no minimum-length restriction in the SDK.",
+      "Wrong — the deny reason is internal (model-facing). Customer-facing messages are the agent's subsequent assistant output.",
+      "Correct — the reason is the model's input. Naming the alternative workflow turns a block into a productive redirect."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "f88b3167-f567-41ba-9a9a-52e821d46865"
+  },
+  {
+    "question": "Which is the strongest signal in a question stem that the right answer involves a HOOK rather than a system-prompt instruction?",
+    "options": [
+      "The agent should usually verify identity before processing refunds.",
+      "Prefer a friendly tone in customer-facing replies.",
+      "Refunds must not exceed $500 under any circumstance; a compliance audit will check this.",
+      "The agent should generally call get_customer first."
+    ],
+    "explanations": [
+      "Wrong — 'usually' implies probabilistic acceptable. Prompt territory.",
+      "Wrong — tone is stylistic; probabilistic compliance is fine. Prompt territory.",
+      "Correct — 'must not... under any circumstance' + 'compliance audit' = guarantee requirement. Only `PreToolUse` interception delivers a zero failure rate.",
+      "Wrong — 'generally' implies probabilistic acceptable. Prompt territory."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "99682572-08b0-48b0-a173-fc859a8a0a2d"
+  },
+  {
+    "question": "An agent's MCP tool `get_invoice` returns `issued_at` as Unix epoch seconds and `due_at` as Unix epoch milliseconds (mixed). What's the BEST `PostToolUse` hook design?",
+    "options": [
+      "Drop `due_at` to avoid confusion; the model only really needs `issued_at` for most workflows.",
+      "Detect each field's format and convert both to ISO 8601 UTC strings (numeric < 10^10 → epoch seconds; numeric < 10^13 → epoch ms; pre-existing strings pass through). The model now sees consistent ISO 8601 across all date fields.",
+      "Leave the formats as-is; instruct the model in the system prompt to recognise epoch seconds vs milliseconds by magnitude.",
+      "Convert both fields to Unix epoch milliseconds (a single canonical numeric format) and let the model do epoch-to-date conversion when needed."
+    ],
+    "explanations": [
+      "Wrong — dropping data the user might need is over-correction. Normalize, don't discard.",
+      "Correct — handle each field individually with format detection, normalize to a single human-readable canonical (ISO 8601). The model reasons over consistent shapes.",
+      "Wrong — prompt-based magnitude detection is probabilistic and error-prone, especially at boundary timestamps. Normalize at the boundary.",
+      "Wrong — numeric epochs are harder for models to reason about than ISO 8601 strings; the canonical should optimise for the consumer (the model)."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "b792181b-1f6d-421b-96a3-ac7919c5566c"
+  },
+  {
+    "question": "An engineer says: 'Hooks are too complicated; we should just write tighter system prompts.' Which response is most aligned with Task 1.5's framing?",
+    "options": [
+      "Agree — prompts are easier to iterate on and modern models follow them well.",
+      "Disagree — but only because hooks are faster at runtime.",
+      "Disagree — and propose moving every behaviour (tone, citation style, response length) into hooks for consistency.",
+      "Disagree — for compliance-grade requirements, prompts give probabilistic compliance with a non-zero failure floor; hooks are the right tool because they give deterministic guarantees. Hooks aren't 'more complicated' — they're a small focused unit per concern, often simpler than the gnarly prompt language people write to compensate for their absence. Use prompts for style; use hooks for guarantees."
+    ],
+    "explanations": [
+      "Wrong — prompts have a non-zero failure floor regardless of model strength. For 'must not' rules, that floor matters.",
+      "Wrong — runtime speed isn't the central trade. Determinism vs probabilism is.",
+      "Wrong — over-correction. Hooks for stylistic concerns is over-engineering.",
+      "Correct — the canonical 1.5 framing. Right tool for right job: prompts for style, hooks for guarantees."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "9128a196-0ff5-4cbe-9d10-67fb137499bf"
+  },
+  {
+    "question": "Three MCP tools return success/failure differently: `news_search` returns `status_code: 200/404/500`, `industry_db` returns `status: 'OK'/'NOT_FOUND'/'ERROR'`, `archive.fetch` returns `success: true/false`. Which `PostToolUse` design is best?",
+    "options": [
+      "A shared `PostToolUse` hook (branching by tool name) that maps all variants to a single canonical enum (e.g., `status: 'success' | 'not_found' | 'error' | 'permission_denied'`) plus an optional `error_message` field. The model now reasons over one vocabulary.",
+      "Leave them as-is; the model can interpret each format from context.",
+      "Three independent `PreToolUse` hooks that rewrite the call to request a uniform format.",
+      "Convert all of them to numeric HTTP-style codes (200/404/500) since HTTP status is a recognized standard."
+    ],
+    "explanations": [
+      "Correct — single canonical enum, single shared hook, branching by tool name. The model reasons over one status vocabulary across tools, which makes synthesis and gap-detection (Task 1.2) straightforward.",
+      "Wrong — multi-format status is the source of subtle bugs (e.g., confusing 'no results' with 'access denied' — Task 5.3). Normalize at the boundary.",
+      "Wrong — `PreToolUse` modifies the call, not the response. Most MCP tools don't accept response-format parameters anyway.",
+      "Wrong — numeric codes are less readable for downstream reasoning than enums. Optimise the canonical for the consumer (the model's reasoning), not for legacy familiarity."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "560079e2-899d-42f5-aac4-dc73dcce74a1"
+  },
+  {
+    "question": "Which behaviour is correctly described as a `PostToolUse` hook responsibility (NOT a `PreToolUse` responsibility)?",
+    "options": [
+      "Denying a `process_refund` call when the amount exceeds $500.",
+      "Blocking a `lookup_order` call when the customer has not yet been verified.",
+      "Trimming a 40-field search result down to 5 relevant fields before the response is appended to the conversation.",
+      "Validating that an outgoing `escalate_to_human` payload contains all required structured fields."
+    ],
+    "explanations": [
+      "Wrong — denying a call before it executes is `PreToolUse`. The whole point is to prevent the side effect.",
+      "Wrong — blocking a call before execution is `PreToolUse` territory.",
+      "Correct — trimming the response after the tool executed and before it enters context is exactly `PostToolUse`. It's a transformation on the response, not the call.",
+      "Wrong — validating an outgoing call is `PreToolUse` (the call hasn't executed yet). `PostToolUse` runs on the response, not the call."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "cd62859b-5123-48c5-b7c9-59ec4fdcfef1"
+  },
+  {
+    "question": "An exam scenario: 'The agent occasionally tries to call a `read_pii` tool when servicing customers in the support tier role. Policy: support tier must not access raw PII. Which architectural fix is correct?",
+    "options": [
+      "Add a few-shot example showing the agent declining `read_pii` and offering the sanitised alternative.",
+      "Add a `PreToolUse` hook on `read_pii` that denies the call when `session.role == 'support_tier'`, with a redirect reason: 'Support tier cannot access raw PII; use `read_anonymized_summary` instead.' The model redirects to the sanitised alternative on the next turn.",
+      "Reword the system prompt to forbid `read_pii` more strongly.",
+      "Add a `PostToolUse` hook on `read_pii` that strips PII fields from the response."
+    ],
+    "explanations": [
+      "Wrong — few-shot reduces probability of misuse, doesn't eliminate it. Compliance-grade requirement needs a hook.",
+      "Correct — `PreToolUse` blocks the call deterministically for the support tier; the redirect reason names the sanitised alternative tool. Policy guarantee + graceful redirect.",
+      "Wrong — system-prompt prohibition is probabilistic. The role-based access policy demands a guarantee.",
+      "Wrong — `PostToolUse` runs after the read has already happened; the PII has already been retrieved and may have been logged. `PreToolUse` is the correct safety boundary."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "f1fa5adf-7dec-40c7-9970-8d787a800937"
+  },
+  {
+    "question": "A web_search MCP tool returns 42 fields per result (raw HTML, redirect chain, headers, scoring metadata) but the agent only needs `title`, `url`, `snippet`, `published_at`, `id`. After six search calls in one session, the agent's attention to the relevant fields drops and it starts citing wrong URLs. Which fix is most aligned with Task 1.5?",
+    "options": [
+      "Add a `PostToolUse` hook on the search tool that trims responses to the five required fields before they enter the conversation; the model never reasons over the other 37.",
+      "Increase the model's max_tokens budget so attention isn't constrained.",
+      "Tell the agent in the system prompt to 'ignore irrelevant fields and focus on title/url/snippet.'",
+      "Switch to a smaller model whose tighter context window forces it to be selective."
+    ],
+    "explanations": [
+      "Correct — verbose tool output trimming at the `PostToolUse` boundary is a canonical 1.5 pattern (and a Task 5.1 callback). The model only sees the five fields it needs, so attention stays on what matters and provenance is preserved.",
+      "Wrong — bigger token budgets don't fix attention dilution; they create more room for irrelevant content to drown out the relevant fields.",
+      "Wrong — that's prompt-based filtering, which is probabilistic. The whole symptom (citing wrong URLs after six calls) shows the model is losing focus across long sessions; an instruction won't fix what a hook can.",
+      "Wrong — model size doesn't address the structural issue. The fix is upstream of the model: trim the tool output before it enters context."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "ed0a2bbe-6a97-4110-ada3-985c52ddd7d1"
+  },
+  {
+    "question": "A `process_payment` tool occasionally receives an `amount` field with a currency-symbol prefix (e.g., `'$120.50'`) due to upstream prompt formatting drift. The downstream MCP tool only accepts numeric amounts. Which `PreToolUse` hook design is appropriate?",
+    "options": [
+      "Deny the call with reason 'amount must be numeric' so the model retries on the next turn.",
+      "Modify the tool input in the hook — strip non-numeric characters and cast to a number — and let the call proceed. `PreToolUse` hooks can transform inputs, not only allow or deny.",
+      "Let the call go through unmodified; the MCP server should validate inputs.",
+      "Move the parsing to a `PostToolUse` hook so the original input is preserved for audit purposes."
+    ],
+    "explanations": [
+      "Wrong — denying for a fixable input wastes a turn and can loop if the model regenerates the same format. Deny is for policy violations, not formatting hygiene.",
+      "Correct — `PreToolUse` has three operations: allow, deny, or transform. Sanitising the amount before dispatch is the third operation, used exactly when the input needs hygiene rather than policy review.",
+      "Wrong — relying on the MCP server to validate trades a deterministic boundary for a remote one and surfaces ugly errors back to the model, which then has to interpret them.",
+      "Wrong — `PostToolUse` fires after the tool ran. By that point the call has already failed with the malformed input."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "e07f44c8-a5af-4b73-a901-939cb1245dc3"
+  },
+  {
+    "question": "Which sequence correctly describes the tool-call lifecycle in the Agent SDK, including hook positions?",
+    "options": [
+      "PostToolUse hook → tool execution → PreToolUse hook → next model turn.",
+      "PreToolUse hook → next model turn → tool execution → PostToolUse hook.",
+      "Model emits tool_use → PreToolUse hook → tool execution → PostToolUse hook → tool_result appended to conversation → next model turn.",
+      "PostToolUse → PreToolUse → tool execution → next model turn (the `Pre` and `Post` names refer to display order in dashboards, not lifecycle position)."
+    ],
+    "explanations": [
+      "Wrong — the order is reversed. Pre fires before execution, Post after.",
+      "Wrong — the next model turn fires after the result is appended, not between Pre and execution.",
+      "Correct — `PreToolUse` fires before the dispatch (allow/deny/modify); the tool runs; `PostToolUse` fires before the result is appended (transform); the model sees the post-hook result on its next turn. This lifecycle is what determines which hook to use for which concern.",
+      "Wrong — the names match the lifecycle exactly. `PreToolUse` is before execution; `PostToolUse` is after."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "1e28db8b-362d-45ac-b5a6-d1ed775aa31a"
+  },
+  {
+    "question": "A `PreToolUse` hook denies a `process_refund` call with a `reason` field. Where does the model see that reason on its next turn?",
+    "options": [
+      "The reason is silently discarded; the model sees only that the call returned no result.",
+      "The reason is logged for ops dashboards but never reaches the model.",
+      "The runtime injects the reason into the coordinator's system prompt for the next turn.",
+      "The reason is delivered as a `tool_result` (marked as an error) tied to the original `tool_use_id`, so the model reads it on its next turn and can adjust by calling an alternative tool the reason names."
+    ],
+    "explanations": [
+      "Wrong — silent denies would leave the model spinning. The runtime surfaces the reason precisely so the model can correct course.",
+      "Wrong — logging only would defeat the redirect pattern. The model needs the text on its next turn for the deny to be productive.",
+      "Wrong — the system prompt is static. Runtime hook outputs flow through `tool_result` blocks, not by mutating the system prompt.",
+      "Correct — the deny reason is delivered as a `tool_result` tied to the original `tool_use_id` (Task 1.1 mechanics). The model reads it on the next turn and emits the alternative call the reason described."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "65d86c44-6061-4450-8fd2-6d8d11650726"
+  },
+  {
+    "question": "A `PreToolUse` hook on `process_refund` returns `{permissionDecision: 'deny', reason: 'policy'}` when amounts exceed $500. In production, the agent now responds 'I'm unable to help with that, please try again.' Customers are confused. What's the architectural fix?",
+    "options": [
+      "Rewrite the deny reason as a corrective instruction that names the redirect (e.g., 'Refunds over $500 require manager approval; call `escalate_to_human` with a structured handoff payload'). The reason becomes the model's next-turn instruction.",
+      "Remove the $500 cap so the agent can always self-serve.",
+      "Catch the deny in a `PostToolUse` hook and rewrite the user-facing message there.",
+      "Add a few-shot example in the system prompt showing the agent how to respond gracefully after a deny."
+    ],
+    "explanations": [
+      "Correct — block without redirect is the anti-pattern. The reason field is the model's next-turn input; making it a concrete corrective instruction (which alternative tool to call, with which payload shape) lets the agent recover the customer's intent through an allowed path.",
+      "Wrong — removing the cap reverses a deliberate policy decision and creates a compliance incident.",
+      "Wrong — `PostToolUse` does not fire on denied calls (no execution happened). Even if it did, rewriting user-facing text isn't where the fix belongs; the fix is to give the *model* a redirect.",
+      "Wrong — few-shot examples are probabilistic. The deterministic fix is structuring the deny reason itself as a corrective instruction."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "d340584b-f26a-46a7-b0c8-ce79544ca4fc"
+  },
+  {
+    "question": "A team debates where to enforce a 'no refunds over $500' rule: (a) inside the `process_refund` MCP tool's own logic, returning an error from the tool, vs (b) in a `PreToolUse` hook that denies the call. Which is better, and why?",
+    "options": [
+      "In-tool error is better — it keeps policy close to the domain and reduces the hook surface area.",
+      "A `PreToolUse` hook is better — policy enforcement stays in the agent harness (one auditable place), the offending call is blocked before it dispatches (no network round-trip, no partial side effects), and the agent layer can evolve the policy without redeploying the MCP server.",
+      "They are equivalent — both stop the action and both surface a message to the model.",
+      "Implement both — defense in depth always wins."
+    ],
+    "explanations": [
+      "Wrong — coupling policy to each tool spreads enforcement across N MCP servers, fragments audits, and ties policy to deployment cadence of every server.",
+      "Correct — the harness-side `PreToolUse` hook is the proper enforcement boundary. It is centralised, auditable, evolvable without MCP server redeploys, and (crucially) prevents the call from dispatching at all — the alternative leaks the attempt downstream.",
+      "Wrong — they have different blast radius. In-tool enforcement still triggers the call (network, possibly partial state changes); the hook prevents dispatch entirely.",
+      "Wrong — defense in depth has its place, but the question asks which is the right architectural enforcement boundary. The hook is the answer; adding both adds complexity without changing the deterministic outcome."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "a5cc1bd7-4aba-4b17-80e9-1edf23828303"
+  },
+  {
+    "question": "A team wants the agent's customer-facing messages to consistently use a friendly, concise tone. An engineer proposes a `PostToolUse` hook that detects unfriendly phrasing and rewrites it. What's the better approach and why?",
+    "options": [
+      "Implement the proposed hook — deterministic enforcement is always preferable.",
+      "Implement two hooks — one for tone, one for redundancy in case the first misses.",
+      "Use the system prompt to specify the tone. Style and preference are exactly the class of concern that probabilistic compliance handles well; reserve hooks for compliance-grade requirements (policy caps, prerequisite gates, data normalization, sensitive-field redaction).",
+      "Train a small classifier model and route every agent message through it."
+    ],
+    "explanations": [
+      "Wrong — hooks for stylistic concerns over-engineer the problem. Tone variance is acceptable; policy violations are not. Hooks shouldn't be the default for every concern.",
+      "Wrong — two hooks for the same probabilistic concern is two points of failure for a problem that the system prompt would handle adequately.",
+      "Correct — Task 1.5's framing is explicit: hooks for deterministic guarantees, prompts for probabilistic style/preference. Tone fits the latter; reaching for a hook here is over-engineering and unnecessary infrastructure.",
+      "Wrong — adding a classifier is heavier engineering than the original problem warrants. The right answer is the system prompt."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "f19879c1-2725-4923-9461-b9934035d7bc"
+  },
+  {
+    "question": "An engineer plans to block `process_refund` calls in a `PostToolUse` hook by checking the response and 'rolling back' if `amount > 500`. Why is this the wrong choice?",
+    "options": [
+      "`PostToolUse` hooks cannot read tool inputs, so the cap can't be enforced there.",
+      "`PostToolUse` fires only on successful calls, so it can't block.",
+      "The Agent SDK doesn't allow any hook to roll back side effects.",
+      "`PostToolUse` fires after the tool has executed — the side effect (refund issued, money moved) has already happened. Blocking belongs in `PreToolUse`, before dispatch."
+    ],
+    "explanations": [
+      "Wrong — `PostToolUse` can read both the tool input and response. The issue is timing, not access.",
+      "Wrong — `PostToolUse` fires for both success and failure responses. The deeper issue is lifecycle position, not result filtering.",
+      "Wrong — over-general. The real problem is that the *external* side effect (the refund processed by the payment system) has already happened by the time `PostToolUse` runs.",
+      "Correct — `PostToolUse` is too late for a block. By the time it fires, the refund has been processed. Compliance enforcement that prevents side effects must happen in `PreToolUse`, before dispatch."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "067512cb-4786-44a1-8559-33dd2c985e24"
+  },
+  {
+    "question": "You have five MCP tools that each return timestamps in their own format. You want all five normalised to ISO 8601 UTC. Two designs are on the table: (a) one shared `PostToolUse` hook that branches by tool name, vs (b) five separate `PostToolUse` hooks each pinned to one tool. Which is the better choice for maintainability?",
+    "options": [
+      "One shared hook — the canonical format is defined in one place, evolution is centralised, and audits trace through a single piece of code. Branching by tool name (or by field heuristics) is straightforward.",
+      "Five separate hooks — each is simpler in isolation, and a bug in one doesn't affect the others.",
+      "They are equivalent; pick whichever the team prefers stylistically.",
+      "Neither — timestamp normalisation should always happen in the MCP server itself, not in agent hooks."
+    ],
+    "explanations": [
+      "Correct — a single shared hook with a tool-name branch is the maintainable design. The canonical format is defined once; updating it (e.g., changing how UTC offsets are handled) doesn't require touching five files. Audits and reviews see one code path.",
+      "Wrong — N parallel hooks invites code drift. The first time the canonical format changes, the team has to remember to update all five places consistently.",
+      "Wrong — they aren't equivalent on maintainability. Duplicated logic is the worse path; centralising the format in one branch-by-tool hook is strictly better.",
+      "Wrong — pushing normalisation to MCP servers fragments the canonical-format definition across server-owner teams. Keeping it in the agent harness is what gives you a single source of truth."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "de7db07f-9580-491e-b574-31b62672fb53"
+  },
+  {
+    "question": "A `lookup_customer_full` MCP tool returns the customer's full SSN and home address even when the agent only needs name and email. Compliance requires those fields not enter the conversation log at all. Which design satisfies the requirement?",
+    "options": [
+      "A system-prompt instruction telling the agent to 'ignore the SSN and address fields and never reference them in responses.'",
+      "A `PostToolUse` hook on `lookup_customer_full` that strips the SSN and address fields from the response before the `tool_result` enters the conversation. The model never sees them, and they never appear in logs.",
+      "A `PreToolUse` hook that denies every call to `lookup_customer_full` and redirects to a different tool.",
+      "Manual review of conversation logs after the fact, redacting SSN and address before logs are exported."
+    ],
+    "explanations": [
+      "Wrong — prompt-based 'ignoring' is probabilistic. The fields still enter the context and the conversation log even if the model never quotes them. Compliance requires they not enter the log at all.",
+      "Correct — `PostToolUse` runs before the `tool_result` is appended to the conversation. Stripping sensitive fields there means they never enter context, never appear in logs, and the model has no way to reference them. This is the deterministic, compliance-grade fix.",
+      "Wrong — denying every call denies the agent's ability to do its job. The agent legitimately needs the name and email; the fix is field-level redaction inside the response, not call-level denial.",
+      "Wrong — post-hoc log redaction can't undo that the data was sent to the model and could have been quoted in earlier responses. Pre-context filtering is the only deterministic fix."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "e5d42b41-81ed-4410-a316-cf516124dd15"
+  },
+  {
+    "question": "An engineer proposes: when the model emits `process_refund({amount: 750})` and the cap is $500, the `PreToolUse` hook should silently MODIFY the input to `amount: 500` and let the call proceed (so the customer at least gets a partial refund). Why is this the wrong design even though `PreToolUse` does support input modification?",
+    "options": [
+      "Silent clamping hides the policy decision from both the model and the audit trail: the conversation shows a successful $500 refund with no record that a $750 attempt was made or capped, the customer is not informed they're owed escalation, and the deterministic-compliance story collapses because the action diverged from the requested intent without any signal. Use `deny` with a redirect to `escalate_to_human` so the policy boundary is observable and the customer gets the manager review they're entitled to.",
+      "`PreToolUse` is technically not allowed to modify monetary fields; only string fields are mutable.",
+      "Modifying inputs in `PreToolUse` is undefined behaviour and the SDK rejects the call.",
+      "It would work, but it should be implemented in `PostToolUse` instead so the original request is logged before clamping."
+    ],
+    "explanations": [
+      "Correct — `PreToolUse` modify is for input HYGIENE (strip a `$` prefix, normalise casing) where the modified input still expresses the same user intent. Silently changing a $750 request to a $500 refund changes the intent without telling anyone, defeats the audit observability that makes deny patterns valuable, and shortcircuits the manager-approval workflow the policy exists to invoke. Deny with redirect is the right tool.",
+      "Wrong — there is no field-type restriction on input modification; the issue is semantic, not mechanical.",
+      "Wrong — input modification is fully supported. The flaw is design, not API surface.",
+      "Wrong — `PostToolUse` runs after dispatch; clamping there is even worse (the wrong amount may have already moved). The deeper issue is that any silent clamp — pre or post — hides the policy event."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "5c8b7e67-2149-4dec-a23a-c388586725fe"
+  },
+  {
+    "question": "Two `PostToolUse` hooks are registered on the same MCP tool `lookup_customer_full`: hook A normalises `created_at` from Unix epoch to ISO 8601, hook B redacts the `ssn` field. A reviewer asks whether the registration ORDER between A and B matters. What is the most accurate answer?",
+    "options": [
+      "Order never matters because `PostToolUse` hooks operate on independent fields by definition.",
+      "Order always matters and the SDK enforces alphabetical execution by hook name.",
+      "Order matters whenever two hooks read or write overlapping fields, or when one hook's output is the next hook's input. For non-overlapping fields (timestamp normalisation vs SSN redaction operate on different keys) the result is order-independent — but the team should still document the intended pipeline because a future hook (say, one that hashes the entire payload) would suddenly become order-sensitive. Treat the chain as a pipeline: define the contract, document it, and avoid hidden field overlaps.",
+      "Order matters only for `PreToolUse` hooks; `PostToolUse` hooks always run in parallel and their outputs are merged."
+    ],
+    "explanations": [
+      "Wrong — independence is a property of the specific hooks, not of `PostToolUse` in general. Two hooks both rewriting `status` would obviously conflict.",
+      "Wrong — the SDK does not silently sort by name; relying on that would be fragile even if it did.",
+      "Correct — the structural truth: hooks form a transformation pipeline on the response object; two hooks that touch disjoint fields commute, two hooks that touch the same field do not. The right engineering posture is to treat the chain as ordered, document the contract, and avoid hidden coupling so adding hook C later doesn't introduce a stealth bug.",
+      "Wrong — `PostToolUse` hooks do not run in parallel with merged outputs; they run as a chain on the response object."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "caf05c4a-d109-4cda-89b8-1451b5db72ac"
+  },
+  {
+    "question": "An MCP `process_refund` tool fails halfway: it debits the customer's wallet but the downstream ledger write errors and the tool returns `{status: 'partial_failure', wallet_debited: true, ledger_written: false}`. The team wants the agent to detect this and trigger compensating action. Where should this logic live?",
+    "options": [
+      "A `PreToolUse` hook on `process_refund` — block the call until the ledger system is healthy.",
+      "A `PostToolUse` hook on `process_refund` that detects `partial_failure` and rewrites the response to include a `next_action: 'call compensate_partial_refund'` annotation, so the model on its next turn sees a structured corrective hint and emits the compensating call. `PostToolUse` is the right layer: the side effect already happened (correctly — that's outside the agent's control), and the hook's job is to shape the response so the model handles it deterministically rather than ad-hoc-interpreting `partial_failure`.",
+      "Inside the `process_refund` MCP tool itself — automatically reverse the wallet debit on ledger failure.",
+      "In the system prompt — instruct the agent that `partial_failure` means it should call `compensate_partial_refund`."
+    ],
+    "explanations": [
+      "Wrong — `PreToolUse` is for blocking before dispatch, but this scenario is about RECOVERY after a partial failure that has already occurred. Health checks before dispatch don't help once the partial state exists.",
+      "Correct — `PostToolUse` shapes the response the model sees. Annotating `partial_failure` with a concrete `next_action` turns an ambiguous result into a deterministic redirect, the same pattern as a productive deny reason. The model then emits the compensating call without relying on probabilistic prompt interpretation.",
+      "Wrong — the question is where the AGENT-side detection lives. Tool-internal compensation is a separate concern (and may not be possible across two systems); the agent still needs to know the partial state.",
+      "Wrong — prompt-based interpretation of `partial_failure` is probabilistic. Compensating action for partial financial failures is exactly the class of concern that demands a deterministic redirect, achieved via the annotation pattern in `PostToolUse`."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "6d17b490-1f93-4eb0-8320-8cd1773603c9"
+  },
+  {
+    "question": "A coordinator agent (Task 1.2) spawns subagents that each call MCP tools. The team wants `PostToolUse` normalization of timestamps to apply uniformly across coordinator AND subagent tool calls. An engineer registers the hook in only the coordinator's harness and assumes it will propagate. What's the architectural reality?",
+    "options": [
+      "Hooks registered in the coordinator's harness automatically propagate to all subagents because subagents inherit the coordinator's context.",
+      "Hooks only fire on the FIRST tool call in a session, regardless of which agent emits it.",
+      "Subagent tool calls are routed through the coordinator's harness, so coordinator-only registration is sufficient.",
+      "Subagents run with their own harness configuration; hooks must be registered in the harness that actually dispatches the tool calls. If subagents are spawned with isolated harnesses, the normalization hook must be registered in each subagent's configuration (or in a shared harness factory) — otherwise the coordinator sees normalised timestamps from its own tool calls but subagent results enter THEIR contexts in raw form, defeating the canonical-format goal."
+    ],
+    "explanations": [
+      "Wrong — hooks are harness-level configuration, not session-inherited state. Subagents launched with their own harness do not auto-inherit.",
+      "Wrong — there is no first-call restriction; hooks fire on every matching call within the harness they're registered in.",
+      "Wrong — subagent tool calls dispatch in the subagent's own harness in standard orchestration topologies.",
+      "Correct — the hook lives where the dispatch happens. Subagents typically dispatch their own tool calls through their own harness; that's where the `PostToolUse` hook must run for normalization to take effect on those calls. The robust pattern is a shared harness/config factory used by both coordinator and subagents so the canonical-format definition lives in one place."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "a67bf1a1-370c-4016-8932-eb9f3db4449a"
+  },
+  {
+    "question": "The product team writes a policy: 'Agent must always include a friendly closing sentence in its final reply.' An engineer reflexively reaches for a `PostToolUse` hook to append the closing. A reviewer pushes back. What's the cleanest critique?",
+    "options": [
+      "The hook should be `PreToolUse` instead so the closing is added before the tool runs.",
+      "`PostToolUse` is for tool-result transformation, not for editing the agent's final assistant message — the agent's final reply is not a tool result and `PostToolUse` does not fire on it. Even if a different hook event existed for assistant messages, this is a stylistic concern that belongs in the system prompt: probabilistic compliance is fully acceptable for tone, and a hook for closings is over-engineering plus a category error about which artifact `PostToolUse` operates on.",
+      "Hooks for stylistic concerns are fine; the team should add a unit test that verifies every reply ends with the closing.",
+      "The right fix is to use a subagent dedicated to writing closings."
+    ],
+    "explanations": [
+      "Wrong — `PreToolUse` runs on TOOL CALLS, not on assistant messages either. The proposal is wrong in lifecycle, not just timing.",
+      "Correct — two-layer critique: (a) `PostToolUse` doesn't fire on assistant text outputs at all — wrong artifact; (b) even with a hypothetical message-level hook, a friendly closing is style, not compliance, so the system prompt is the right home. Reserve hooks for guarantees.",
+      "Wrong — re-asserting the over-engineering. The system prompt suffices and is the right level of abstraction for tone.",
+      "Wrong — using a subagent for adding a closing is wildly over-architected. Style belongs in the prompt."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "50fc9859-2c3b-4174-8d41-733fffb64a4f"
+  },
+  {
+    "question": "A `PostToolUse` hook on `lookup_order` raises an exception while transforming the response. From the perspective of designing a robust agent harness, which behaviour is the SAFEST default for the SDK to take?",
+    "options": [
+      "Silently swallow the exception and append the original (raw, untransformed) tool result so the conversation continues — availability over consistency.",
+      "Abort the entire session — fail fast.",
+      "Surface the hook failure as a clearly marked error in place of the tool result so the model and the operators see that something went wrong, halt that tool's response from entering context as if it were a normal result, and let the agent decide whether to retry or escalate. Silent fallback to raw output is the worst outcome for normalization hooks specifically because it reintroduces exactly the heterogeneity the hook existed to remove, and does so invisibly.",
+      "Retry the hook with exponential backoff up to 100 attempts."
+    ],
+    "explanations": [
+      "Wrong — silent fallback to raw output is the most dangerous default for a normalization hook. The whole point of the hook is that the model MUST NOT see the raw shape; silently letting it through restores the bug the hook was supposed to fix, with no signal to operators.",
+      "Wrong — aborting the session is too aggressive. A single tool's hook failure shouldn't kill the whole conversation; recoverable failure modes exist.",
+      "Correct — the principle: a normalization hook's failure is a structural integrity failure; the safest default is to make it visible (to model and operator) rather than silently revert to the dangerous raw shape. The agent can then decide to retry, escalate, or downgrade gracefully — with full information.",
+      "Wrong — 100 retries on a deterministic hook will deterministically fail 100 times. Retries are a poor substitute for visibility into the failure."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "4d852ff4-a35b-4d1c-b762-002bfb479f38"
+  },
+  {
+    "question": "A team has a working `PostToolUse` normalization hook converting Unix epoch to ISO 8601. They later add `PostToolUse` redaction for SSN. Six months later, a junior engineer adds a third `PostToolUse` hook that hashes the entire response payload for integrity logging. Production breaks: the hash never matches because the response keeps changing. What's the architectural lesson?",
+    "options": [
+      "`PostToolUse` hooks should never modify response payloads — only annotate them.",
+      "Hashing is incompatible with `PostToolUse` and must always live in `PreToolUse`.",
+      "`PostToolUse` hooks form a TRANSFORMATION PIPELINE; whatever runs last sees the cumulative effect of earlier hooks. The integrity-hash hook is being run before the redaction hook (or vice versa), so what it hashes is not what eventually enters context. The fix is to make the hash hook explicit about its position in the chain (run last, after all transformations) and document the pipeline contract — or move the hash to a different lifecycle point (after `tool_result` is finalised). This is a callback to ordering: a new hook on shared state must be slotted into the documented pipeline contract, not bolted on.",
+      "The team should switch from `PostToolUse` to `Notification` hooks for the hash."
+    ],
+    "explanations": [
+      "Wrong — modification is the explicit purpose of `PostToolUse`; the rule isn't 'no modification', it's 'understand the pipeline'.",
+      "Wrong — `PreToolUse` operates on inputs, not response payloads. Hashing the response there is impossible.",
+      "Correct — the lesson maps directly to the multi-hook ordering principle: hooks compose as a pipeline, and adding one must respect that other hooks may transform the same data before or after it. The robust pattern is an explicit pipeline contract with the hash hook documented to run last — or to operate at a different lifecycle point that sees the finalised payload.",
+      "Wrong — `Notification` is a separate hook event and not the right tool here; the bug is pipeline ordering, not lifecycle position."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "6145d009-18df-4e48-b004-968869bc9e9d"
+  },
+  {
+    "question": "A `PreToolUse` hook on `process_refund` denies a $750 call with a perfect redirect reason naming `escalate_to_human`. The model dutifully calls `escalate_to_human`. A different team is also working on the same agent and adds a separate `PreToolUse` hook on `escalate_to_human` that requires `session.manager_on_call == true` and denies otherwise. Now the agent ends up emitting BOTH calls and getting BOTH denied, and the customer sees 'I'm unable to help.' What's the architectural lesson?",
+    "options": [
+      "Avoid having more than one `PreToolUse` hook in a system; the SDK doesn't support it.",
+      "The two hooks were authored independently and the redirect path of hook A was not validated against the gates of hook B. When hooks form a CHAIN of redirects, each redirect target must be a path the model can actually take — otherwise the deny on `escalate_to_human` makes hook A's redirect a dead end. Either remove the manager-on-call gate (probably wrong), or have hook A's redirect choose a path that's available given current session state (e.g., check `manager_on_call` BEFORE redirecting, and fall back to a third path if false), or have hook B return a redirect to a queue rather than a flat deny. The design discipline: redirects must be reachable.",
+      "The deny reason on the first hook should have been a prompt instruction instead.",
+      "Both hooks should have been merged into a single `PostToolUse` hook for simplicity."
+    ],
+    "explanations": [
+      "Wrong — multiple `PreToolUse` hooks across multiple tools are a normal and supported pattern.",
+      "Correct — the structural lesson: redirects in `PreToolUse` deny reasons effectively assume the redirect target is reachable. When other gates are added later, those redirects can become dead ends, and the agent ends up looping through denies. The fix lives at the design level — coordinate the gates (or have the first redirect probe state and pick a viable path) so redirects always land on something the model can actually do.",
+      "Wrong — prompt-only enforcement gives up the determinism the original hook was providing. The fix isn't to weaken hook A; it's to coordinate the gates.",
+      "Wrong — `PostToolUse` doesn't apply to denied calls and doesn't address the redirect-reachability problem at all."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "d244d60b-a0f2-430b-a9b1-40fc1fe00f8d"
+  },
+  {
+    "question": "Compliance asks the team: 'Can you guarantee that no refund over $500 has ever been issued by this agent in production?' The team has a `PreToolUse` cap hook in place. Which answer is BEST aligned with how Task 1.5 frames the value of hooks vs prompts?",
+    "options": [
+      "'Yes, because we wrote a strong system prompt forbidding it.'",
+      "'Probably yes — we evaluated against 10,000 test conversations and saw zero violations.'",
+      "'Yes — the `PreToolUse` hook denies any `process_refund` call where amount > $500 BEFORE the call dispatches to the payment system. The deny is observable in our hook traces (every blocked attempt is logged with the offending amount and the redirect taken), so we can both prove the guarantee architecturally AND show auditors the per-attempt evidence. This is the deterministic-enforcement story: the cap is part of the dispatch boundary, not a probabilistic prompt instruction the model might or might not follow on a given turn.'",
+      "'No, because models are non-deterministic; no guarantee is possible at the agent layer.'"
+    ],
+    "explanations": [
+      "Wrong — strong prompts have a non-zero failure floor. Compliance auditors want a guarantee, not a probability.",
+      "Wrong — empirical evaluation is evidence, not a guarantee. The 10,001st conversation could violate. Determinism comes from architecture, not test counts.",
+      "Correct — the canonical 1.5 answer combines TWO things auditors want: architectural determinism (the dispatch boundary blocks the call regardless of model behaviour) AND per-attempt observability (denied attempts are logged). Together they let you prove the guarantee structurally while also presenting the evidence trail — the strongest possible compliance posture for this class of policy.",
+      "Wrong — defeatist and incorrect. Determinism at the dispatch boundary is achievable for tool-mediated actions; this is exactly what hooks deliver."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "1c2d3fb5-4f26-4093-8e11-726fbc0818e3"
+  },
+  {
+    "question": "An MCP tool `update_inventory` returns a successful response, but the underlying database actually failed and the tool wrapper incorrectly mapped the failure to `status: 'OK'`. The `PostToolUse` hook for status normalization passes it through as `status: 'success'` because that's what the tool returned. Compliance later asks why the agent reported success on a failed update. Where is the right architectural lever — a hook fix, a tool fix, or something else — and why?",
+    "options": [
+      "Add a `PreToolUse` hook that pings the database before every `update_inventory` call to verify health, so failures are pre-empted.",
+      "The bug is in the MCP tool wrapper (it lied about the result); the fix belongs in the tool, not in any hook. Hooks operate on the data the tool returns and cannot, in general, know more about the underlying system than the tool itself does. The 1.5 framing is precise: hooks give deterministic guarantees ABOUT THE SHAPE AND POLICY of tool calls in the agent harness — they normalise heterogeneous formats and enforce policy on calls — but they do not validate the truthfulness of tool reports. Asking a hook to fix a misreporting tool conflates 'data normalization' with 'data verification' and pushes hooks past their proper scope.",
+      "Add a `PostToolUse` hook that re-queries the database to confirm every `update_inventory` claim — defense in depth.",
+      "Add a system-prompt instruction telling the model to distrust `status: 'success'` results from `update_inventory`."
+    ],
+    "explanations": [
+      "Wrong — pre-flight pings don't address the bug (the tool's internal mapping is wrong). The next call after a healthy ping could still misreport. The flaw is in the wrapper logic, not in dispatch readiness.",
+      "Correct — the question tests whether you understand the SCOPE of hooks. `PostToolUse` normalises shapes and trims fields based on what the tool reported; it cannot independently know the tool lied. Hooks are not a substitute for correct tool implementations. Compliance fix: repair the MCP tool wrapper. Layer principle: each layer addresses problems at its layer; hooks fix shape/policy, tools fix truthfulness, and conflating the two leads to brittle hook code that slowly absorbs every tool's bugs.",
+      "Wrong — re-querying the database in a hook duplicates the tool's responsibility, doubles the load, and still doesn't catch every misreport (the hook would itself depend on the same potentially-buggy access path). Fix the tool.",
+      "Wrong — prompt-based 'distrust' is probabilistic and the wrong layer entirely. The flaw is at the tool boundary; that's where it should be repaired."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.5"
+    ],
+    "phase": "post",
+    "qid": "95c4c960-b4af-4b76-b799-f314b9944279"
+  }
+]

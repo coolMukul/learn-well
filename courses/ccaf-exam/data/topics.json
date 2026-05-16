@@ -1,0 +1,502 @@
+{
+  "chapters": [
+    {
+      "id": "D1",
+      "name": "Agentic Architecture & Orchestration",
+      "weight": 27,
+      "topics": [
+        {
+          "id": "1.1",
+          "title": "Agentic loop for autonomous task execution",
+          "subtopics": [
+            "stop_reason values: tool_use vs end_turn",
+            "Appending tool results to conversation history between iterations",
+            "Model-driven decision-making vs scripted decision trees / fixed tool sequences",
+            "Anti-patterns: parsing natural language for termination, arbitrary iteration caps as primary stopper, asserting on assistant text content"
+          ],
+          "excerptFile": "reference/sections/topic-1.1.md",
+          "lessonFile": "topics/topic-1.1.md"
+        },
+        {
+          "id": "1.2",
+          "title": "Coordinator-subagent orchestration",
+          "subtopics": [
+            "Hub-and-spoke architecture; routing all subagent comms through coordinator",
+            "Subagents have isolated context; do not inherit coordinator history",
+            "Coordinator role: decomposition, delegation, aggregation, dynamic subagent selection",
+            "Risks of overly narrow decomposition; iterative refinement loops",
+            "Partitioning research scope to minimize duplication"
+          ],
+          "excerptFile": "reference/sections/topic-1.2.md",
+          "lessonFile": "topics/topic-1.2.md"
+        },
+        {
+          "id": "1.3",
+          "title": "Subagent invocation, context passing, and spawning",
+          "subtopics": [
+            "Task tool as spawning mechanism; allowedTools must include 'Task'",
+            "Explicit context passing — subagents do not auto-inherit",
+            "AgentDefinition: descriptions, system prompts, tool restrictions",
+            "Structured data formats with attribution metadata when passing context",
+            "Parallel subagents in a single coordinator turn (multiple Task calls)",
+            "fork_session for divergent exploration from a shared baseline",
+            "Goal-oriented coordinator prompts (not procedural)"
+          ],
+          "excerptFile": "reference/sections/topic-1.3.md",
+          "lessonFile": "topics/topic-1.3.md"
+        },
+        {
+          "id": "1.4",
+          "title": "Multi-step workflows: enforcement and handoff",
+          "subtopics": [
+            "Programmatic enforcement (hooks, prerequisite gates) vs prompt-based ordering",
+            "Deterministic compliance for identity verification, financial operations",
+            "Structured handoff payloads: customer ID, root cause, refund amount, recommended action",
+            "Decomposing multi-concern requests into parallel investigations with shared context"
+          ],
+          "excerptFile": "reference/sections/topic-1.4.md",
+          "lessonFile": "topics/topic-1.4.md"
+        },
+        {
+          "id": "1.5",
+          "title": "Agent SDK hooks for interception and normalization",
+          "subtopics": [
+            "PostToolUse hooks for transforming tool results before model sees them",
+            "Outgoing tool-call interception for compliance enforcement",
+            "Deterministic guarantees vs probabilistic prompt compliance",
+            "Data normalization examples: Unix → ISO 8601, status code mappings",
+            "Blocking policy violations and redirecting to alternative workflows"
+          ],
+          "excerptFile": "reference/sections/topic-1.5.md",
+          "lessonFile": "topics/topic-1.5.md"
+        },
+        {
+          "id": "1.6",
+          "title": "Task decomposition strategies",
+          "subtopics": [
+            "Fixed sequential pipelines (prompt chaining) vs dynamic adaptive decomposition",
+            "Per-file local analysis + cross-file integration pass for code review",
+            "Adaptive investigation plans that generate subtasks from intermediate findings",
+            "Mapping → prioritization → dependency-aware adaptation for open-ended tasks"
+          ],
+          "excerptFile": "reference/sections/topic-1.6.md",
+          "lessonFile": "topics/topic-1.6.md"
+        },
+        {
+          "id": "1.7",
+          "title": "Session state, resumption, and forking",
+          "subtopics": [
+            "Named session resumption: --resume <session-name>",
+            "fork_session for parallel exploration branches",
+            "Resume vs fresh-start tradeoff when prior tool results are stale",
+            "Informing resumed sessions about file changes for targeted re-analysis",
+            "Structured summaries when starting fresh vs unreliable stale tool results"
+          ],
+          "excerptFile": "reference/sections/topic-1.7.md",
+          "lessonFile": "topics/topic-1.7.md"
+        }
+      ]
+    },
+    {
+      "id": "D2",
+      "name": "Tool Design & MCP Integration",
+      "weight": 18,
+      "topics": [
+        {
+          "id": "2.1",
+          "title": "Tool interfaces with clear descriptions and boundaries",
+          "subtopics": [
+            "Descriptions as primary tool-selection signal for LLMs",
+            "Including input formats, examples, edge cases, boundary explanations",
+            "Eliminating overlap by renaming and re-scoping (e.g., analyze_content → extract_web_results)",
+            "Splitting generic tools into purpose-specific ones with defined contracts",
+            "Auditing system prompts for keyword-sensitive instructions that override descriptions"
+          ],
+          "excerptFile": "reference/sections/topic-2.1.md",
+          "lessonFile": "topics/topic-2.1.md"
+        },
+        {
+          "id": "2.2",
+          "title": "Structured error responses for MCP tools",
+          "subtopics": [
+            "MCP isError flag pattern",
+            "Transient vs validation vs business vs permission errors",
+            "errorCategory + isRetryable structured metadata",
+            "retriable: false flags + customer-friendly explanations for business rule violations",
+            "Local recovery in subagents before propagating to coordinator with partial results",
+            "Distinguishing access failures from valid empty results"
+          ],
+          "excerptFile": "reference/sections/topic-2.2.md",
+          "lessonFile": "topics/topic-2.2.md"
+        },
+        {
+          "id": "2.3",
+          "title": "Tool distribution across agents and tool_choice",
+          "subtopics": [
+            "Tool overload (18 vs 4-5) degrades selection reliability",
+            "Cross-specialization misuse (e.g., synthesis agent attempting web search)",
+            "Scoped tools per role, with limited cross-role tools for high-frequency needs",
+            "Constrained alternatives over generic (e.g., load_document over fetch_url)",
+            "tool_choice: 'auto' / 'any' / forced ({type: tool, name: ...})",
+            "Forcing a tool first (extract_metadata) then processing in follow-up turns"
+          ],
+          "excerptFile": "reference/sections/topic-2.3.md",
+          "lessonFile": "topics/topic-2.3.md"
+        },
+        {
+          "id": "2.4",
+          "title": "MCP server integration into Claude Code and agent workflows",
+          "subtopics": [
+            "Project-scoped .mcp.json vs user-scoped ~/.claude.json",
+            "Environment variable expansion in .mcp.json (e.g., ${GITHUB_TOKEN})",
+            "All configured MCP servers discovered at connection time, available simultaneously",
+            "MCP resources for content catalogs (issue summaries, schemas, doc hierarchies)",
+            "Enhancing MCP tool descriptions to win over built-in tools (Grep)",
+            "Choosing community MCP servers over custom for standard integrations (e.g., Jira)"
+          ],
+          "excerptFile": "reference/sections/topic-2.4.md",
+          "lessonFile": "topics/topic-2.4.md"
+        },
+        {
+          "id": "2.5",
+          "title": "Built-in tools (Read, Write, Edit, Bash, Grep, Glob)",
+          "subtopics": [
+            "Grep for content search across codebases",
+            "Glob for file path patterns (e.g., **/*.test.tsx)",
+            "Read + Write fallback when Edit can't find unique anchor text",
+            "Incremental discovery: Grep for entry points → Read to follow imports",
+            "Tracing function usage across wrapper modules (identify exports, then search uses)"
+          ],
+          "excerptFile": "reference/sections/topic-2.5.md",
+          "lessonFile": "topics/topic-2.5.md"
+        }
+      ]
+    },
+    {
+      "id": "D3",
+      "name": "Claude Code Configuration & Workflows",
+      "weight": 20,
+      "topics": [
+        {
+          "id": "3.1",
+          "title": "CLAUDE.md hierarchy, scoping, and modular organization",
+          "subtopics": [
+            "Hierarchy: ~/.claude/CLAUDE.md (user) vs .claude/CLAUDE.md or root CLAUDE.md (project) vs subdirectory CLAUDE.md",
+            "User-level CLAUDE.md is NOT shared with teammates via VCS",
+            "@import syntax for modular references to external files",
+            ".claude/rules/ as alternative to monolithic CLAUDE.md",
+            "/memory command to verify which memory files are loaded"
+          ],
+          "excerptFile": "reference/sections/topic-3.1.md",
+          "lessonFile": "topics/topic-3.1.md"
+        },
+        {
+          "id": "3.2",
+          "title": "Custom slash commands and skills",
+          "subtopics": [
+            ".claude/commands/ (project, shared via VCS) vs ~/.claude/commands/ (personal)",
+            ".claude/skills/ with SKILL.md frontmatter",
+            "Skill frontmatter: context: fork, allowed-tools, argument-hint",
+            "context: fork for isolating verbose/exploratory output from main session",
+            "Personal skill variants in ~/.claude/skills/ to avoid affecting teammates",
+            "Skills (on-demand) vs CLAUDE.md (always-loaded)"
+          ],
+          "excerptFile": "reference/sections/topic-3.2.md",
+          "lessonFile": "topics/topic-3.2.md"
+        },
+        {
+          "id": "3.3",
+          "title": "Path-specific rules with glob conditional loading",
+          "subtopics": [
+            ".claude/rules/ files with YAML frontmatter `paths` glob arrays",
+            "Conditional rule activation only when editing matching files",
+            "Glob patterns spanning directories (e.g., **/*.test.tsx)",
+            "When to prefer path-scoped rules over directory-level CLAUDE.md"
+          ],
+          "excerptFile": "reference/sections/topic-3.3.md",
+          "lessonFile": "topics/topic-3.3.md"
+        },
+        {
+          "id": "3.4",
+          "title": "Plan mode vs direct execution",
+          "subtopics": [
+            "Plan mode for large-scale changes, multiple valid approaches, architectural decisions, multi-file modifications",
+            "Direct execution for simple, well-scoped changes (single-function, clear stack trace)",
+            "Plan mode enables safe codebase exploration before commitment",
+            "Explore subagent for verbose discovery to preserve main context",
+            "Combining: plan mode for investigation + direct execution for implementation"
+          ],
+          "excerptFile": "reference/sections/topic-3.4.md",
+          "lessonFile": "topics/topic-3.4.md"
+        },
+        {
+          "id": "3.5",
+          "title": "Iterative refinement techniques",
+          "subtopics": [
+            "Concrete input/output examples > prose for transformations",
+            "Test-driven iteration: write tests first, share failures",
+            "Interview pattern: have Claude ask questions before implementing",
+            "Single message for interacting fixes vs sequential for independent issues",
+            "Specific test cases with example input + expected output for edge cases"
+          ],
+          "excerptFile": "reference/sections/topic-3.5.md",
+          "lessonFile": "topics/topic-3.5.md"
+        },
+        {
+          "id": "3.6",
+          "title": "Claude Code in CI/CD pipelines",
+          "subtopics": [
+            "-p / --print non-interactive flag",
+            "--output-format json + --json-schema for parseable findings",
+            "CLAUDE.md as CI context channel (testing standards, fixtures, review criteria)",
+            "Session context isolation: generator vs reviewer instances",
+            "Including prior review findings to avoid duplicate comments on re-runs",
+            "Providing existing test files in context to avoid duplicate test scenarios"
+          ],
+          "excerptFile": "reference/sections/topic-3.6.md",
+          "lessonFile": "topics/topic-3.6.md"
+        }
+      ]
+    },
+    {
+      "id": "D4",
+      "name": "Prompt Engineering & Structured Output",
+      "weight": 20,
+      "topics": [
+        {
+          "id": "4.1",
+          "title": "Explicit criteria to reduce false positives",
+          "subtopics": [
+            "Specific categorical criteria over vague 'be conservative' / 'high-confidence only'",
+            "False-positive contagion: high-FP categories undermine trust in accurate ones",
+            "Severity criteria with concrete code examples per level",
+            "Temporarily disabling high-FP categories to restore developer trust"
+          ],
+          "excerptFile": "reference/sections/topic-4.1.md",
+          "lessonFile": "topics/topic-4.1.md"
+        },
+        {
+          "id": "4.2",
+          "title": "Few-shot prompting for consistency",
+          "subtopics": [
+            "2-4 targeted examples for ambiguous scenarios",
+            "Demonstrating reasoning: why one action over plausible alternatives",
+            "Format demonstration: location / issue / severity / suggested fix",
+            "Generalization to novel patterns vs matching only pre-specified cases",
+            "Reducing extraction hallucination with examples of varied document structures"
+          ],
+          "excerptFile": "reference/sections/topic-4.2.md",
+          "lessonFile": "topics/topic-4.2.md"
+        },
+        {
+          "id": "4.3",
+          "title": "Structured output via tool_use and JSON schemas",
+          "subtopics": [
+            "tool_use + JSON schema = guaranteed schema-compliant output (eliminates syntax errors)",
+            "Does not prevent semantic errors (line items not summing, wrong field placement)",
+            "tool_choice: 'auto' / 'any' / forced ({type: tool, name: extract_metadata})",
+            "Optional/nullable fields prevent fabrication when info is absent",
+            "Enums with 'unclear' / 'other' + detail for extensible categories",
+            "Format normalization rules in prompt alongside strict schema"
+          ],
+          "excerptFile": "reference/sections/topic-4.3.md",
+          "lessonFile": "topics/topic-4.3.md"
+        },
+        {
+          "id": "4.4",
+          "title": "Validation, retry, and feedback loops",
+          "subtopics": [
+            "Retry-with-error-feedback: original doc + failed extraction + specific errors",
+            "Limits of retry: ineffective when info is absent from source (vs format errors)",
+            "detected_pattern field for systematic FP analysis",
+            "Semantic validation: calculated_total vs stated_total, conflict_detected booleans",
+            "Self-correction validation flows"
+          ],
+          "excerptFile": "reference/sections/topic-4.4.md",
+          "lessonFile": "topics/topic-4.4.md"
+        },
+        {
+          "id": "4.5",
+          "title": "Batch processing strategies",
+          "subtopics": [
+            "Message Batches API: 50% cost, ≤24h processing window, no SLA",
+            "Appropriate for non-blocking workloads (overnight reports, weekly audits)",
+            "Inappropriate for blocking workflows (pre-merge checks)",
+            "Does NOT support multi-turn tool calling within a single request",
+            "custom_id for request/response correlation",
+            "Submission cadence math for SLAs (e.g., 4-hour windows for 30-hour SLA)",
+            "Pre-batch prompt refinement on samples to maximize first-pass success"
+          ],
+          "excerptFile": "reference/sections/topic-4.5.md",
+          "lessonFile": "topics/topic-4.5.md"
+        },
+        {
+          "id": "4.6",
+          "title": "Multi-instance and multi-pass review architectures",
+          "subtopics": [
+            "Self-review limitations: model retains generation reasoning context",
+            "Independent review instances catch subtle issues that self-review misses",
+            "Multi-pass: per-file local analysis + cross-file integration to avoid attention dilution",
+            "Calibrated confidence reporting per finding"
+          ],
+          "excerptFile": "reference/sections/topic-4.6.md",
+          "lessonFile": "topics/topic-4.6.md"
+        }
+      ]
+    },
+    {
+      "id": "D5",
+      "name": "Context Management & Reliability",
+      "weight": 15,
+      "topics": [
+        {
+          "id": "5.1",
+          "title": "Conversation context preservation",
+          "subtopics": [
+            "Progressive summarization risks: numbers, dates, customer-stated expectations get vague",
+            "Lost-in-the-middle effect: middle sections may be omitted",
+            "Tool results consume disproportionate tokens (40+ fields when 5 are relevant)",
+            "Persistent 'case facts' block included in each prompt outside summarized history",
+            "Trimming verbose tool outputs to relevant fields before context accumulation",
+            "Position-aware ordering: key findings at start, organized headers"
+          ],
+          "excerptFile": "reference/sections/topic-5.1.md",
+          "lessonFile": "topics/topic-5.1.md"
+        },
+        {
+          "id": "5.2",
+          "title": "Escalation and ambiguity resolution",
+          "subtopics": [
+            "Escalation triggers: customer asks, policy gap, inability to make progress",
+            "Honor explicit human-agent requests immediately",
+            "Sentiment / self-confidence are unreliable proxies for case complexity",
+            "Multiple-match → request additional identifiers, don't heuristic-pick",
+            "Acknowledging frustration while offering resolution if within capability"
+          ],
+          "excerptFile": "reference/sections/topic-5.2.md",
+          "lessonFile": "topics/topic-5.2.md"
+        },
+        {
+          "id": "5.3",
+          "title": "Error propagation across multi-agent systems",
+          "subtopics": [
+            "Structured error context: failure type, attempted query, partial results, alternatives",
+            "Access failure vs valid empty result distinction",
+            "Anti-patterns: silent error suppression, whole-workflow termination on single failure",
+            "Local recovery in subagents; propagate only what can't be resolved",
+            "Coverage annotations on synthesis output (well-supported vs gaps)"
+          ],
+          "excerptFile": "reference/sections/topic-5.3.md",
+          "lessonFile": "topics/topic-5.3.md"
+        },
+        {
+          "id": "5.4",
+          "title": "Context in large codebase exploration",
+          "subtopics": [
+            "Extended-session degradation: drift to 'typical patterns'",
+            "Scratchpad files for persisting key findings across context boundaries",
+            "Subagent delegation for verbose exploration",
+            "Structured agent state exports (manifests) for crash recovery",
+            "/compact to reduce context usage during extended exploration"
+          ],
+          "excerptFile": "reference/sections/topic-5.4.md",
+          "lessonFile": "topics/topic-5.4.md"
+        },
+        {
+          "id": "5.5",
+          "title": "Human review workflows and confidence calibration",
+          "subtopics": [
+            "Aggregate accuracy metrics may mask poor performance on specific document types/fields",
+            "Stratified random sampling for ongoing error rate measurement",
+            "Field-level confidence scores calibrated using labeled validation sets",
+            "Validate accuracy by document type and field segment before automating",
+            "Routing low-confidence or contradictory extractions to human review"
+          ],
+          "excerptFile": "reference/sections/topic-5.5.md",
+          "lessonFile": "topics/topic-5.5.md"
+        },
+        {
+          "id": "5.6",
+          "title": "Provenance and multi-source synthesis",
+          "subtopics": [
+            "Source attribution lost when summaries don't preserve claim-source mappings",
+            "Structured claim-source mappings preserved through synthesis",
+            "Conflicting credible sources: annotate with attribution, don't pick one",
+            "Required publication / collection dates to disambiguate temporal data",
+            "Render content-type-appropriately: financial as tables, news as prose, technical as lists"
+          ],
+          "excerptFile": "reference/sections/topic-5.6.md",
+          "lessonFile": "topics/topic-5.6.md"
+        }
+      ]
+    }
+  ],
+  "outOfScope": [
+    "Fine-tuning, training, model weights, internal architecture",
+    "Constitutional AI, RLHF, safety training methodology",
+    "Computer use (browser/desktop automation)",
+    "Vision / image analysis",
+    "Streaming API / SSE",
+    "Rate limiting, quotas, pricing math",
+    "API auth, billing, OAuth, key rotation",
+    "Cloud provider configurations (AWS/GCP/Azure)",
+    "Embedding models, vector DB internals",
+    "Prompt caching internals",
+    "Tokenization specifics",
+    "MCP server hosting / infrastructure",
+    "Performance benchmarking / model comparison metrics"
+  ],
+  "scenarios": [
+    {
+      "id": "S1",
+      "name": "Customer Support Resolution Agent",
+      "primaryDomains": [
+        "D1",
+        "D2",
+        "D5"
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "Code Generation with Claude Code",
+      "primaryDomains": [
+        "D3",
+        "D5"
+      ]
+    },
+    {
+      "id": "S3",
+      "name": "Multi-Agent Research System",
+      "primaryDomains": [
+        "D1",
+        "D2",
+        "D5"
+      ]
+    },
+    {
+      "id": "S4",
+      "name": "Developer Productivity with Claude",
+      "primaryDomains": [
+        "D2",
+        "D3",
+        "D1"
+      ]
+    },
+    {
+      "id": "S5",
+      "name": "Claude Code for CI/CD",
+      "primaryDomains": [
+        "D3",
+        "D4"
+      ]
+    },
+    {
+      "id": "S6",
+      "name": "Structured Data Extraction",
+      "primaryDomains": [
+        "D4",
+        "D5"
+      ]
+    }
+  ]
+}

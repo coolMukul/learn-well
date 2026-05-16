@@ -1,0 +1,882 @@
+[
+  {
+    "question": "Which signal does Claude rely on most when deciding which of two similar tools to call?",
+    "options": [
+      "The tool's description (with its input schema as a secondary cue).",
+      "The order in which tools were registered with the SDK.",
+      "The tool's name only — descriptions are shown to humans, not the model.",
+      "A scoring function the host runtime computes from prior call success rates."
+    ],
+    "explanations": [
+      "Correct — descriptions are the primary tool-selection signal; the JSON schema reinforces input expectations but does not by itself establish when-to-use criteria.",
+      "Wrong — registration order has no documented effect on selection; relying on it is a fragile heuristic that breaks on the next reorder.",
+      "Wrong — descriptions are explicitly part of what the model sees and reasons over; treating them as human-only documentation is the root cause of most misroute bugs.",
+      "Wrong — the runtime does not feed historical success rates back into the model's selection; selection is per-turn over the description and schema."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "pre",
+    "qid": "2bc1d28a-610a-4405-92c0-60e8270567f2"
+  },
+  {
+    "question": "A tool description for `lookup_order` says only: \"Looks up an order.\" What is the most likely production failure mode as the catalog grows?",
+    "options": [
+      "The tool will reject valid order IDs because the schema is incomplete.",
+      "Latency will increase because the model re-reads the description on every turn.",
+      "The model will misroute between similar-sounding tools because it has no boundary criteria to disambiguate them.",
+      "The MCP server will fail validation because tool descriptions must be at least 50 characters."
+    ],
+    "explanations": [
+      "Wrong — a thin prose description does not affect schema validation; the schema validates inputs independently.",
+      "Wrong — description length has no measurable latency impact at this scale, and the model reads tool definitions once per turn regardless.",
+      "Correct — without when-to-use and do-not-use phrasing, selection collapses to name-similarity guessing once a sibling tool exists, which is the canonical failure described in the guide.",
+      "Wrong — there is no minimum-length validation rule for MCP tool descriptions; the issue is selection quality, not validation."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "pre",
+    "qid": "d27f6fed-5d52-431f-9442-f2099cf39234"
+  },
+  {
+    "question": "Two tools, `analyze_content` and `analyze_document`, have near-identical descriptions and the agent keeps picking the wrong one. Which fix best matches the guide's recommendation?",
+    "options": [
+      "Lower the model temperature so selection becomes more deterministic.",
+      "Add a system-prompt sentence: \"For PDFs, prefer `analyze_document`; for web pages, prefer `analyze_content`.\"",
+      "Wrap both tools in a router tool that decides which to invoke internally.",
+      "Rename `analyze_content` to `extract_web_results` and rewrite its description to be web-page-specific so the tools no longer compete for the same intent."
+    ],
+    "explanations": [
+      "Wrong — temperature does not fix description ambiguity; the model still has no boundary criteria, so misroutes persist.",
+      "Wrong — keyword-based routing rules in the system prompt are fragile, accumulate over time, and re-introduce the bug whenever a third similar tool joins.",
+      "Wrong — adding a router tool hides the ambiguity rather than removing it; the underlying tools still overlap and downstream maintenance grows.",
+      "Correct — the canonical fix is to rename and re-scope so each tool has a non-overlapping purpose, exactly the `analyze_content` → `extract_web_results` example in the guide."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "pre",
+    "qid": "934a06ab-1001-43f1-864e-47d7dbc8c7e4"
+  },
+  {
+    "question": "Which of the following belongs in a tool's prose description, not just its JSON schema?",
+    "options": [
+      "The data type of each parameter (e.g., integer, string).",
+      "Business constraints and units, e.g., \"`amount_cents` is an integer ≤ the order subtotal, expressed in cents.\"",
+      "Whether the parameter is required or optional.",
+      "The maximum string length allowed by the schema."
+    ],
+    "explanations": [
+      "Wrong — primitive types belong in (and are enforced by) the schema; restating them in prose adds no selection signal.",
+      "Correct — units, ranges, and business rules are not captured by the schema; the model only learns them from the prose description, and omitting them causes invented or out-of-range inputs.",
+      "Wrong — required-vs-optional is a schema concern (`required` array); the schema enforces it directly.",
+      "Wrong — `maxLength` is a standard schema constraint; the schema validates it and the model reads it from the schema."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "pre",
+    "qid": "46f5358f-e41f-4865-aef2-2eaf2ed7f53d"
+  },
+  {
+    "question": "An agent has a single generic tool `analyze_document` that callers prompt for extraction, summarization, or claim verification. Outputs are unstable and downstream parsers keep breaking. What does the guide recommend?",
+    "options": [
+      "Add more examples to `analyze_document`'s description and tighten the system prompt.",
+      "Force `tool_choice: any` so the model is required to call the tool every turn.",
+      "Split `analyze_document` into purpose-specific tools (`extract_data_points`, `summarize_content`, `verify_claim_against_source`), each with its own narrow input/output contract.",
+      "Lower the temperature and add a JSON-mode flag so the output shape stabilises."
+    ],
+    "explanations": [
+      "Wrong — examples help, but a single tool whose output shape varies by intent will still produce unstable outputs no matter how the prompt is tuned.",
+      "Wrong — `tool_choice: any` forces *some* tool call but does nothing about the output-shape ambiguity that is the root cause.",
+      "Correct — splitting along distinct verbs (extract / summarize / verify) gives each tool a stable contract and maps the user's intent cleanly to one tool.",
+      "Wrong — temperature and JSON-mode do not fix the structural problem that one tool is trying to satisfy three different output contracts."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "pre",
+    "qid": "a263ef31-a41e-49b2-9f83-d87c8b41dbab"
+  },
+  {
+    "question": "After a system-prompt edit, the support agent now calls `escalate_to_human` on every customer message that contains the word \"issue\". What is the most likely root cause?",
+    "options": [
+      "A keyword-sensitive instruction was added to the system prompt that turns selection into a substring rule, overriding the tool description.",
+      "The MCP server is misconfigured and the description is no longer reaching the model.",
+      "The model has degraded and needs to be downgraded to an earlier version.",
+      "`tool_choice` is set to `auto`, which forces escalation by default."
+    ],
+    "explanations": [
+      "Correct — system-prompt sentences like \"when the customer mentions an issue, escalate\" create implicit substring rules that fire on every match and override the tool's situational when-to-use criteria.",
+      "Wrong — if the description weren't reaching the model the agent wouldn't be able to call the tool at all; the symptom is over-calling, not failure to call.",
+      "Wrong — model regression is not the typical cause of a behavior that started after a prompt change; the prompt change is the proximate event.",
+      "Wrong — `tool_choice: auto` is the normal mode and does not bias toward any specific tool, let alone escalation."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "pre",
+    "qid": "65d67b0f-4592-4e2e-bc59-ee5718fbb5b2"
+  },
+  {
+    "question": "Which of the following is NOT one of the four parts of a strong tool description as described in the guide?",
+    "options": [
+      "Input format (with a literal example).",
+      "Expected output.",
+      "When-to-use criteria.",
+      "Estimated latency and token cost of the call."
+    ],
+    "explanations": [
+      "Wrong — input format with a literal example is one of the four parts; it grounds the model on what valid inputs look like.",
+      "Wrong — expected output is one of the four parts; it shapes the model's downstream reasoning over the result.",
+      "Wrong — when-to-use criteria is one of the four parts; it anchors selection on situation rather than tool name.",
+      "Correct — latency and token cost are not part of the canonical description structure; the four parts are input format, expected output, when-to-use, and do-not-use / boundary statements."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "pre",
+    "qid": "299155ef-9ddc-4b4d-9a74-476f29c392f9"
+  },
+  {
+    "question": "A research agent's `search_documents` tool returns an empty array when the customer has no matching documents. The downstream code keeps treating this as an access failure and retrying. Where should the fix go?",
+    "options": [
+      "Add a retry budget in the orchestration layer to cap the retries.",
+      "Update the tool's description to state explicitly that an empty result is a valid outcome and is not an access failure.",
+      "Change the tool to throw an exception when the result set is empty.",
+      "Move the empty-vs-error distinction into the system prompt instead of the description."
+    ],
+    "explanations": [
+      "Wrong — capping retries hides the symptom while leaving the model still misclassifying empty results as errors; the wrong tool calls continue.",
+      "Correct — the description is the cheapest place to land the empty-vs-error distinction so the model handles it correctly without an extra call (this also feeds Task 2.2's structured-error guidance).",
+      "Wrong — turning a valid empty result into an exception inverts the semantics; downstream code now sees real errors when nothing is wrong.",
+      "Wrong — system-prompt rules are fragile and per-conversation; the description is the durable place for tool-specific contract details."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "pre",
+    "qid": "1aff48fa-bd56-4e19-9828-c7d178d36860"
+  },
+  {
+    "question": "Which approach best eliminates description overlap between two MCP tools that operate on different data shapes?",
+    "options": [
+      "Rename and re-scope each tool so its description maps to a distinct input modality and output shape.",
+      "Add a `priority` field to each tool's metadata so the higher-priority one wins ties.",
+      "Use the same tool name with a `mode` parameter that selects the behavior.",
+      "Make the tools mutually exclusive by setting `tool_choice: any` and trusting the model."
+    ],
+    "explanations": [
+      "Correct — distinct inputs/outputs give each tool a non-overlapping purpose, which is the canonical fix (e.g., `extract_web_results` vs `extract_pdf_sections`).",
+      "Wrong — there is no `priority` field for MCP tools; even if there were, it would mask ambiguity rather than eliminate it.",
+      "Wrong — collapsing two tools into one with a `mode` parameter recreates the generic-tool problem and makes selection of `mode` the new ambiguity.",
+      "Wrong — `tool_choice: any` only forces *some* tool call; it does not resolve which of two overlapping tools is correct."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "pre",
+    "qid": "360ca606-4bc1-4788-9adf-93b8e01d07dc"
+  },
+  {
+    "question": "Which of the following is an anti-pattern when designing tool descriptions?",
+    "options": [
+      "Stating do-not-use boundaries that name the correct sibling tool.",
+      "Including a literal example of a valid input string.",
+      "Writing descriptions like \"Get the data\" or \"Look up the record\" with no when-to-use criteria.",
+      "Including the units and range of numeric parameters in the prose."
+    ],
+    "explanations": [
+      "Wrong — do-not-use boundaries are a recommended pattern; they redirect misroutes to the right sibling and prevent overlap.",
+      "Wrong — literal input examples are a recommended pattern; they prevent the model from inventing free-form values.",
+      "Correct — vague one-liners describe what the tool *is* but never *when it applies*, and selection collapses as soon as a sibling tool exists; this is the canonical anti-pattern.",
+      "Wrong — putting units and ranges in the prose is a recommended pattern; the schema cannot express \"in cents\" or \"≤ order subtotal.\""
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "pre",
+    "qid": "7eec2aa0-9b76-4b7b-a6fb-ce4334184916"
+  },
+  {
+    "question": "A team's research agent has `fetch_url`, `analyze_content`, and `analyze_document`. After adding a fourth tool `extract_pdf_sections`, misroutes get worse: the agent now calls `analyze_document` on web pages and `analyze_content` on PDFs. Which change most directly addresses the root cause?",
+    "options": [
+      "Remove `extract_pdf_sections` since adding it caused the regression.",
+      "Rename `analyze_content` to `extract_web_results` and rewrite both legacy descriptions to name distinct input modalities (HTML vs PDF), eliminating overlap.",
+      "Move all four tools behind a single `analyze` router tool that dispatches internally.",
+      "Add a system-prompt sentence: \"If the URL ends in .pdf, call `analyze_document`.\""
+    ],
+    "explanations": [
+      "Wrong — the new tool exposed a pre-existing ambiguity between `analyze_content` and `analyze_document`; removing it returns to the prior latent bug rather than fixing it.",
+      "Correct — the canonical guide example: rename and re-scope so each tool's description names a distinct input modality and output shape, removing the competing-intent overlap.",
+      "Wrong — a wrapper hides the four tools but keeps the underlying ambiguity; selection just shifts inside the wrapper and becomes harder to debug.",
+      "Wrong — keyword-based system-prompt rules paper over the ambiguity, are fragile across content types, and break the moment input doesn't match the heuristic."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "29887b51-9e6e-4e48-ba51-92e9d57cff70"
+  },
+  {
+    "question": "An MCP tool `process_refund` accepts `amount_cents` (integer). In production the model occasionally passes the dollar amount instead of cents. The schema is correct. What is the most appropriate fix?",
+    "options": [
+      "Raise the model temperature to encourage more careful reasoning over the amount.",
+      "Rename the parameter to `amount_dollars` and let the server multiply by 100 internally.",
+      "Add a server-side post-validation check that rejects amounts smaller than 100.",
+      "Update the prose description to state the unit and a literal example: \"`amount_cents` — integer in cents (e.g., 1599 = $15.99); must be ≤ order subtotal.\""
+    ],
+    "explanations": [
+      "Wrong — higher temperature increases variance, which is the opposite of what's needed; the missing signal is the unit, not the reasoning effort.",
+      "Wrong — renaming hides the issue and silently changes contract semantics; existing callers may now pass cents and be charged 100x more.",
+      "Wrong — \"reject < 100\" is a fragile heuristic that breaks for legitimate small refunds and still lets larger dollar-as-cents bugs through.",
+      "Correct — units and business constraints belong in the prose description, not just the schema; a literal example anchors the model on the correct format."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "062d8b66-4a4c-461f-85b7-34645d7a6785"
+  },
+  {
+    "question": "When should you split a generic tool into multiple purpose-specific tools rather than improving its description?",
+    "options": [
+      "When the generic tool is being asked to satisfy distinct verbs (e.g., extract vs summarize vs verify) with different output contracts.",
+      "Always — generic tools are never acceptable in production agents.",
+      "Only when the team has fewer than 4 tools total and can absorb the catalog growth.",
+      "When the tool is invoked more than 100 times per minute, to spread load."
+    ],
+    "explanations": [
+      "Correct — splitting is appropriate when one tool is being stretched across multiple verbs with different output shapes; each split gets a stable, machine-checkable contract.",
+      "Wrong — generic tools are sometimes the right choice; the test is whether they stretch across distinct verbs with incompatible output contracts.",
+      "Wrong — catalog size is a real concern (Task 2.3) but is not the trigger for splitting; the trigger is contract incoherence, not tool count.",
+      "Wrong — invocation rate has no bearing on whether the tool's contract is coherent; load distribution is an infrastructure concern, not a tool-design one."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "84243a30-29c1-47c8-ab45-dd56fe822d77"
+  },
+  {
+    "question": "After adding the sentence \"If the customer mentions chargebacks, immediately call `freeze_account`\" to the system prompt, the agent now freezes accounts whenever the customer forwards an old email that quotes the word \"chargeback\". What's the right fix?",
+    "options": [
+      "Add a confirmation step in the system prompt: \"Ask before freezing.\"",
+      "Replace the keyword with a regex that excludes quoted text.",
+      "Remove the keyword-sensitive system-prompt rule and instead sharpen `freeze_account`'s description with situational when-to-use criteria the model can reason over.",
+      "Move the rule into the tool's description verbatim so it lives alongside the schema."
+    ],
+    "explanations": [
+      "Wrong — adding a confirmation step layers more prompt rules on top of the broken one; the substring-trigger problem remains.",
+      "Wrong — regex on natural language is brittle and fights the model rather than the underlying ambiguity; the substring association is the real bug.",
+      "Correct — keyword-sensitive prompt rules turn selection into substring matching; removing them and letting a sharpened description carry the situational logic is the documented fix.",
+      "Wrong — copying the keyword rule into the description preserves the substring-trigger behavior; descriptions should encode situational criteria, not keyword triggers."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "99362115-2427-464f-8395-c0cfc56a4ad8"
+  },
+  {
+    "question": "A data-extraction agent has one tool `extract` that returns a JSON object whose schema varies by intent (sometimes a list of fields, sometimes a summary string, sometimes a verification result). Why is this a tool-design anti-pattern?",
+    "options": [
+      "Because tool names are limited to 16 characters and `extract` is too short to be unique.",
+      "Because the unstable output shape collapses three distinct verbs into one fuzzy contract, so downstream parsers break and the model has no clear selection criterion.",
+      "Because every MCP tool is required to return a single primitive type by spec.",
+      "Because it forces the model to use `tool_choice: any` instead of `auto`."
+    ],
+    "explanations": [
+      "Wrong — there is no 16-char name limit; the issue is contract incoherence, not naming.",
+      "Correct — collapsing extract / summarize / verify into one tool yields unstable outputs and gives the model no clear verb-to-tool mapping; the fix is to split along the verbs with distinct contracts.",
+      "Wrong — MCP tools are not restricted to primitive return types; rich JSON results are allowed and common.",
+      "Wrong — `tool_choice` mode is unrelated; the design problem is the fuzzy contract, not the choice mode."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "a43d1227-0a99-4dff-a817-77168e4f2242"
+  },
+  {
+    "question": "You are reviewing two MCP tools, `get_customer` and `lookup_order`. The first description says \"Returns customer profile by `customer_id` or email.\" The second says \"Returns customer order data.\" In production, the model often calls `get_customer` and tries to read order fields from the response. What is the most precise diagnosis?",
+    "options": [
+      "Tool overload: the catalog has too many tools and selection is degrading.",
+      "An MCP transport bug is corrupting the tool descriptions in transit.",
+      "The model's general-knowledge prior about customer objects is overriding the tool definitions.",
+      "Description overlap and a missing boundary statement: the second description doesn't say it returns *order* data by `order_id` and not customer profile data, so the model conflates them."
+    ],
+    "explanations": [
+      "Wrong — two tools is far below the overload threshold; the selection failure is description-quality, not catalog size.",
+      "Wrong — there is no evidence of a transport bug; the symptom is consistent with description overlap, which is the more parsimonious diagnosis.",
+      "Wrong — invoking the model's prior is a vague explanation; the concrete problem is that the descriptions don't draw a clear boundary between the two tools.",
+      "Correct — the second description is too thin and overlaps with the first on \"customer\"; sharpening it (\"Returns a single order by `order_id`; takes no customer parameters\") and adding a do-not-use boundary on `get_customer` resolves the conflation."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "0b7b5535-5009-4301-9c66-2ec4dada585d"
+  },
+  {
+    "question": "When is it preferable to fix tool misrouting via tool-description changes rather than by editing the system prompt?",
+    "options": [
+      "Almost always — descriptions are durable per-tool and avoid the keyword-rule sprawl that prompt edits accumulate over time.",
+      "Only when the misroute affects more than 5% of calls; otherwise prompt edits are faster.",
+      "Never — system-prompt rules always take precedence and are the canonical fix.",
+      "Only when the tools are MCP-served; built-in tools must be fixed via the system prompt."
+    ],
+    "explanations": [
+      "Correct — descriptions live alongside the tool, are reused everywhere the tool is exposed, and avoid the brittle accumulation of keyword rules that system-prompt fixes produce.",
+      "Wrong — the choice isn't a function of misroute frequency; the durability and locality argument applies regardless of how often the bug fires.",
+      "Wrong — system-prompt rules can override descriptions but doing so on purpose is the anti-pattern; the canonical fix lives in the description.",
+      "Wrong — built-in tools also have descriptions that can (and should) be enhanced; the description-vs-prompt trade-off is the same for both."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "5e6e616a-a80f-49db-accf-ad4b4a59f164"
+  },
+  {
+    "question": "Which of the following is the strongest description for an MCP tool `lookup_order`?",
+    "options": [
+      "\"Looks up an order. Returns the order.\"",
+      "\"Order lookup utility — retrieves order information from the order service.\"",
+      "\"Generic order helper. Use for any order-related query the customer asks.\"",
+      "\"Retrieves a single order by `order_id` (format: `ORD-` + 8 digits, e.g., `ORD-00451209`). Returns line items, status, and shipping events. Use when the user gives a specific order ID; use `search_orders_by_customer` instead when only an email or name is available. Returns an empty result (not an error) when the ID doesn't exist.\""
+    ],
+    "explanations": [
+      "Wrong — vague one-liner with no input format, when-to-use, or boundary; selection collapses as soon as any sibling tool exists.",
+      "Wrong — slightly more verbose but still gives no input format, no example, no when-to-use criterion, and no boundary with sibling tools.",
+      "Wrong — \"any order-related query\" is the opposite of a tight contract; this invites overlap with every future order-shaped tool.",
+      "Correct — covers all four parts (input format with example, expected output, when-to-use criteria, do-not-use / boundary with sibling) and explicitly distinguishes empty result from error."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "8d75b53d-7d9c-4d4f-8393-7643047323bb"
+  },
+  {
+    "question": "Splitting a generic tool into purpose-specific ones can backfire if done carelessly. Which pitfall does the guide warn about?",
+    "options": [
+      "MCP only allows up to 5 tools per server, so further splitting will fail to register.",
+      "The model cannot reason about more than 3 tools per turn, so splitting beyond that is wasted.",
+      "Each split needs a sharpened, contract-shaped description; otherwise the children collide with each other and you've added catalog size without buying selection clarity.",
+      "Splitting requires versioning every downstream caller, which is operationally expensive."
+    ],
+    "explanations": [
+      "Wrong — there is no 5-tools-per-server limit; the warning is about description quality after splitting, not registration.",
+      "Wrong — there is no per-turn cap of 3 tools; the relevant warning is about selection degradation at much larger catalog sizes (Task 2.3, ~18 tools).",
+      "Correct — splits without sharpened descriptions reproduce the overlap problem at a finer grain; each new tool needs the four-part description treatment to be worth the catalog growth.",
+      "Wrong — versioning is a real operational concern but not the design pitfall the guide highlights for splitting; the design pitfall is description quality on the children."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "5ce9daeb-206d-4302-9451-c9980982401b"
+  },
+  {
+    "question": "A tool `escalate_to_human` is being called too aggressively. Which change best aligns with the guide's tool-design guidance?",
+    "options": [
+      "Add a hard cap in the orchestration layer that blocks more than 1 escalation per session.",
+      "Switch `tool_choice` to `auto` and hope the model self-regulates.",
+      "Add a system-prompt sentence: \"Don't escalate unless absolutely necessary.\"",
+      "Sharpen the description to enumerate the situational when-to-use criteria (explicit human-agent request, repeated failed resolution, policy gap with no defined workflow) and a do-not-use clause for transient confusion that other tools can resolve."
+    ],
+    "explanations": [
+      "Wrong — a session-level cap masks the root cause and produces wrong behavior in legitimate multi-issue cases; the fix should be in the description.",
+      "Wrong — `tool_choice: auto` is the default mode and does not regulate over-calling on its own.",
+      "Wrong — vague guidance like \"unless absolutely necessary\" gives the model nothing to reason over; the description-level fix uses concrete situational criteria instead.",
+      "Correct — enumerating when-to-use criteria in the description gives the model durable, situational anchors and lets it stop using the tool for cases that other tools can handle."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "fbfb6fe0-69d6-4009-a0ef-8f608ced68d2"
+  },
+  {
+    "question": "A logistics agent has two MCP tools, `track_shipment` and `track_package`, with descriptions \"Tracks a shipment\" and \"Tracks a package.\" The agent picks between them inconsistently and customers see wrong ETAs. Which fix most directly removes the ambiguity?",
+    "options": [
+      "Rename one tool and rewrite both descriptions to name distinct input modalities (e.g., `lookup_shipment_by_carrier_tracking_number` for external carrier IDs vs `lookup_internal_shipment_by_id` for our own shipment IDs).",
+      "Lower the model temperature so selection becomes deterministic and the misroutes stop.",
+      "Add a system-prompt rule: \"If the ID starts with `1Z`, use `track_package`; otherwise use `track_shipment`.\"",
+      "Merge them into a single `track` tool with a `mode` parameter (`shipment` | `package`)."
+    ],
+    "explanations": [
+      "Correct — this is the canonical rename-and-re-scope fix: each tool now corresponds to a distinct input modality (carrier tracking number vs internal shipment ID), so the descriptions stop competing for the same intent.",
+      "Wrong — temperature changes selection variance but not the underlying ambiguity; the model still has no boundary criteria, so misroutes persist deterministically.",
+      "Wrong — keyword-based prompt routing is fragile and breaks the moment a carrier whose IDs don't start with `1Z` is added; the canonical fix is to remove the ambiguity in the descriptions, not paper over it in the prompt.",
+      "Wrong — collapsing two tools into one with a `mode` parameter recreates the generic-tool problem (selection of `mode` is the new ambiguity) and gives no win in selection clarity."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "4cd88af2-e8fe-4d01-bd21-6af5020aa410"
+  },
+  {
+    "question": "After a finance agent's system prompt added the line \"Whenever the user mentions 'invoice', call `generate_invoice`,\" the agent now generates a fresh invoice every time a user pastes an old invoice asking for a status check. What's the right fix?",
+    "options": [
+      "Layer another rule on top: \"...except when the user is forwarding an existing invoice for review.\"",
+      "Remove the keyword-sensitive sentence from the system prompt and sharpen `generate_invoice`'s description with situational when-to-use criteria (verified customer, no open invoice for the same line items, explicit request to bill).",
+      "Add a regex pre-filter in the orchestration layer that strips quoted text before the model sees it.",
+      "Rename `generate_invoice` to `make_invoice` so the keyword association breaks naturally."
+    ],
+    "explanations": [
+      "Wrong — adding more keyword exceptions accumulates fragile rules; the substring-trigger problem stays in place and breaks again at the next variant.",
+      "Correct — keyword-sensitive prompt rules turn selection into substring matching; removing them and letting a sharpened description carry situational logic is the documented fix.",
+      "Wrong — regex on natural language fights the model rather than the underlying ambiguity; the substring association inside the prompt remains the real bug.",
+      "Wrong — renaming the tool doesn't remove the prompt's substring rule, and the agent will still mis-fire whenever the prompt is updated to mention the new name."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "42647a45-2741-40dc-bec5-2cb8dc21c4bf"
+  },
+  {
+    "question": "Which of the following is BEST expressed in an MCP tool's prose description rather than its JSON schema?",
+    "options": [
+      "Whether the parameter is required (vs optional).",
+      "That the parameter is a string with a maximum length of 64 characters.",
+      "That the parameter must be one of `pending`, `paid`, or `cancelled`.",
+      "That the parameter `delay_minutes` must not exceed the customer's SLA window for their product tier."
+    ],
+    "explanations": [
+      "Wrong — required-vs-optional is a schema concern (`required` array); the schema enforces it directly and restating it in prose adds no signal.",
+      "Wrong — `maxLength` is a standard JSON-schema constraint; the schema validates it and the model reads the limit from there.",
+      "Wrong — enum constraints belong in the schema (`enum`) where they are machine-checkable; the schema both documents and enforces the allowed values.",
+      "Correct — business constraints that depend on per-customer / per-tier context cannot be expressed as a static JSON-schema rule; they belong in the prose description so the model can reason about the bound."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "d475f9e1-a805-4573-bca5-942efb25b21f"
+  },
+  {
+    "question": "A support tool `find_open_tickets(customer_id)` correctly returns `[]` when a customer has no open tickets. The downstream code keeps treating the empty array as an access-denied error and triggers retries. Where should the fix land?",
+    "options": [
+      "Update the tool's description to state explicitly that an empty array is a valid, non-error outcome and means \"no open tickets.\"",
+      "Wrap the server code in a try/except that converts empty results to a sentinel string the agent can match on.",
+      "Add a system-prompt rule explaining that empty arrays are not errors.",
+      "Mandate that the agent always call `get_customer` before `find_open_tickets` to confirm the customer exists."
+    ],
+    "explanations": [
+      "Correct — the description is the cheapest, most durable place to land the empty-vs-error distinction (this also dovetails with Task 2.2's structured-error guidance); the model handles it correctly without an extra call.",
+      "Wrong — converting valid empty results into a sentinel inverts the contract and forces every downstream consumer to special-case the sentinel; the underlying confusion is in the model's reading of empty, not the wire format.",
+      "Wrong — system-prompt rules are fragile and per-conversation; tool-specific contract details belong in the description, where they live alongside the tool everywhere it's exposed.",
+      "Wrong — adding a precondition call hides the symptom while doubling tool calls per turn; it doesn't fix the model's misreading of empty vs error."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "f39633a0-2ad8-4f67-9926-f16675991f4b"
+  },
+  {
+    "question": "A legal-research agent has a single MCP tool `process_brief` that callers prompt for citation extraction, plain-English summarization, or argument-strength scoring. Output JSON shape varies per turn and downstream parsers are constantly breaking. Why is this design wrong?",
+    "options": [
+      "Tool names cannot start with `process_` per MCP spec, so the model degrades selection.",
+      "Three distinct verbs (extract / summarize / score) require three distinct contracts; one tool's output shape cannot stably satisfy all three, so downstream parsers break and selection has no clear criterion.",
+      "MCP tools cannot accept enum parameters, so the `mode` parameter that disambiguates the verbs cannot be passed reliably.",
+      "Output-shape variance is acceptable; the real bug is that `process_brief` is missing a `temperature` field on its input schema."
+    ],
+    "explanations": [
+      "Wrong — there is no naming-prefix restriction in MCP; the issue is contract incoherence, not the verb in the tool name.",
+      "Correct — collapsing extract / summarize / score into one tool yields unstable outputs and gives the model no clear verb-to-tool mapping; the documented fix is to split along the verbs with stable per-tool contracts.",
+      "Wrong — MCP tools support enum parameters; the design problem is the fuzzy contract, not parameter-type expressiveness.",
+      "Wrong — `temperature` is not a tool input; the structural issue is that one tool is trying to satisfy three different output contracts."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "b46903fb-4cdc-4edd-ab80-32942b72291f"
+  },
+  {
+    "question": "An agent has overlapping tools `analyze_image` and `inspect_image`. A team proposes adding a top-level `image` router tool that dispatches to whichever child it picks internally. What is wrong with this approach?",
+    "options": [
+      "Nothing — adding a router is the canonical guide-recommended fix for description overlap.",
+      "It increases catalog size, which always degrades selection past 3 tools regardless of the contracts.",
+      "MCP does not allow tools to delegate to other tools at runtime, so the router cannot be implemented.",
+      "It hides the underlying overlap rather than removing it; the same ambiguity now lives one layer deeper inside the router and is harder to debug than two clearly-named, re-scoped siblings."
+    ],
+    "explanations": [
+      "Wrong — the canonical fix is to rename and re-scope the children so they no longer compete, not to add a router. A wrapper preserves the ambiguity.",
+      "Wrong — the 3-tool threshold isn't a real rule; selection degrades past much larger catalog sizes (Task 2.3, ~18 tools), and only when descriptions stay weak.",
+      "Wrong — MCP tools can call into shared backend logic; runtime dispatch is implementable. The real problem is design, not feasibility.",
+      "Correct — the router pattern moves the same description-overlap problem into the router's selection logic, where it's harder to inspect; the durable fix is to rename and re-scope so each tool has a non-overlapping purpose."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "724c9262-e335-416c-8151-483154542b4c"
+  },
+  {
+    "question": "An MCP tool `book_meeting` has `start_time` typed as `string` in the schema. In production the model alternates between ISO 8601, RFC 2822, and natural-language phrases like \"next Tuesday at 2pm.\" The schema and server code are correct. Which change yields the most lift?",
+    "options": [
+      "Switch to a smaller model to reduce variance in input formatting.",
+      "Add `format: date-time` to the schema and trust the model to pick up the hint without further prose.",
+      "Update the prose description to specify the format and provide a literal example: \"`start_time` — ISO 8601 with timezone offset, e.g., `2026-08-12T14:30:00-04:00`.\"",
+      "Reject non-ISO strings server-side and let the agent retry until it lands on a valid one."
+    ],
+    "explanations": [
+      "Wrong — model size does not address the missing format signal; the variance is because the description doesn't anchor a single format with a literal example.",
+      "Wrong — `format: date-time` is a hint many models read inconsistently; without a literal example in the prose, the model still invents shapes it has seen elsewhere.",
+      "Correct — literal input examples in the description are the documented anchor for input-format stability; \"e.g., `2026-08-12T14:30:00-04:00`\" eliminates the ambiguity at the cheapest layer.",
+      "Wrong — server-side rejection turns a description bug into a retry loop, wasting tokens; the fix should prevent the bad input rather than catch it."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "8b94b9f0-a3ff-4135-9330-a96de81ffefb"
+  },
+  {
+    "question": "When is it CORRECT to KEEP a single generic tool rather than splitting it into purpose-specific siblings?",
+    "options": [
+      "When the tool's outputs already share one stable contract for one verb (e.g., `lookup_order` returns the same order shape regardless of which order is requested).",
+      "When the team wants to keep the catalog small enough to stay below Task 2.3's overload threshold, regardless of contract coherence.",
+      "Always — splitting is over-engineering and the guide warns against it because of catalog growth.",
+      "When the tool has fewer than 3 callers, since splitting only pays off at scale."
+    ],
+    "explanations": [
+      "Correct — the trigger for splitting is contract incoherence (multiple distinct verbs collapsed into one tool), not tool count; a single tool with one stable verb and one output shape should stay single.",
+      "Wrong — catalog size is a real Task 2.3 concern but is not the trigger for splitting decisions; you split when contracts are incoherent and avoid splitting when they aren't.",
+      "Wrong — the guide explicitly recommends splitting when one tool is stretched across distinct verbs (`extract` / `summarize` / `verify`); blanket avoidance is the wrong rule.",
+      "Wrong — caller count has no bearing on whether the tool's contract is coherent; the design test is on the tool, not its consumers."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "88c9f832-2594-4cba-90cb-fc40cc7ca660"
+  },
+  {
+    "question": "An MCP tool `transfer_funds` accepts `amount` (number) and `currency` (string). Schema validation is in place. In production the model occasionally passes `amount: 50` meaning \"$50.00\" when the server expects cents, and the transfer goes through at $0.50. Which fix addresses the root cause?",
+    "options": [
+      "Add a runtime check that rejects any amount under $1.00 to catch the dollar-as-cents mistakes.",
+      "Rename `amount` to `amount_cents` AND state in the prose description: \"`amount_cents` — integer in cents (e.g., `5000` for $50.00); never dollars.\"",
+      "Lower the model temperature so it stops experimenting with units between calls.",
+      "Require the user to type the amount in their message so the model copies it verbatim into the tool call."
+    ],
+    "explanations": [
+      "Wrong — a `< $1.00` heuristic blocks legitimate small transfers and still lets larger dollar-as-cents bugs through (e.g., `100` meant as $100 still passes); units belong in the description, not in a fragile rejection rule.",
+      "Correct — units and business semantics belong in the prose description (and a self-documenting parameter name reinforces the unit); the schema gives the type, but only the description anchors the unit and a literal example.",
+      "Wrong — temperature does not fix a missing unit signal; the model has no way to know cents vs dollars without prose, so variance just shifts.",
+      "Wrong — relying on the user's literal text re-introduces every input-format inconsistency the description is supposed to resolve, and the contract should not depend on user phrasing."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "f871a5fb-2b2c-4fb2-8e78-0e2235aebafe"
+  },
+  {
+    "question": "A knowledge-base agent has `search_articles_by_keyword` and `lookup_article_by_id`. Even when the user provides a clean `KB-` ID, the model often calls `search_articles_by_keyword`. Both descriptions are reasonable on their own but neither mentions the other. Which fix most directly stops the misroutes?",
+    "options": [
+      "Force `tool_choice: any` so the model is required to think harder about the tool selection.",
+      "Remove `search_articles_by_keyword` from the catalog so the ambiguity disappears.",
+      "Add reciprocal do-not-use boundaries: `search_articles_by_keyword` says \"Do not use when the user has provided a `KB-` ID — call `lookup_article_by_id` instead\"; `lookup_article_by_id` says \"Do not use for free-text queries — call `search_articles_by_keyword`.\"",
+      "Add a system-prompt sentence: \"If the user types `KB-`, use the lookup tool.\""
+    ],
+    "explanations": [
+      "Wrong — `tool_choice: any` only forces *some* tool call; it does not steer between two siblings whose descriptions don't cover each other.",
+      "Wrong — removing a useful tool sacrifices a real capability instead of fixing the description gap; free-text search is a legitimate use case.",
+      "Correct — the missing piece is the do-not-use / boundary statement that names the right sibling; this is exactly the four-part-description pattern (input, output, when-to-use, do-not-use) and resolves overlap without a system-prompt rule.",
+      "Wrong — keyword-based prompt rules are fragile (what about lowercase `kb-`? a `KB-` reference inside an unrelated quote?), and the canonical fix is to make the descriptions self-disambiguating."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "65f25d07-3227-40cf-93c5-648b1c0e8f5d"
+  },
+  {
+    "question": "A document-analysis agent has one tool `analyze_document` stretched across three jobs (extract data points, summarize content, verify claims). Output JSON shapes vary per turn and parsers break. Two redesigns are on the table: (α) keep one tool but add a required `task` enum (`extract` | `summarize` | `verify`) and document the per-task input/output shape inside `analyze_document`'s description; (β) split into three tools with sharpened, contract-shaped descriptions (`extract_data_points`, `summarize_content`, `verify_claim_against_source`). Which is the BETTER redesign and why?",
+    "options": [
+      "(α) — the catalog stays small (Task 2.3 overload concern) and the enum makes the model's selection deterministic.",
+      "(α) — the description can carry per-task contracts and the model maps the user's verb directly to the enum value.",
+      "(β) — splitting always wins because more tools always give the model richer signal.",
+      "(β) — three distinct verbs need three distinct contracts; one tool's output schema cannot stably serve all three regardless of how the description is written."
+    ],
+    "explanations": [
+      "Wrong — keeping the catalog small is a real concern, but it does not justify keeping a tool whose output shape is structurally incoherent. The unstable output (the original bug) survives the enum because each enum value still produces a different schema from the same tool.",
+      "Wrong — the enum routes the *call* but not the *contract*. Downstream parsers still cannot bind a single schema to `analyze_document`'s response, so the output instability that motivated the redesign remains.",
+      "Wrong — \"splitting always wins\" overstates the rule and contradicts the catalog-size trade-off (Task 2.3); the guide explicitly cautions that splitting must be purposeful along distinct verbs, not per micro-feature.",
+      "Correct — each split gets a stable, machine-checkable output shape, and the model's selection becomes deterministic because the user's verb (extract / summarize / verify) maps cleanly to one tool. The enum approach hides the contract incoherence rather than removing it."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "9da206b0-79b1-478c-be21-a7a0207ceda1"
+  },
+  {
+    "question": "An MCP tool `process_refund` has `amount` typed as `number` in the schema. Production bug: model sometimes sends dollars instead of cents, refunding 1/100th of intended. You can apply any combination of: (a) rename the parameter to `amount_cents` in the schema; (b) add prose in the tool description: \"`amount_cents` — integer in cents (e.g., `5000` for $50.00); never dollars\"; (c) add prose: \"must be ≤ order subtotal\"; (d) add a server-side guard rejecting any amount under 100. Which combination is the BEST primary fix per the guide?",
+    "options": [
+      "(a) alone — a self-documenting parameter name is the strongest single signal and avoids description bloat.",
+      "(a) + (b) + (c) — the name carries the unit, prose anchors it with a literal example, and the business constraint that the schema cannot express lives in the prose where the model can reason about it.",
+      "(a) + (b) + (d) — name + prose + a runtime guard for defense in depth, with the business rule covered implicitly by the guard.",
+      "(b) + (c) + (d) — the prose carries the contract and the runtime guard catches the rest, so renaming downstream-visible parameters is unnecessary."
+    ],
+    "explanations": [
+      "Wrong — a name alone (`amount_cents`) tells the model the unit but does not give it a literal example or the business bound; the model can still send `50` interpreted as cents (= 50¢) when the intended amount is $50.",
+      "Correct — the guide's recommendation is exactly this layering: name + literal-example prose + business-constraint prose. Each addresses a distinct part of the contract that the schema cannot express, and together they over-determine the unit and bound.",
+      "Wrong — a `< 100` runtime guard is a fragile heuristic that blocks legitimate small refunds and silently lets larger dollar-as-cents bugs through (e.g., `100` meant as $100 still passes); the right place for the bound is the prose business constraint.",
+      "Wrong — skipping the rename throws away the strongest passive signal (the parameter name as documentation), and the runtime guard stands in for the business constraint with weaker semantics. The four-part description pattern wants name + prose, not prose + guard."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "7c9b8ff2-c193-4c07-967e-8fea735085a7"
+  },
+  {
+    "question": "Two MCP tools `analyze_image` (computes scene labels and bounding boxes) and `inspect_image` (validates image quality, EXIF, color profile) genuinely do different things, but both descriptions read like \"analyzes an image.\" The agent regularly picks the wrong one. Which is the CANONICAL fix per the guide?",
+    "options": [
+      "Rename one tool and rewrite both descriptions so they map to non-overlapping purposes (e.g., `extract_image_features` and `validate_image_quality`), each scoped to its distinct verb and output shape.",
+      "Keep the names as-is, add reciprocal do-not-use boundaries naming the sibling, and treat the boundary statements as sufficient.",
+      "Add a system-prompt sentence: \"When the user is uploading raw photos, prefer `inspect_image` first.\"",
+      "Wrap both behind an `image` router tool that internally chooses based on file metadata."
+    ],
+    "explanations": [
+      "Correct — the canonical structural fix is to rename and re-scope so the tools no longer compete for the same intent. Once the names diverge and the descriptions encode distinct verbs / output shapes, the overlap is removed at the structural layer rather than annotated around.",
+      "Wrong — boundary statements help (and you would still add them after renaming), but on their own they leave the same names and verbs colliding. The bug recurs whenever a third similar tool is added because the underlying overlap is still there.",
+      "Wrong — keyword-sensitive system-prompt rules are an anti-pattern: they fire on substring matches (\"raw photos\" in unrelated context) and accumulate into a fragile rule pile that fights tool descriptions.",
+      "Wrong — wrapping behind a router hides the same overlap one layer deeper. Selection still has to happen, just inside the router, where it is harder to inspect and to debug than two clearly-named, re-scoped siblings."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "da78f8ba-fe8b-4738-aedc-328b06fbcf92"
+  },
+  {
+    "question": "An MCP tool `escalate_to_human` has a sharpened description: \"Use when (a) the user explicitly asks to speak to a human, OR (b) the agent has tried two tools and both returned actionable errors, OR (c) the user reports a policy gap with no defined workflow.\" In production the agent still over-fires on benign mentions (\"the human cost of this\", \"my human supervisor said…\"). Which is the BEST fix?",
+    "options": [
+      "Rename `escalate_to_human` to `escalate_to_agent` so the substring \"human\" no longer appears in the tool name, breaking the unintended association.",
+      "Add a system-prompt exception: \"Do not call `escalate_to_human` when the word 'human' appears in quoted or narrative context.\"",
+      "Sharpen condition (a) further with exemplary AND counter-exemplary phrasings: \"Appropriate ONLY when the user makes an unambiguous request such as 'transfer me to a human' or 'I need to speak to an agent'; NOT for passing mentions of the word 'human' in unrelated context (e.g., 'the human cost of this issue').\"",
+      "Lower the model temperature so it becomes more conservative about acting on individual keywords."
+    ],
+    "explanations": [
+      "Wrong — the name is not the source signal here; the description is. Renaming would suppress one substring trigger but leaves condition (a)'s thin phrasing as the source of the misroute, and the model's substring-matching tendency just shifts to whichever synonym is in the new name.",
+      "Wrong — this is the keyword-prompt anti-pattern at one remove: substring rules in the system prompt are exactly what the lesson tells you to remove. Layering more substring rules on top of an under-specified description compounds the fragility.",
+      "Correct — the structural fix is at the description level: condition (a) was thin enough to be read as a substring trigger, so adding both exemplary phrasings (what counts) and counter-examples (what doesn't) gives the model the situational anchor it was missing. The fix lives in the description, not the prompt or the tool name.",
+      "Wrong — temperature changes the variance of selection but not its target. The model still has the same under-specified condition (a) to reason over, so the misroutes recur with lower variance rather than disappearing."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "ae9299ac-0cb3-4cd8-8598-d2efff0c9fd0"
+  },
+  {
+    "question": "Two tools `get_user` and `find_user` share near-identical one-line descriptions and the model misroutes ~12% of the time. Three proposals: (p) rename `find_user` → `search_users_by_query` and rewrite both descriptions for distinct purposes; (q) add reciprocal do-not-use boundaries to the existing tools naming the sibling; (r) apply both (p) and (q) together. Which is the BEST primary action?",
+    "options": [
+      "(p) alone — once the tool names diverge and the descriptions are re-scoped, explicit do-not-use boundaries become redundant noise.",
+      "(q) alone — fastest fix; renaming `find_user` risks breaking downstream callers that referenced the old name.",
+      "None of the above — merge the two into a single `users` tool with a `mode` parameter (`get` | `search`) so there is no overlap to manage.",
+      "(r) — rename and re-scope removes the structural overlap; the do-not-use boundary on each new tool then anchors the boundary explicitly so future engineers cannot accidentally reintroduce overlap by adding a sibling that drifts back into the gap."
+    ],
+    "explanations": [
+      "Wrong — renames are durable, but the do-not-use boundary is forward-looking documentation that prevents the next contributor from reintroducing the bug. Calling it \"redundant\" understates its role as guardrail; it costs almost nothing in description length and pays dividends as the catalog grows.",
+      "Wrong — boundary statements alone leave the names colliding and the descriptions still competing for the same intent. The structural overlap has not been removed; it has been annotated. The bug recurs as soon as a third similar tool joins.",
+      "Wrong — collapsing into one tool with a `mode` parameter recreates the generic-tool problem. The user's verb (get vs search) was a clean signal; turning it into an internal enum forces selection of `mode` and gives the downstream code a less stable contract.",
+      "Correct — the canonical fix is rename-and-re-scope, AND adding the explicit do-not-use boundary makes the design intent visible to both the model and future maintainers. Defense-in-depth at the description layer is cheap and correct here."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "5797fbf7-deac-4dc7-b65b-60755cae6565"
+  },
+  {
+    "question": "A KB agent has `lookup_article_by_id(article_id)` returning `{title, body, last_updated, related_ids[]}`. Engineers debate whether to split it into `get_article_content`, `get_article_metadata`, and `get_related_articles`. Which is the BETTER decision?",
+    "options": [
+      "Split — each downstream consumer wants different fields, and contract-specific tools is the textbook fix.",
+      "Don't split — the tool serves one verb (lookup) with a single stable output shape. Consumers can read whichever fields they need from the existing return; splitting would add catalog size without buying selection clarity.",
+      "Split — Task 2.3's catalog overload concern is far below this tool count, so adding tools is effectively free.",
+      "Don't split — but rename the tool to `lookup_article_full_record` so consumers know to expect every field."
+    ],
+    "explanations": [
+      "Wrong — the trigger for splitting is *contract incoherence* (multiple distinct verbs collapsed into one tool with unstable output shape), not consumer convenience. Here the verb is one (lookup) and the output shape is stable; consumers picking different subsets of a stable response do not justify a split.",
+      "Correct — one verb with one stable output schema is exactly the case where splitting is wrong. Decomposing it would scatter related fields across three tools, force consumers to make multiple calls for what they used to get in one, and grow the catalog with no gain in selection clarity.",
+      "Wrong — invoking catalog overload as if it were the trigger inverts the rule. The decision is on contract coherence, not on whether you can afford more tools; \"we have room\" is not a reason to split a coherent tool.",
+      "Wrong — the rename addresses no real bug (the existing return is already complete and stable) and the proposed name is awkward. The lesson would not endorse a cosmetic rename in place of a structural decision."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "9945591e-2a3c-4c6a-8d64-6862bd47d597"
+  },
+  {
+    "question": "A research team splits `analyze_document` into `extract_data_points`, `summarize_content`, `verify_claim_against_source`. The legacy `analyze_document` tool stays registered for backward compatibility. Each child has a one-line description: \"Extracts data points from a document.\", \"Summarizes a document.\", \"Verifies a claim against a document.\" Misroutes are now significantly WORSE than before. What is the most likely root cause?",
+    "options": [
+      "The split should have produced four tools (one per major verb plus one fallback) — three is below the structural threshold for stable selection.",
+      "Three tools is below MCP's minimum tool count for stable model selection, so reverting the split is required.",
+      "Each child has a thin one-line description (no input format, no when-to-use, no boundary), AND the legacy `analyze_document` is still registered. The children compete with each other and with the legacy tool, recreating the original overlap at finer granularity.",
+      "The catalog crossed Task 2.3's overload threshold; selection is degrading from sheer size."
+    ],
+    "explanations": [
+      "Wrong — there is no \"four-tool threshold\" in the guide. Splitting is keyed to distinct verbs (here three: extract / summarize / verify), and adding an arbitrary fourth would not improve selection unless it covered a real fourth verb.",
+      "Wrong — there is no MCP-imposed minimum tool count. The diagnosis dressing this up as a platform constraint is fabricated; the real issue is description quality and the legacy tool, not catalog size.",
+      "Correct — splitting must come with sharpened, contract-shaped descriptions for each child, and the legacy generic tool must be deprecated or removed. Weak children plus a still-registered parent reproduces the overlap at finer granularity, which is why this is the canonical splitting-pitfall warning in the lesson.",
+      "Wrong — four tools (three children + legacy) is well below Task 2.3's overload region (~18 tools). Pinning the bug on catalog size would lead to the wrong fix (\"register fewer tools\") instead of the right one (\"sharpen descriptions and remove the legacy tool\")."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "4d9d5e7e-5570-4754-959d-057bca57a52c"
+  },
+  {
+    "question": "An MCP tool `book_meeting` accepts `start_time`. Available layers for input-format guidance: (i) parameter description on the schema property: \"ISO 8601 with offset\"; (ii) literal example inside the top-level tool description: \"e.g., `2026-08-12T14:30:00-04:00`\"; (iii) JSON-schema `format: date-time`; (iv) server-side parser that silently retries common alternate formats (RFC 2822, natural language). Which combination is the BEST primary fix per the guide's principles?",
+    "options": [
+      "(i) + (iii) — keep input-format guidance inside the schema where it is machine-checkable; the model can read the property description from there.",
+      "(ii) alone — the top-level description is the dominant signal; redundancy at the property level adds noise.",
+      "All four (i)+(ii)+(iii)+(iv) — defense-in-depth always wins, including the lenient parser as a safety net.",
+      "(i) + (ii) + (iii) and explicitly skip (iv) — anchor the format at every layer the model reads (top-level prose, property prose, schema format) so the unit is over-determined; do NOT add (iv) because silently accepting bad input rewards the bug and the model never learns the right format."
+    ],
+    "explanations": [
+      "Wrong — this skips the most important single signal: the literal example in the top-level prose description. The schema's property description plus `format: date-time` are weaker hints that some models read inconsistently.",
+      "Wrong — putting the example at the top level alone is much better than nothing, but the guide's pattern is name + prose + literal example, plus matching schema-level constraints; redundancy at the property and schema layers is not noise — it's reinforcement.",
+      "Wrong — the trap here is (iv). A lenient server-side parser silently accepting wrong formats means the model never learns the right format because the bug is invisible; this is a tool-design anti-pattern even though it looks like resilient defensive coding.",
+      "Correct — the four-part description plus matching schema constraints is exactly the layering the guide recommends, and explicitly omitting the lenient parser preserves the feedback loop that surfaces format mismatches as errors the description fix can address."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "062a9b31-5d90-4fc6-93d8-8e6208a2016c"
+  },
+  {
+    "question": "After thoroughly sharpening descriptions, removing every keyword rule from the system prompt, renaming one of two overlapping tools, and adding reciprocal do-not-use boundaries, an agent still misroutes between `tool_X` and `tool_Y` about 5% of the time. Reviewing those cases, you find the user's instructions themselves were genuinely ambiguous (\"pull the order info\" — could fit either tool). What is the most appropriate diagnosis and next step?",
+    "options": [
+      "The descriptions still have residual verb overlap on \"pull\" / \"fetch\"; sharpen the language further until both tools use distinct verbs.",
+      "When the user's intent is genuinely ambiguous, no description fix can disambiguate it by definition. The right next step is OUTSIDE description design — e.g., have the agent ask a clarifying question or surface a confirmation step at the agent layer.",
+      "Lower the model temperature to push the residual misroutes toward the more probable tool; the 5% will drop sharply.",
+      "Add a fallback rule in the system prompt: \"If unsure between `tool_X` and `tool_Y`, prefer `tool_X`.\""
+    ],
+    "explanations": [
+      "Wrong — at 5% residual after the description-level fixes, further description sharpening is hitting diminishing returns. The remaining cases share a feature (genuinely ambiguous user input) that no description language can resolve, since the description cannot read the user's mind.",
+      "Correct — there is a real ceiling on what description quality can accomplish. When the input is genuinely ambiguous, the disambiguation has to move up the stack (agent-level clarifying question, confirmation prompt) — not deeper into description design. Recognising this boundary is part of using the lesson well.",
+      "Wrong — temperature changes the *spread* of selection probabilities, not their *target*. Pushing toward the more probable tool will be wrong roughly half the time on genuinely ambiguous input; reducing variance does not improve the expected value here.",
+      "Wrong — this is exactly the keyword/system-prompt fallback rule the lesson warns against. \"Prefer X when unsure\" makes the agent silently wrong on the ambiguous half rather than asking the user; it converts a visible misroute into a hidden one."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "52bcb6c0-6254-418a-9e05-9d9f3117cf9d"
+  },
+  {
+    "question": "Which of the following sets BEST captures the four parts of a contract-shaped tool description per the guide?",
+    "options": [
+      "Input format with a literal example; expected output; when-to-use criteria; do-not-use / boundary statement that names the right sibling tool.",
+      "Tool name justification; input format with a literal example; expected output; when-to-use criteria.",
+      "Input format with a literal example; expected latency budget; when-to-use criteria; do-not-use boundary.",
+      "Input format; expected output; tool version / changelog notes; do-not-use boundary."
+    ],
+    "explanations": [
+      "Correct — the four parts are: input format (with a literal example to anchor the shape), expected output, when-to-use criteria (situational anchors for selection), and a do-not-use / boundary statement that redirects misroutes to the right sibling tool.",
+      "Wrong — \"tool name justification\" is not part of the four-part structure; the model does not need to know why the tool is named what it is. Replacing the do-not-use boundary with naming rationale drops the most important sibling-disambiguation signal.",
+      "Wrong — \"expected latency budget\" is an operational concern outside the description's selection role; the missing piece versus the canonical structure is *expected output*, not latency.",
+      "Wrong — \"version / changelog notes\" is metadata for humans and CI, not a selection signal for the model; and the structure also requires when-to-use criteria, which this option drops."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.1"
+    ],
+    "phase": "post",
+    "qid": "fff93925-be12-4e08-99c1-4429d5d6f24e"
+  }
+]

@@ -1,0 +1,882 @@
+[
+  {
+    "question": "Which of the following is NOT one of the three deterministic escalation triggers for a customer support agent?",
+    "options": [
+      "The customer explicitly asks for a human agent",
+      "Policy is silent or ambiguous on the customer's specific request",
+      "The agent has tried its tools and can't make further forward progress",
+      "The customer's tone has become noticeably frustrated"
+    ],
+    "explanations": [
+      "An explicit human request is the canonical first deterministic trigger — escalate immediately on the next turn.",
+      "Policy gaps (silence or ambiguity) are the second deterministic trigger; the agent should not improvise a defensible-sounding answer.",
+      "Inability to make forward progress with the available tools is the third deterministic trigger.",
+      "Frustrated tone is sentiment, not a trigger — it should be acknowledged in the reply, not used to route the case."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "pre",
+    "qid": "8ac09da1-fa24-4e26-abf4-1a3d0b9e2b7a"
+  },
+  {
+    "question": "A customer types 'Just give me a real person, please.' What should the agent do on its very next turn?",
+    "options": [
+      "Run one more autonomous attempt to resolve the issue, then escalate if it fails",
+      "Call escalate_to_human immediately on the next turn",
+      "Ask the customer to first describe the issue in more detail so the human has context",
+      "Run a sentiment check, and only escalate if frustration crosses a threshold"
+    ],
+    "explanations": [
+      "An explicit human request must be honored immediately; running a final autonomous attempt delays the handoff and erodes trust.",
+      "An explicit human-agent request is the first deterministic trigger and must be honored on the next turn.",
+      "The customer has already given the trigger; context can be attached to the escalation payload, not gated in front of it.",
+      "Sentiment is not the trigger here — the explicit request itself is the trigger; sentiment thresholds are an anti-pattern."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "pre",
+    "qid": "2c89c984-28fd-4956-9e29-aaaa5e8706a6"
+  },
+  {
+    "question": "Why is having the model self-report a 1-10 confidence score and escalating below a threshold an unreliable escalation strategy?",
+    "options": [
+      "Confidence scores require fine-tuning the model, which is out of scope for the SDK",
+      "LLM self-reported confidence is poorly calibrated — agents are often confidently wrong on the hardest cases",
+      "Self-confidence requires too many extra tokens per turn",
+      "Confidence scores are deterministic, which removes the model's ability to choose tools"
+    ],
+    "explanations": [
+      "Fine-tuning is unrelated; the issue is calibration, not model training.",
+      "LLM self-confidence is a poorly calibrated signal: the model is often most confident on the cases that most need a human, exactly inverting the desired routing behaviour.",
+      "Token cost is not the core issue — the core issue is that the score is unreliable.",
+      "Self-confidence isn't deterministic and doesn't conflict with tool selection."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "pre",
+    "qid": "aa3bcc61-ac37-45a0-81f6-fa44c3233c69"
+  },
+  {
+    "question": "lookup_order returns three different orders for the customer. What is the correct next behaviour?",
+    "options": [
+      "Pick the most recent order and ask the customer to confirm",
+      "Ask the customer for an additional identifier such as the order number or last four of the card",
+      "Pick the order with the largest dollar amount, since that is most likely the disputed one",
+      "Escalate to a human, since multiple matches indicate complexity"
+    ],
+    "explanations": [
+      "Picking the most recent and confirming is a heuristic guess wearing a confirmation prompt; customers under time pressure often confirm without reading.",
+      "Multiple matches must be resolved by asking the customer for a disambiguating identifier — the agent does not pick a record on the customer's behalf.",
+      "Largest dollar amount is another heuristic that silently misidentifies customers a percentage of the time.",
+      "Multiple matches alone aren't a complexity escalation — they're a disambiguation prompt the agent should issue."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "pre",
+    "qid": "dd320315-7450-4e62-b168-4b79a00cbfbe"
+  },
+  {
+    "question": "A customer is clearly frustrated about a duplicate charge that the agent can refund under existing policy. What is the right behaviour?",
+    "options": [
+      "Auto-escalate immediately because the customer is frustrated",
+      "Ignore the frustration to keep the conversation efficient and process the refund",
+      "Acknowledge the frustration AND offer the in-capability resolution; escalate only if the customer reiterates they want a human",
+      "Run a sentiment classifier first and route based on its score"
+    ],
+    "explanations": [
+      "Frustration is not an escalation trigger; auto-escalating wastes the human queue on a case the agent could close.",
+      "Ignoring the frustration sounds robotic and degrades CSAT; acknowledgement matters even when you can resolve the issue.",
+      "The pattern is dual-action: acknowledge the frustration and offer the in-capability resolution. Escalate only on an explicit reiterated request.",
+      "Sentiment classifiers are an anti-pattern for routing — sentiment doesn't correlate with case complexity."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "pre",
+    "qid": "53cfe2f9-8320-4828-a351-cc628c57137e"
+  },
+  {
+    "question": "Your refund policy explicitly covers 'price drops on our own site within 14 days.' A customer asks for a competitor price match. The policy is silent on competitor pricing. What should the agent do?",
+    "options": [
+      "Generalize from the spirit of the existing policy and approve the match",
+      "Decline the request without explanation",
+      "Treat the situation as a policy gap and escalate to a human",
+      "Run a sentiment check and decide based on customer tone"
+    ],
+    "explanations": [
+      "Generalising from policy silence creates unauthorised concessions and contradictory precedents.",
+      "Declining without explanation isn't required by the policy gap pattern and damages the customer experience.",
+      "Policy silence is the canonical policy-gap trigger — escalate so a human can decide and document the precedent.",
+      "Sentiment is not the trigger; the silent policy is."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "pre",
+    "qid": "18ebef44-017e-418f-9529-42f7b4e68160"
+  },
+  {
+    "question": "Your agent is escalating straightforward cases (clear damage replacements with photo evidence) while attempting to autonomously handle policy-exception cases. According to the official guidance, what is the most effective FIRST step to fix escalation calibration?",
+    "options": [
+      "Add explicit escalation criteria to the system prompt with few-shot examples of when to escalate vs resolve",
+      "Have the agent self-report a confidence score and escalate when it falls below a threshold",
+      "Train a separate classifier on historical tickets to predict escalation",
+      "Add a sentiment-analysis layer that escalates whenever the customer sounds frustrated"
+    ],
+    "explanations": [
+      "Explicit criteria plus few-shot examples directly address the unclear decision boundary — the proportionate first response.",
+      "Self-reported confidence is poorly calibrated, especially on the cases that most need escalation.",
+      "A separate classifier is over-engineered and requires labeled data when prompt optimization hasn't been tried.",
+      "Sentiment doesn't correlate with case complexity, so the routing it produces is wrong by construction."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "pre",
+    "qid": "829296d0-d594-420a-85f7-e1394659cdfd"
+  },
+  {
+    "question": "Which behaviour is correct when a tool returns multiple matches for the customer's identifier?",
+    "options": [
+      "Default to the most recent record because it usually is the right one",
+      "Default to the alphabetically-first record for determinism",
+      "Ask the customer for an additional identifier that disambiguates the records",
+      "Process the operation against all matches simultaneously"
+    ],
+    "explanations": [
+      "Recency is a heuristic that silently misidentifies customers and can land refunds on the wrong account.",
+      "Alphabetical ordering is just another heuristic — it gives the wrong answer some percentage of the time.",
+      "The instructional rule is to ask for an additional identifier (order number, email, last four, ZIP) and let the customer disambiguate.",
+      "Acting on all matches is destructive, especially for financial-consequence operations like refunds."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "pre",
+    "qid": "2e3ad6a1-0378-43aa-af7d-872d14ba520e"
+  },
+  {
+    "question": "Which statement best characterises the relationship between customer sentiment and case complexity?",
+    "options": [
+      "Negative sentiment is a strong predictor of case complexity",
+      "Positive sentiment correlates with simple, in-policy requests",
+      "Sentiment and case complexity are largely uncorrelated; sentiment is an unreliable proxy",
+      "Sentiment is only useful as a tiebreaker when other escalation triggers are ambiguous"
+    ],
+    "explanations": [
+      "Customers can be furious about straightforward in-capability issues, breaking the predictor relationship.",
+      "Customers can be polite about requests that need policy exceptions, breaking the predictor relationship.",
+      "Sentiment doesn't correlate with case complexity; the official guidance treats sentiment as an unreliable proxy.",
+      "Using sentiment as a tiebreaker is just sentiment-routing in disguise; the deterministic triggers stand on their own."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "pre",
+    "qid": "9c4138e6-1418-41d7-bdef-e453935f8413"
+  },
+  {
+    "question": "A customer says 'I'm so frustrated — please just refund the duplicate charge.' The duplicate refund is in capability. What is the correct first reply?",
+    "options": [
+      "Process the refund silently without acknowledging the frustration",
+      "Auto-escalate to a human because the customer expressed frustration",
+      "Acknowledge the frustration AND offer the refund the policy permits",
+      "Ask the customer to rephrase their request more politely before proceeding"
+    ],
+    "explanations": [
+      "Skipping the acknowledgement reads as robotic and degrades CSAT, even when the resolution succeeds.",
+      "Frustration alone is not an escalation trigger; auto-escalating wastes the human queue on a closeable case.",
+      "Acknowledge plus offer is the canonical pattern: validate the customer's experience and resolve the in-capability issue.",
+      "Demanding politeness before resolving punishes a frustrated customer for a problem the agent can fix."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "pre",
+    "qid": "7b4d01b3-a77d-459e-a035-b8acd57f9703"
+  },
+  {
+    "question": "After running its tools, the agent has hit an authorisation error it cannot bypass and has no remaining options to advance the customer's request. Which deterministic escalation trigger applies?",
+    "options": [
+      "Inability to make forward progress",
+      "Customer explicitly asked for a human",
+      "Policy gap or ambiguity",
+      "Negative customer sentiment"
+    ],
+    "explanations": [
+      "Exhausting the available tools without forward progress is the third deterministic trigger and the right justification for escalation here.",
+      "The customer hasn't asked for a human in this scenario; the trigger that fired is no-progress, not the explicit-request trigger.",
+      "Policy isn't silent or ambiguous; the agent simply lacks the authorisation to act, which is a different trigger.",
+      "Sentiment is not a deterministic trigger and isn't mentioned in the scenario."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "c612bc99-3bea-4c79-acf2-73c878456fe2"
+  },
+  {
+    "question": "Which improvement to escalation calibration is most aligned with the official sample question's correct answer?",
+    "options": [
+      "A sentiment classifier that escalates on negative tone",
+      "Explicit escalation criteria with few-shot examples in the system prompt",
+      "A separate ML classifier trained on historical tickets",
+      "A self-reported confidence threshold below which the agent escalates"
+    ],
+    "explanations": [
+      "Sentiment classifiers solve the wrong problem; tone doesn't track complexity.",
+      "Explicit criteria plus few-shot examples directly target the unclear decision boundary; this is the proportionate, lowest-cost first move.",
+      "A separate classifier is over-engineered and assumes prompt-level fixes have been exhausted.",
+      "Self-confidence thresholds rely on a poorly calibrated signal — agents are often most confident on the worst cases."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "6576352d-b5cb-4494-b754-30cffb730f8e"
+  },
+  {
+    "question": "A customer types 'Either fix this or transfer me to someone who can.' The duplicate charge is straightforwardly refundable under policy. What should the agent do?",
+    "options": [
+      "Escalate immediately because the customer mentioned a transfer",
+      "Ignore the transfer phrasing entirely and just process the refund",
+      "Run a confidence check and decide based on the score",
+      "Acknowledge the frustration, offer the in-capability refund, and escalate only if the customer reiterates the human-transfer request"
+    ],
+    "explanations": [
+      "The phrasing is conditional ('either … or'), not an unambiguous demand for a human; the in-capability resolution is the right first move.",
+      "Ignoring the customer's stated alternative is dismissive and risks escalation later if they feel unheard.",
+      "Self-confidence scores are not a valid routing mechanism.",
+      "Acknowledge plus offer the resolution; honour the human request only if the customer reiterates after the offer."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "cbc4aa99-920d-4218-b779-1d01e78b0f02"
+  },
+  {
+    "question": "Why is it incorrect to run an additional tool call after an explicit human-agent request 'just to gather context for the human'?",
+    "options": [
+      "Tool calls cost too much in tokens",
+      "It delays honouring the explicit request, eroding trust; context can be attached to the escalation payload after the handoff",
+      "Tool calls always fail after escalation triggers",
+      "The escalation tool refuses to accept any context payload"
+    ],
+    "explanations": [
+      "Token cost isn't the core reason; the design rule is about honouring the trigger immediately.",
+      "Honouring the explicit request must happen on the next turn; context for the human can be attached via the handoff payload, not gated in front of it.",
+      "Tool calls don't categorically fail after triggers; the issue is the deliberate delay.",
+      "Escalation tools generally accept context payloads; this option is fabricated."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "688e5c70-a1da-4d58-8d52-ec8e00ba16df"
+  },
+  {
+    "question": "A team adds a rule: 'If the agent's self-reported confidence drops below 7, escalate.' What is the most likely production failure mode?",
+    "options": [
+      "Self-confidence is poorly calibrated; the agent will be confidently wrong on the hardest cases and won't escalate them, while escalating easy cases that read as 'uncertain'",
+      "The rule will only escalate complex cases and ignore simple ones",
+      "Confidence scores will perfectly invert, escalating only the easiest cases",
+      "Confidence rules are deterministic and will always escalate the same cases"
+    ],
+    "explanations": [
+      "LLM self-confidence is poorly calibrated; the cases that most need escalation often produce the highest scores, defeating the threshold.",
+      "The failure mode is the opposite — hardest cases often produce highest confidence and won't trigger.",
+      "Confidence doesn't perfectly invert; it's noisy and miscalibrated, not anti-correlated.",
+      "Confidence scores aren't deterministic; they're sampled and miscalibrated."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "95ab90ab-eee5-470d-805a-98222e7b70f7"
+  },
+  {
+    "question": "A reviewer suggests adding a sentiment-analysis layer to escalate any conversation where negative sentiment exceeds a threshold. Which critique is most correct?",
+    "options": [
+      "Sentiment analysis is fine but should only run after the agent has tried to solve the problem twice",
+      "Sentiment doesn't correlate with case complexity, so this routing escalates easy cases up and leaves hard ones with the agent",
+      "Sentiment-based routing is correct only if the customer's frustration is sustained across three turns",
+      "Sentiment-based routing is the cheapest improvement and should be the first change made"
+    ],
+    "explanations": [
+      "Sentiment isn't a valid trigger at any cadence; this option still treats it as a routing signal.",
+      "The official critique is exactly this: frustration doesn't predict complexity, so sentiment routing produces wrong dispositions in both directions.",
+      "Three-turn frustration is still tone, not a trigger; the rule is the deterministic three.",
+      "Per the sample question, the proportionate first improvement is explicit prompt criteria, not sentiment routing."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "fe14ebe3-22a5-4e88-ab1c-54205239476d"
+  },
+  {
+    "question": "An order lookup returns multiple matches across the customer's household. Which agent message follows the correct disambiguation pattern?",
+    "options": [
+      "'I'll go ahead with the most recent order — please confirm.'",
+      "'I'm seeing more than one order on your account — could you share the order number from your confirmation email so I can pull up the right one?'",
+      "'I'll process refunds on all matching orders to be safe.'",
+      "'Multiple matches are too complex for me to handle — transferring you to a human now.'"
+    ],
+    "explanations": [
+      "Picking-the-most-recent-and-confirming is a heuristic guess wearing a confirmation prompt; customers under time pressure often confirm without reading.",
+      "Asking for a disambiguating identifier is the correct pattern — the agent doesn't pick on the customer's behalf.",
+      "Acting on all matches is destructive for financial-consequence operations.",
+      "Multiple matches alone aren't a complexity-escalation trigger; the right move is to ask for an identifier."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "74774b1e-641f-411b-a309-79443421590a"
+  },
+  {
+    "question": "Which of these is a valid disambiguating identifier the agent could ask for when a lookup returns multiple matches?",
+    "options": [
+      "The customer's overall sentiment score",
+      "The customer's first name only",
+      "The order number from the customer's confirmation email",
+      "Whichever record was most recently updated by the system"
+    ],
+    "explanations": [
+      "Sentiment isn't an identifier and doesn't disambiguate records.",
+      "First name is exactly what produced the multi-match; asking for it again doesn't disambiguate.",
+      "An order number tied to the specific record is a canonical disambiguating identifier the customer can supply.",
+      "Most-recently-updated is an internal heuristic, not something the customer is asked to supply."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "3e846d4c-4b09-4bef-8f31-f57ca99248ee"
+  },
+  {
+    "question": "Customer: 'I'm furious — this is the third time I've had to call about this duplicate charge.' Policy clearly permits the refund. What's the correct first reply?",
+    "options": [
+      "Open with 'I understand you're frustrated, but per our policy I'll need you to confirm a few things first.'",
+      "'Transferring you to a human now since you've contacted us multiple times.'",
+      "'Could you describe what you mean by duplicate charge in more detail before I do anything?'",
+      "'I'm sorry this has been a hassle — I can refund the duplicate charge on order X right now.'"
+    ],
+    "explanations": [
+      "Leading with policy hurdles after acknowledging frustration is performative and frustrates further.",
+      "Repeat-contact frustration alone is not an escalation trigger; the resolution is in capability, so don't burn the human queue.",
+      "Asking for re-explanation when the agent already has enough context delays the resolution and reads as dismissive.",
+      "Acknowledge plus offer the in-capability resolution — the canonical pattern."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "6a26193b-3e72-4d5b-80e7-26494dce66e6"
+  },
+  {
+    "question": "Which of the following correctly describes the role of the system prompt for escalation decisions?",
+    "options": [
+      "It should explicitly enumerate the escalation criteria with few-shot examples covering in-scope and out-of-scope cases",
+      "It should ask the model to compute a confidence score and route on that score",
+      "It should instruct the model to escalate any conversation longer than 10 turns",
+      "It should instruct the model to escalate whenever it cannot find an exact tool match for the request"
+    ],
+    "explanations": [
+      "Explicit criteria plus few-shot examples is the proportionate, well-calibrated mechanism the official guidance recommends.",
+      "Self-reported confidence is poorly calibrated and not a valid routing mechanism.",
+      "Conversation length is unrelated to whether the deterministic triggers have fired.",
+      "Tool-match availability is not the trigger; policy gap or no-progress is."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "89f1d86a-0063-4fbd-b29b-c6af0ad24942"
+  },
+  {
+    "question": "A customer asks the agent to honour a coupon that expired one day ago. The refund policy is silent on expired coupons (it covers active coupons and price drops, but not exceptions to expiry). The customer is calm. What's the correct disposition?",
+    "options": [
+      "Approve the coupon as a goodwill gesture since the customer is calm",
+      "Deny the request silently because the policy doesn't explicitly allow it",
+      "Treat policy silence on expired-coupon exceptions as a policy gap and escalate",
+      "Auto-approve any expired coupon that's less than 24 hours old"
+    ],
+    "explanations": [
+      "Approving silently when policy is silent creates unauthorised concessions and contradictory precedents.",
+      "Silently denying is also a unilateral interpretation of silent policy; the agent shouldn't decide either way.",
+      "Policy silence on the exception is a policy gap; escalate so a human can decide and document the precedent.",
+      "A 24-hour grace rule isn't in the policy; inventing one is the same anti-pattern as approving as a goodwill gesture."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "73042f5f-d66a-4c09-8fe2-3da4db5e3ea9"
+  },
+  {
+    "question": "Why is 'the case feels complex' NOT a valid fourth escalation trigger?",
+    "options": [
+      "Because complexity has a precise definition the model can compute",
+      "Because complexity is a symptom; the agent should still name which deterministic trigger (asks / policy gap / no progress) applies",
+      "Because complex cases should always be solved autonomously",
+      "Because the model's complexity estimates are perfectly calibrated"
+    ],
+    "explanations": [
+      "Complexity does not have a precise computable definition the model can rely on for routing.",
+      "Complexity is a symptom that may correlate with the deterministic triggers — but the routing decision should be made on the deterministic trigger, not the symptom.",
+      "Complex cases often need escalation; the question is which deterministic trigger fires, not whether complexity itself routes.",
+      "Model complexity estimates aren't perfectly calibrated; this option contradicts the calibration concerns elsewhere in the topic."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "572c166e-7fe4-4347-9d65-c60214815f5d"
+  },
+  {
+    "question": "An agent's logs show it consistently escalates damage-replacement requests with photo evidence (clear in-policy cases) while fighting to autonomously approve large competitor price-match exceptions (clear policy gaps). What's the calibration symptom?",
+    "options": [
+      "The agent is correctly handling complexity",
+      "The agent is operating in a perfect first-contact-resolution regime",
+      "The agent has too few tools available",
+      "Escalation criteria are inverted — easy cases are escalated and hard cases are attempted"
+    ],
+    "explanations": [
+      "Escalating cleanly in-policy cases while attempting policy-gap cases autonomously is exactly the wrong direction.",
+      "The agent is below target FCR exactly because of inverted calibration.",
+      "Tool availability isn't the issue described — the boundary between resolve-vs-escalate is.",
+      "This is the canonical inverted-calibration pattern; the fix per the sample question is explicit escalation criteria with few-shot examples."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "8aea9370-7544-4b55-9776-374295e141ab"
+  },
+  {
+    "question": "A team's improvement plan lists four candidate first changes. Which is the proportionate first move per the official guidance for inverted escalation calibration?",
+    "options": [
+      "Train an offline classifier on labelled tickets to predict escalation",
+      "Add explicit escalation criteria with few-shot examples to the system prompt",
+      "Plug in a sentiment-analysis service as the new routing layer",
+      "Have the model output a confidence score and threshold-route on it"
+    ],
+    "explanations": [
+      "An offline classifier is over-engineered before prompt changes have been tried.",
+      "Explicit criteria plus few-shot examples directly addresses the unclear decision boundary and is the proportionate first move.",
+      "Sentiment routing solves the wrong problem.",
+      "Self-confidence threshold routing is the canonical anti-pattern called out in the sample question."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "4c6edc85-876d-4ee9-82c3-cb06d4608c6c"
+  },
+  {
+    "question": "A customer's message is ambiguous: 'Can someone help me with this?' (which could be the agent itself). What is the correct interpretation?",
+    "options": [
+      "Treat any mention of 'someone' as an explicit human request and escalate immediately",
+      "Ignore the ambiguity and continue tool calls",
+      "Run a sentiment check to decide",
+      "Briefly offer to help and ask the customer to confirm whether they want a human; only an unambiguous explicit request triggers immediate escalation"
+    ],
+    "explanations": [
+      "Ambiguous phrasing isn't an explicit trigger; treating it as one over-escalates.",
+      "Ignoring the ambiguous phrasing risks missing a real human request if the customer reiterates.",
+      "Sentiment is not the right tool here; the correct move is to clarify.",
+      "When phrasing is genuinely ambiguous, the agent may briefly offer to help and ask the customer to confirm; once the request becomes unambiguous, escalation is immediate."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "9f4c612d-e465-465d-9e22-a77e57f9a994"
+  },
+  {
+    "question": "Which is the strongest argument against having the agent 'default to the most recent record' on multiple-match lookups, even when paired with a confirmation prompt?",
+    "options": [
+      "Most-recent is usually right, so the rule is acceptable",
+      "Customers under time pressure often confirm prompts without reading, so the heuristic silently misidentifies a percentage of the time",
+      "Most-recent is too computationally expensive for the database to compute",
+      "Confirmation prompts can't be displayed in chat interfaces"
+    ],
+    "explanations": [
+      "Usually-right is wrong-sometimes; for financial-consequence operations, the heuristic's errors land on the wrong account.",
+      "The exact failure mode the topic flags: confirmation prompts paired with heuristic guesses produce silent misidentifications because customers click through.",
+      "Computational cost is not the issue; correctness is.",
+      "Confirmation prompts can be displayed in chat; the issue is whether they're a substitute for asking for an identifier."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "6e0dcd88-a88a-4997-a80e-511aa00b51cf"
+  },
+  {
+    "question": "An agent is told 'escalate if you don't know how to proceed.' Which of the deterministic triggers does that paraphrase most closely?",
+    "options": [
+      "Customer explicitly asks for a human",
+      "Sentiment-based escalation",
+      "Inability to make forward progress",
+      "Policy approval threshold"
+    ],
+    "explanations": [
+      "Not knowing how to proceed isn't a customer-asks signal.",
+      "Sentiment is not a deterministic trigger.",
+      "'Don't know how to proceed' is a paraphrase of the no-forward-progress trigger — the agent has exhausted its options.",
+      "There is no 'policy approval threshold' trigger in the deterministic three."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "229495ef-0edc-4c43-b2e7-23ab6b01fa84"
+  },
+  {
+    "question": "A frustrated customer says 'I've been on this for an hour. Either fix the duplicate charge or I'm going to my bank.' The refund is in capability. What's the correct response pattern?",
+    "options": [
+      "Threaten the customer back with policy language about chargebacks",
+      "Acknowledge the frustration and offer the in-capability refund; escalate only if the customer subsequently demands a human",
+      "Auto-escalate immediately because the customer mentioned their bank",
+      "Run a sentiment classifier and route based on threshold"
+    ],
+    "explanations": [
+      "Threatening responses degrade CSAT and increase chargeback risk.",
+      "Acknowledge plus offer is the canonical pattern; reserve escalation for an unambiguous human-agent demand.",
+      "Mentioning the bank isn't an explicit human-agent request; auto-escalating wastes the queue.",
+      "Sentiment-based routing is the canonical anti-pattern."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "b01313b2-e6e7-488b-8a62-8412549f7223"
+  },
+  {
+    "question": "Which combination of behaviours is correct when an agent receives a frustrated, in-capability request?",
+    "options": [
+      "Acknowledge frustration AND offer resolution; escalate only on explicit reiteration of human request",
+      "Skip acknowledgement to reduce token cost AND process the resolution",
+      "Escalate immediately AND attach a sentiment score to the handoff",
+      "Wait for the customer to calm down AND then offer the resolution"
+    ],
+    "explanations": [
+      "This is the canonical dual-action pattern from the topic: acknowledge plus offer; escalate only on reiterated explicit request.",
+      "Skipping acknowledgement is robotic and damages CSAT, regardless of token cost.",
+      "Escalating frustrated in-capability cases wastes the queue; sentiment is not a routing signal.",
+      "Waiting for emotional state changes isn't a defined behaviour and doesn't address the resolution path."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "a892add7-1196-4e22-bab3-b2bfc1d398f5"
+  },
+  {
+    "question": "A customer's first message is 'I want to talk to a human now.' The agent responds with 'I can help with most issues — what's going on?' How should this turn be evaluated?",
+    "options": [
+      "Correct, because gathering more context helps the eventual human",
+      "Correct, because the agent should always try once before escalating",
+      "Incorrect — explicit human requests must be honoured immediately on the next turn, not deflected",
+      "Correct, because the customer hasn't provided an order number yet"
+    ],
+    "explanations": [
+      "Context can be attached to the escalation payload; the explicit request must still be honoured immediately.",
+      "There is no 'try once first' rule; the explicit-request trigger is honour-immediately.",
+      "The explicit human-agent request is the first deterministic trigger; deflecting it is the canonical anti-pattern.",
+      "Identifier collection is not a precondition for honouring an explicit request."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "fa1604dc-2d9e-434a-8c5b-39ad24a041f0"
+  },
+  {
+    "question": "Two agents (A and B) handle the same multi-match scenario. A says 'I'll process the most-recent order — confirm?'. B says 'I see multiple matching orders; could you share the order number?'. Per the topic guidance, which agent is correct and why?",
+    "options": [
+      "A — confirmation prompts are equivalent to identifier requests",
+      "A — most-recent is the highest-probability correct guess",
+      "B — heuristic-pick-with-confirm silently misidentifies customers; explicit identifier requests do not",
+      "Both are equivalent in correctness"
+    ],
+    "explanations": [
+      "Confirmation prompts paired with heuristic guesses are not equivalent to asking for an identifier — customers under pressure often confirm without reading.",
+      "Highest-probability isn't acceptable for financial-consequence operations; the failure mode is silent misidentification.",
+      "B follows the rule: ask for a disambiguating identifier; don't pick on the customer's behalf.",
+      "They are not equivalent; A introduces a known silent-failure mode B does not."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "7d352ce2-c79d-48b0-b1b7-5723423715dd"
+  },
+  {
+    "question": "A team argues: 'If our agent says it's unsure or hedges in its draft response, we should escalate.' Why is this an anti-pattern?",
+    "options": [
+      "Hedging language is the same signal as the explicit-request trigger",
+      "Self-reported uncertainty / hedging is a poorly-calibrated proxy; the agent often hedges on easy cases and sounds confident on the hardest ones — not a deterministic trigger",
+      "Hedging language is forbidden in customer-facing replies",
+      "The agent is technically incapable of producing hedging language"
+    ],
+    "explanations": [
+      "Hedging is not the same as the customer asking for a human; it's an internal-state signal of the agent.",
+      "Self-reported uncertainty is the same calibration problem as numeric confidence scores — agents are confidently wrong on hard cases. The deterministic triggers are policy gap and no-progress; hedging language is not on the list.",
+      "Hedging isn't categorically forbidden; the issue is using it as a routing signal.",
+      "Agents can produce hedging language; this option is factually wrong."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "f861d74a-1d53-4a2b-a219-1ae73a26d51a"
+  },
+  {
+    "question": "Which scenario most justifies escalation under the policy-gap trigger (rather than the explicit-request or no-progress triggers)?",
+    "options": [
+      "The customer typed 'transfer me to a human, please.'",
+      "The agent has tried both `process_refund` and `apply_credit` and both returned authorisation errors",
+      "The customer's request (competitor price-match) is one the policy doesn't explicitly cover, even though the agent could fabricate a defensible answer",
+      "The customer's tone became frustrated after three turns"
+    ],
+    "explanations": [
+      "That's the explicit-request trigger, not the policy-gap trigger.",
+      "Authorisation failures across all available tools is the no-progress trigger.",
+      "Policy silence on competitor pricing is the canonical policy-gap example: the right move is escalation, not a fabricated defensible answer.",
+      "Sentiment is not a deterministic trigger at all."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "eb673830-13a0-44c7-a1c5-76df68ffce7d"
+  },
+  {
+    "question": "An engineer proposes: 'Whenever the model's softmax confidence on its drafted reply is below 0.6, escalate.' Why does this fail in production?",
+    "options": [
+      "Softmax confidence is precisely the well-calibrated signal escalation needs",
+      "Softmax over the drafted reply is not a measure of case-resolution correctness; the agent can be highly fluent (high softmax) while being completely wrong on hard cases — and unsure-sounding on cases it could resolve fine",
+      "Softmax is unavailable on streaming responses",
+      "Softmax requires fine-tuning and is therefore out of scope"
+    ],
+    "explanations": [
+      "Softmax over the next token is unrelated to whether the case-resolution decision is correct; it's not the calibration the routing needs.",
+      "This is the canonical objection: token-level fluency doesn't track case complexity or correctness; the agent is often highly confident on hard cases and unsure on easy ones. Same failure family as self-reported confidence.",
+      "Streaming availability is irrelevant to whether the signal is meaningful for routing.",
+      "Fine-tuning is unrelated; the issue is the signal's meaning, not how it's produced."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "824c0ef5-36d0-4387-b5fb-9014f70fb85e"
+  },
+  {
+    "question": "A team adds a rule: 'If lookup_order returns multiple matches and one of them was created in the last 24 hours, auto-select that one and proceed.' Which critique most directly applies?",
+    "options": [
+      "The rule is fine; recency within 24 hours is a reasonable heuristic",
+      "The rule is heuristic record-selection by another name; for financial-consequence operations the agent should ask the customer for a disambiguating identifier instead of picking",
+      "The rule is fine if combined with a confirmation prompt to the customer",
+      "The rule is fine only when the matches are within the same household"
+    ],
+    "explanations": [
+      "It is exactly the heuristic the topic warns against; 'reasonable' heuristics still produce silent misidentifications.",
+      "The instructional rule is to ask for a disambiguating identifier — not to pick under any heuristic. Recency within 24 hours is just another heuristic that lands refunds on the wrong account some percentage of the time.",
+      "Confirmation prompts paired with heuristic picks are the exact silent-failure mode flagged in the topic.",
+      "Same-household matching is the most likely scenario where misidentification happens; it doesn't make the heuristic safer."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "0a16fb04-e32c-4f9e-a107-21fc6ba83c2b"
+  },
+  {
+    "question": "A junior engineer says: 'A customer who's calm and polite probably has a simple case, so we can lower the escalation threshold for them.' What's wrong with this reasoning?",
+    "options": [
+      "Nothing — politeness reliably tracks case simplicity",
+      "Sentiment (including polite/calm tone) doesn't correlate with case complexity; calm customers can have policy-gap cases that need escalation, and frustrated customers can have trivially-resolvable in-capability ones",
+      "It's wrong only if the customer is also a repeat caller",
+      "The reasoning is sound but only for B2B customers"
+    ],
+    "explanations": [
+      "Politeness does not track simplicity; the topic explicitly calls out this miscalibration.",
+      "Sentiment in either direction is uncorrelated with complexity. A calm customer asking for a competitor price match is a policy gap regardless of tone.",
+      "Repeat-caller status is unrelated to whether tone tracks complexity.",
+      "There is no documented difference for B2B; the rule is universal."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "56b17fef-3c78-43aa-9b01-2529d486f7e7"
+  },
+  {
+    "question": "Customer message: 'I want to talk to a human, but first can you tell me my last order's tracking number?' What is the correct sequencing?",
+    "options": [
+      "Honour the explicit human request immediately; the tracking lookup is a separate request the human can handle",
+      "Run the tracking lookup first and then escalate, because the customer asked for it before the human",
+      "Refuse the tracking lookup and escalate without acknowledgement",
+      "Pick whichever sub-request has higher self-confidence"
+    ],
+    "explanations": [
+      "The explicit human request must be honoured on the next turn. The tracking sub-request can be attached to the handoff payload (the human can run it) — the agent should not gate the handoff on doing it itself.",
+      "Doing the lookup first delays the explicit-request honour; that's the canonical anti-pattern.",
+      "Refusing without acknowledgement is needlessly hostile; the right move is to acknowledge and escalate, attaching the tracking question.",
+      "Self-confidence is not a valid routing signal."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "3fe1b3fe-2433-4163-94b1-a3fb06658168"
+  },
+  {
+    "question": "A customer complains. The agent thinks: 'This case feels really complex — I should escalate.' Per the topic, what is the correct internal step before pressing escalate?",
+    "options": [
+      "Press escalate — feeling-of-complexity is the strongest signal available",
+      "Name which of the three deterministic triggers (asks / policy gap / no progress) actually fired; if none, keep working",
+      "Run a self-confidence check and route on the score",
+      "Ask the customer how complex they think their case is"
+    ],
+    "explanations": [
+      "Feeling-of-complexity is a symptom, not a trigger; it cannot stand alone as a routing signal.",
+      "The discipline is to name the deterministic trigger before escalating. If none of the three fired, the agent should keep working; complexity alone is not a fourth trigger.",
+      "Self-confidence is the canonical anti-pattern.",
+      "Asking the customer to rate complexity isn't a defined pattern and doesn't help the agent route."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "ef143c18-e3be-4d56-96ed-318cf3e91256"
+  },
+  {
+    "question": "Two designs are compared. Design A: 'Agent escalates whenever its self-reported confidence < 6 OR the customer's sentiment is negative.' Design B: 'Agent escalates only when the customer explicitly asks, the policy doesn't cover the case, or the agent has run out of forward progress; frustration is acknowledged in-channel.' Which design matches the topic's deterministic-triggers model and why?",
+    "options": [
+      "Design A — combining two signals improves coverage",
+      "Both designs are equivalent in production behaviour",
+      "Design B — it uses only the three deterministic triggers and rejects sentiment and self-confidence as routing signals, which the topic specifies as the correct model",
+      "Design A — its OR condition catches more cases"
+    ],
+    "explanations": [
+      "Combining two miscalibrated signals doesn't improve coverage; it amplifies the wrong-direction routing both produce.",
+      "They are very different: A routes on tone and self-confidence (both anti-patterns); B routes on the deterministic triggers.",
+      "Design B is precisely the topic's prescribed model: three deterministic triggers, no sentiment or self-confidence routing, frustration handled in-channel via acknowledge-plus-offer.",
+      "Catching more cases by routing on bad signals just escalates the wrong cases; coverage is not the right metric."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "578dd42e-6cef-4bb8-bd04-79aadc108123"
+  },
+  {
+    "question": "An agent's prompt currently says: 'Escalate when you are unsure or when the customer seems frustrated.' A reviewer rewrites it as: 'Escalate when (a) the customer explicitly asks for a human, (b) policy is silent or ambiguous on the customer's specific request, or (c) you have tried the available tools and cannot make further forward progress; otherwise acknowledge the customer's emotional state in-channel and offer the resolution if it is in capability.' Why is the rewrite the correct version per the topic?",
+    "options": [
+      "Because the rewrite is shorter and easier for the model to attend to",
+      "Because the rewrite removes mention of frustration entirely, which is the goal",
+      "Because the original was correct and the rewrite is unnecessary",
+      "Because the original conflates miscalibrated proxies (unsure / sentiment) with deterministic triggers, while the rewrite uses only the three deterministic triggers and routes frustration to in-channel acknowledge-plus-offer rather than to escalation"
+    ],
+    "explanations": [
+      "Length isn't the criterion; the rewrite is actually longer, and brevity alone wouldn't justify the change.",
+      "The rewrite doesn't remove frustration — it routes it to in-channel acknowledgement, which is the correct treatment.",
+      "The original is the canonical anti-pattern (sentiment + self-confidence routing), so it isn't correct.",
+      "The rewrite replaces miscalibrated proxies with the three deterministic triggers and handles frustration via acknowledge-plus-offer in-channel — exactly the topic's prescribed model."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 5",
+      "5.2"
+    ],
+    "phase": "post",
+    "qid": "861c1976-7e1c-4f54-9289-c0e7d1ceb136"
+  }
+]

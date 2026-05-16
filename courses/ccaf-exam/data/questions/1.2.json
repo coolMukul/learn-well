@@ -1,0 +1,882 @@
+[
+  {
+    "question": "A team is designing a multi-agent research system. Which best describes the 'hub-and-spoke' architecture used in coordinator-subagent orchestration?",
+    "options": [
+      "All subagents communicate freely with each other and only the final result returns to the coordinator.",
+      "The coordinator is the central hub through which all inter-subagent communication flows; subagents do not talk directly to each other.",
+      "The coordinator runs first; once it finishes, subagents are released to operate independently.",
+      "Each subagent has its own coordinator, forming a tree of nested hubs."
+    ],
+    "explanations": [
+      "Wrong — peer-to-peer subagent communication breaks observability and consistent error handling. The coordinator must remain the single point of routing.",
+      "Correct — hub-and-spoke means every message flows through the coordinator (the hub). This is what enables centralized observability, error handling, and information control.",
+      "Wrong — subagents are not 'released' to run autonomously after the coordinator finishes. Each invocation is a discrete request-response routed through the coordinator while it is still running.",
+      "Wrong — that describes nested coordinators, not hub-and-spoke. In hub-and-spoke there is one coordinator and a flat ring of specialised subagents."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "pre",
+    "qid": "5e74d4fe-df63-4a27-ad68-0f0b791fc04c"
+  },
+  {
+    "question": "When a coordinator spawns a subagent in a hub-and-spoke system, what does the subagent automatically receive about the current task?",
+    "options": [
+      "The full coordinator conversation history, including prior user turns and reasoning.",
+      "All prior subagent results from this session, deduplicated.",
+      "Only the context the coordinator passes explicitly in the subagent's invocation; subagent context is isolated.",
+      "A read-only handle to the coordinator's memory that it can query as needed."
+    ],
+    "explanations": [
+      "Wrong — this is the most common misconception. Subagents do not inherit the coordinator's history; treating them as if they do is why so many subagent briefs end up underspecified.",
+      "Wrong — there is no automatic cross-subagent state sharing. If results from a prior subagent are needed, the coordinator must pass them in explicitly.",
+      "Correct — subagent context is isolated. The coordinator must brief each subagent with whatever scope, constraints, and prior context that subagent needs.",
+      "Wrong — there is no shared memory handle. The coordinator passes context by value in the invocation; the subagent has no way to call back into the coordinator's state."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "pre",
+    "qid": "fba2bf10-9ddf-4d99-af1d-800560b85977"
+  },
+  {
+    "question": "Which of the following is NOT one of the four primary responsibilities of a coordinator agent in a hub-and-spoke system?",
+    "options": [
+      "Decomposing the user request into subtasks aligned with available subagents.",
+      "Delegating each subtask to a specific subagent with an explicit brief.",
+      "Aggregating subagent results into a coherent input for downstream steps.",
+      "Maintaining persistent long-term memory of all prior user sessions for cross-session learning."
+    ],
+    "explanations": [
+      "This is a coordinator role — decomposition is the first step in turning a user request into something subagents can act on.",
+      "This is a coordinator role — delegation requires an explicit brief because subagent context is isolated.",
+      "This is a coordinator role — aggregation is what turns parallel subagent outputs into the next step's input.",
+      "Correct — long-term cross-session memory is not part of the four coordinator responsibilities (decomposition, delegation, aggregation, dynamic subagent selection). Cross-session persistence is an out-of-band concern."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "pre",
+    "qid": "295cce61-11e1-4002-9c7c-3247104ec066"
+  },
+  {
+    "question": "A coordinator handles two requests in the same session: (1) 'what is TSLA's current price?' and (2) 'compare TSLA and F's 5-year fundamentals and write a one-pager.' How should its behaviour differ?",
+    "options": [
+      "Dynamically select the subagent set per query — invoke only a finance lookup for (1), and the full search/docs/synthesis/report pipeline for (2).",
+      "Always run the full pipeline so output formatting is consistent across requests.",
+      "Run the same pipeline but summarise more aggressively for (1) to keep latency low.",
+      "Reject (1) — the multi-agent system is over-engineered for a single-step factual lookup."
+    ],
+    "explanations": [
+      "Correct — dynamic subagent selection is exactly this: the coordinator analyses query requirements and invokes only the subagents it actually needs. (1) is a lookup; (2) is a comparative synthesis.",
+      "Wrong — running every subagent regardless of query is a fixed pipeline disguised as orchestration. It wastes tokens and dilutes synthesis when most subagents had nothing useful to add.",
+      "Wrong — 'summarise more aggressively' is a downstream bandage; the upstream issue is that the coordinator picked the wrong subagent set in the first place.",
+      "Wrong — rejecting trivial queries punishes users for asking simple questions. The right behaviour is to invoke a smaller subagent set, not to refuse."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "pre",
+    "qid": "c191c660-2203-489b-a4b8-4561c3849452"
+  },
+  {
+    "question": "A multi-agent research system was asked for a report on creative industries' adoption of generative AI. The synthesis covers visual arts thoroughly but never mentions music or film. Where is the root cause most likely to be?",
+    "options": [
+      "The web search subagent's queries returned poor results for music and film.",
+      "The synthesis subagent ignored part of its input.",
+      "The coordinator's task decomposition was too narrow and never assigned music or film as subtasks.",
+      "The user's prompt was too vague to act on without clarification."
+    ],
+    "explanations": [
+      "Wrong — the search subagent can only search what it's asked to search. If the coordinator never delegated a 'music' or 'film' query, the search subagent had nothing to fail on.",
+      "Wrong — the synthesis subagent only synthesises what it received. Missing sub-domains in the output usually mean missing sub-domains in the input, which traces back to decomposition.",
+      "Correct — overly narrow decomposition is the canonical root cause for missing sub-domains. The fix is at the coordinator: broader decomposition plus an iterative refinement loop to detect gaps.",
+      "Wrong — 'creative industries' implies music, film, and visual arts to most readers. The coordinator should decompose accordingly rather than punt to the user."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "pre",
+    "qid": "937e73af-7817-4181-be73-3542d98c0e87"
+  },
+  {
+    "question": "A coordinator fans out three search subagents in parallel, each given the prompt 'research generative AI in creative industries.' The synthesis stage receives heavily overlapping evidence. What is the most likely cause?",
+    "options": [
+      "Three is the wrong number of parallel subagents; two would have produced complementary results.",
+      "The coordinator failed to partition the research scope, so all three subagents covered the same ground.",
+      "The synthesis subagent is over-eager about deduplication and is collapsing distinct findings.",
+      "The search subagents need better tool descriptions to differentiate themselves."
+    ],
+    "explanations": [
+      "Wrong — count isn't the issue. Two subagents on the same broad query would have duplicated just as much. Distinct slices, not specific counts, are what create coverage.",
+      "Correct — without scope partitioning (by subtopic or by source type), parallel subagents converge on the same evidence. The coordinator must hand each subagent a distinct slice.",
+      "Wrong — the duplicates are real, not over-deduplication artifacts. The synthesis subagent is correctly noticing the inputs overlap.",
+      "Wrong — tool descriptions affect tool selection, not how a subagent partitions its query. Differentiation must come from the coordinator's brief."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "pre",
+    "qid": "c9de50f3-7ff6-4571-9787-81e555f9ab57"
+  },
+  {
+    "question": "A coordinator invokes a doc-analysis subagent with the prompt 'extract key findings from these documents.' The user's actual question — 'which OEMs adopted gen-AI in 2025?' — is in the coordinator's history but never repeated in the subagent's brief. The subagent returns a generic summary. What's the architectural mistake?",
+    "options": [
+      "The coordinator assumed the subagent would inherit the user's question from history, but subagent context is isolated — the question must be passed explicitly.",
+      "The subagent should have asked a clarifying question before responding.",
+      "The subagent prompt is missing chain-of-thought reasoning instructions.",
+      "Doc-analysis subagents should not be used for question-driven extraction; a separate extraction subagent should be invoked."
+    ],
+    "explanations": [
+      "Correct — the subagent's context is isolated. The coordinator's history is invisible to it, so 'extract key findings' is all it sees, and a generic summary is the rational response. Pass the user's question explicitly.",
+      "Wrong — relying on subagents to ask clarifying questions is unreliable and wastes a round trip. The coordinator is responsible for briefing the subagent fully up front.",
+      "Wrong — chain-of-thought won't help when the subagent doesn't know what question it's answering. The missing input is the user's question, not the reasoning style.",
+      "Wrong — doc-analysis is fine for question-driven extraction. The bug is that the subagent doesn't know the question, not that it's the wrong subagent."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "pre",
+    "qid": "4feb6fa5-f2ac-446e-a66c-007d80eb221c"
+  },
+  {
+    "question": "A coordinator is built to invoke every subagent (search, docs, synthesis, report) in fixed sequence on every user query, regardless of what was asked. Which best describes this design?",
+    "options": [
+      "A robust orchestration baseline that maximises coverage on every query.",
+      "An efficient default — downstream subagents simply no-op when their input is empty.",
+      "The recommended pattern when subagent latency is unpredictable, since it amortises overhead.",
+      "A scripted/fixed pipeline disguised as orchestration; the coordinator isn't doing dynamic subagent selection."
+    ],
+    "explanations": [
+      "Wrong — running every subagent regardless of query inflates token cost and dilutes synthesis with irrelevant inputs. 'Robust' here is a euphemism for 'rigid.'",
+      "Wrong — subagents don't free no-op; each invocation costs tokens and can introduce errors. The right move is to skip them, not to invoke and rely on no-op.",
+      "Wrong — latency unpredictability is a separate concern. Always invoking every subagent doesn't help with latency; it makes the worst-case latency the only case.",
+      "Correct — by definition this is a fixed pipeline. The coordinator's value comes from dynamically selecting the subagent subset that fits the query; without that selection, you have prompt chaining with extra steps."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "pre",
+    "qid": "19784be0-9ba3-49fb-8d5e-a0479496b461"
+  },
+  {
+    "question": "To 'improve latency,' an engineer modifies the system so the search subagent passes its results directly to the synthesis subagent, bypassing the coordinator. Which best describes the consequence?",
+    "options": [
+      "Latency improves and there is no architectural downside, since the coordinator was just relaying messages.",
+      "Throughput improves, but synthesis quality drops due to attention dilution from extra messages.",
+      "The coordinator loses visibility into intermediate state — observability, consistent error handling, and gap detection are all degraded.",
+      "It violates the Anthropic API spec and the request will fail at runtime."
+    ],
+    "explanations": [
+      "Wrong — the coordinator is not 'just relaying.' It enforces partitioning, observes intermediate state, and decides whether refinement is needed. Bypassing it removes those.",
+      "Wrong — attention dilution is a different concept (about prompt-internal token allocation). Bypassing the coordinator is an architectural break, not an attention issue.",
+      "Correct — hub-and-spoke exists precisely so the coordinator can observe inter-subagent traffic and intervene. Peer-to-peer routing kills observability, fragments error handling, and prevents coverage-gap detection.",
+      "Wrong — there is no API-level prohibition; the system runs. The break is architectural, not protocol-level, which is exactly what makes it dangerous: it works, just badly."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "pre",
+    "qid": "a04fa429-957e-4a69-8bd1-d69cc6d26d34"
+  },
+  {
+    "question": "A coordinator delegates a multi-source synthesis task and returns the first draft directly to the user. Reports occasionally have entire sub-domains missing. What pattern is the coordinator missing?",
+    "options": [
+      "An iterative refinement loop where the coordinator evaluates the synthesis output for gaps and re-delegates targeted queries to search/analysis subagents until coverage is sufficient.",
+      "A second synthesis subagent that runs in parallel and votes on the final output.",
+      "Few-shot examples in the synthesis subagent's prompt.",
+      "A more capable model for the synthesis step."
+    ],
+    "explanations": [
+      "Correct — iterative refinement is exactly the missing pattern. The coordinator must compare the draft against the original query, identify gaps, re-delegate targeted searches, and re-invoke synthesis until coverage holds.",
+      "Wrong — a second synthesis subagent doesn't fix decomposition gaps. If neither synthesis ever sees evidence on the missing sub-domain, both will omit it.",
+      "Wrong — few-shot examples shape format and style, not coverage. The missing sub-domain isn't a style issue; the synthesis subagent never received evidence on it.",
+      "Wrong — a stronger model can't synthesise evidence it doesn't have. The fix is upstream of synthesis, in the coordinator's gap detection and refinement step."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "pre",
+    "qid": "4c3635ac-150e-46d1-857d-209e9a65bf04"
+  },
+  {
+    "question": "A coordinator in a multi-agent research system needs to invoke a web search subagent on a sub-task derived from 'report on EV adoption in Norway in 2025.' Which invocation brief best aligns with hub-and-spoke principles?",
+    "options": [
+      "'Search the web' — keep the brief minimal so the subagent isn't biased.",
+      "A structured brief with the subdomain (EV adoption), country (Norway), year scope (2025), preferred source types, and expected output shape.",
+      "'You are an expert. Use your judgement to research EV adoption thoroughly.'",
+      "Pass the entire prior conversation history (user turn + coordinator's reasoning) and let the subagent extract what it needs."
+    ],
+    "explanations": [
+      "Wrong — minimal briefs strand the subagent. Subagent context is isolated, so without explicit scope and constraints, it will return generic search results.",
+      "Correct — explicit scope, constraints, and output shape are exactly what the coordinator must pass because subagent context is isolated. This brief is focused and actionable.",
+      "Wrong — flattery and 'use your judgement' don't substitute for structured context. The subagent will still lack scope, country, year, and output shape.",
+      "Wrong — dumping the full coordinator history bloats the subagent's context and forces it to do the coordinator's job (extraction). Pass only what the subagent needs, in a focused form."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "548cfa04-db86-4281-9c95-835d8fd5f867"
+  },
+  {
+    "question": "Your synthesis subagent returns a draft missing the music sub-domain in a 'creative industries adoption of gen-AI' report. The coordinator's options are below. Which is the correct refinement step?",
+    "options": [
+      "Re-run the entire pipeline from scratch with a stronger system prompt.",
+      "Ask the user to clarify whether music is in scope for their definition of 'creative industries.'",
+      "Re-delegate a targeted search query for music, then re-invoke synthesis with the augmented evidence appended.",
+      "Edit the draft directly to add a placeholder music section, marked TODO for the user to fill in."
+    ],
+    "explanations": [
+      "Wrong — re-running from scratch discards the work already done on visual arts and film. Targeted refinement preserves valid output and only fills the gap.",
+      "Wrong — punting to the user for a definition that's already reasonable hides the architectural fix. Iterative refinement is meant to detect and close gaps without user intervention.",
+      "Correct — this is the textbook iterative refinement loop. Detect gap → targeted re-delegation to the appropriate subagent → re-invoke synthesis with the new evidence merged in.",
+      "Wrong — placeholder TODOs are an admission of failure that ships unfinished work. Refinement must close the gap, not paper over it."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "f31c027d-e438-457c-89df-a7523235339e"
+  },
+  {
+    "question": "You are researching 'the global semiconductor supply chain in 2025' with three search subagents in parallel. The user cares about both regional differences AND source-type diversity. Which partitioning is most defensible?",
+    "options": [
+      "All three subagents run the same broad query; rely on synthesis to dedup overlapping results.",
+      "Partition by region only — North America, EU, Asia — accepting that source-type diversity will not be ensured.",
+      "Partition by source type only — news, industry reports, academic — accepting that regional differences may be uneven.",
+      "Combine: partition by region across the three subagents, and within each subagent's brief require diverse source types so each region's evidence is balanced across news/reports/academic."
+    ],
+    "explanations": [
+      "Wrong — same broad query produces overlap; synthesis dedup is a fallback, not a substitute for partitioning. Both axes the user cares about are still under-covered.",
+      "Wrong — a region-only partition ignores half of what the user asked for (source diversity). The output will have regional breadth but uneven evidence quality.",
+      "Wrong — a source-type-only partition ignores the user's stated regional interest. Evidence will be diverse in source but uneven in regional coverage.",
+      "Correct — when the user cares about two orthogonal axes, the coordinator can partition on the primary axis (region) and require diversity on the secondary axis inside each subagent's brief. Both axes are covered without duplication."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "78882cb4-e88f-4e04-b286-e91b52289beb"
+  },
+  {
+    "question": "A coordinator wants to detect coverage gaps in synthesis output before returning the report to the user. Which signal is the most architecturally sound for this gap-detection step?",
+    "options": [
+      "Compare the synthesis draft's section headings against the subtopic set the coordinator derived from the original user request, and flag any subtopic without a corresponding section.",
+      "Check that the draft's word count exceeds a threshold proportional to the user's expected report length.",
+      "Verify the synthesis subagent's response had stop_reason of end_turn rather than tool_use.",
+      "Run the synthesis subagent a second time and only return the report if both drafts are textually identical."
+    ],
+    "explanations": [
+      "Correct — comparing the realised sections against the planned subtopic set is exactly what gap detection looks like. It catches sub-domains the coordinator decomposed for but the synthesis dropped.",
+      "Wrong — word count is a weak proxy. A draft can hit the word target while completely omitting a sub-domain (it just goes deeper on the others).",
+      "Wrong — stop_reason indicates the subagent finished its turn cleanly. It says nothing about whether the content covers all planned sub-domains.",
+      "Wrong — re-running for textual identity is fragile (LLMs vary) and doesn't actually check coverage. Two drafts can match each other while both miss the same sub-domain."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "5725c792-e2f6-4c2a-8d03-32819e0ebcd8"
+  },
+  {
+    "question": "A coordinator handles two queries in one session: (a) 'what's the current S&P 500?' and (b) 'summarise the past five quarterly earnings reports for AAPL and synthesise the trend.' How should dynamic subagent selection differ between them?",
+    "options": [
+      "For (a), invoke only a finance/lookup subagent; for (b), invoke search + docs + synthesis + report subagents.",
+      "Always invoke the full pipeline; (a) just produces a shorter report than (b).",
+      "Reject (a) entirely — the multi-agent system is over-engineered for a single-step factual lookup.",
+      "Run both queries through the same fixed pipeline but cache (a)'s answer for future requests."
+    ],
+    "explanations": [
+      "Correct — dynamic subagent selection picks the smallest subset that satisfies the query. (a) is a single-step lookup; (b) genuinely needs decomposition, evidence, and synthesis.",
+      "Wrong — invoking the full pipeline on (a) wastes tokens, introduces irrelevant noise, and produces a worse answer than a direct lookup.",
+      "Wrong — refusing trivial queries punishes users for asking simple questions. The right move is to invoke a smaller subagent set, not to reject.",
+      "Wrong — caching is orthogonal. The architectural failure is using a fixed pipeline; caching just hides the cost of doing the wrong thing twice."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "323d80b9-a44f-4b8b-928f-63541015bfcd"
+  },
+  {
+    "question": "An engineer reports the multi-agent research system's outputs are 'directionally right but always miss something important.' Logs show the coordinator delegates to search, docs, and synthesis once, then returns the first synthesis draft. What's the most likely fix?",
+    "options": [
+      "Switch to a more capable model for the synthesis subagent.",
+      "Add an iterative refinement loop where the coordinator evaluates each draft for gaps and re-delegates targeted queries to search/analysis subagents until coverage is sufficient.",
+      "Increase the number of parallel search subagents from one to three with the same broad query.",
+      "Move synthesis behind a separate coordinator so its context is more isolated."
+    ],
+    "explanations": [
+      "Wrong — a stronger model cannot synthesise evidence the search step never gathered. The bug is upstream, in the lack of gap detection and refinement.",
+      "Correct — 'always miss something important' is the textbook symptom of no refinement loop. Adding gap detection plus targeted re-delegation closes the gap class without changing the model.",
+      "Wrong — more parallel subagents on the same broad query duplicate evidence without expanding coverage. Without partitioning, this is wasted spend.",
+      "Wrong — adding another coordinator layer doesn't add gap detection; it adds latency and complexity. The missing pattern is the refinement loop on the existing coordinator."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "4cf8e661-fbe8-4219-9e5f-38e478cab2a5"
+  },
+  {
+    "question": "A team optimised their research system so the search subagent posts results directly to a shared queue that synthesis reads from, bypassing the coordinator. After deployment, intermittent search-subagent errors (rate limits, partial results) cause silent quality drops in the report. What's the architectural diagnosis?",
+    "options": [
+      "The search subagent needs better retry logic and exponential backoff.",
+      "The synthesis subagent should validate evidence quality before incorporating it.",
+      "Bypassing the coordinator broke hub-and-spoke; the coordinator can no longer enforce consistent error handling, propagate failures, or detect coverage gaps caused by partial search results.",
+      "The shared queue should add a signature field so synthesis can verify source authenticity."
+    ],
+    "explanations": [
+      "Wrong — retry logic on the search subagent treats one symptom but doesn't fix the missing cross-subagent error path. The coordinator should be deciding whether to escalate, retry, or accept partial results.",
+      "Wrong — pushing validation down to synthesis ad-hocs the policy. With hub-and-spoke restored, error handling is centralised and consistent across subagents.",
+      "Correct — the issue is exactly that the coordinator is no longer in the loop. Hub-and-spoke routes all traffic through the coordinator so it can see partial results, enforce policy, and decide on refinement. Bypass = silent failures.",
+      "Wrong — authenticity is unrelated; the bug is in error visibility and propagation, not source verification."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "f4973228-ae1f-4a1f-88d9-8fc38b1ec197"
+  },
+  {
+    "question": "A coordinator invokes a doc-analysis subagent with 'extract key findings from these documents.' The user's actual question — 'what licensing changes did OEMs announce in Q3 2025?' — is in the coordinator's history but never repeated in the subagent's brief. The subagent returns a generic summary. What broke?",
+    "options": [
+      "The doc-analysis subagent needed a longer context window for the documents provided.",
+      "The coordinator assumed the subagent would inherit context implicitly, but subagent context is isolated — the user's question must be passed explicitly in the brief.",
+      "'Extract key findings' is the wrong verb; the prompt should have said 'summarise.'",
+      "The system prompt is missing few-shot examples of correct extraction format."
+    ],
+    "explanations": [
+      "Wrong — context window size is irrelevant when the subagent doesn't know what to look for. A larger window would still produce a generic summary.",
+      "Correct — implicit context inheritance is the canonical anti-pattern. The subagent runs in an isolated context; the user's question is invisible unless the coordinator includes it in the invocation.",
+      "Wrong — the verb choice doesn't matter when the subagent has no question to answer. 'Summarise' would produce the same generic output.",
+      "Wrong — few-shot examples shape format, not focus. Without the user's question, the subagent will format a generic summary correctly."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "e4a6b118-84bb-4ec4-bc90-b78e95fb9bf8"
+  },
+  {
+    "question": "Which scenario is the strongest candidate for a coordinator-subagent system rather than a single-agent loop?",
+    "options": [
+      "A single-step factual lookup such as 'what's TSLA's current price?'",
+      "A linear text transformation such as translating one paragraph from English to French.",
+      "An open-ended research task spanning multiple source types and sub-domains, where the coordinator must dynamically dispatch subagents and synthesise their findings.",
+      "A latency-critical chat exchange where every interaction must respond in under 100 ms."
+    ],
+    "explanations": [
+      "Wrong — a one-shot factual lookup needs neither decomposition nor multi-source synthesis. A single agent (or a single tool call) is right-sized.",
+      "Wrong — linear text transformations have no decomposition surface; multi-agent overhead adds latency without improving quality.",
+      "Correct — multi-source, multi-sub-domain research is exactly what the coordinator-subagent pattern was designed for: decomposition, scoped delegation, aggregation, and refinement.",
+      "Wrong — multi-agent systems add round-trips that fight a 100 ms latency budget. Latency-critical chat is the wrong fit; a single agent with focused tools is more appropriate."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "16a715ce-6b90-43c7-8cfc-4001bfc435c5"
+  },
+  {
+    "question": "A coordinator has three parallel search subagents available. The user asks for 'a one-pager on solid-state battery adoption in 2025' and emphasises that they want diverse, high-quality evidence (industry, news, academic). Which partitioning best matches that goal?",
+    "options": [
+      "Partition by subtopic — one subagent per battery chemistry. Source diversity is treated as a secondary concern that synthesis can sort out.",
+      "Partition by source type — one subagent on industry reports, one on news, one on academic papers. Each covers the full subject space within its source pool.",
+      "Run the same broad query across all three subagents and rely on synthesis to dedup and label sources.",
+      "Use only one subagent — partitioning across three over-engineers a one-pager and risks under-using the available budget."
+    ],
+    "explanations": [
+      "Wrong — partitioning by subtopic optimises for sub-domain coverage. The user explicitly cares about source diversity, so source-type partitioning matches their priority better.",
+      "Correct — when the user's priority is source diversity, partitioning by source type ensures industry/news/academic each get focused coverage and the synthesis stage receives a balanced evidence pool.",
+      "Wrong — same query across all subagents produces duplicates regardless of source pool. The partition has to be in the coordinator's brief, not left to synthesis to recover.",
+      "Wrong — dropping to one subagent abandons the parallelism budget. With three available subagents and an explicit diversity goal, partitioning beats serialisation."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "15cb69ca-c0a0-43f0-9c8f-62e4c1793785"
+  },
+  {
+    "question": "A user asks for 'a report on AI applications in healthcare in 2025.' The phrase is ambiguous — clinical-AI only, or clinical + admin + insurance + drug discovery + imaging + telemedicine. The coordinator must decide upfront. Per Task 1.2, what's the most defensible behaviour?",
+    "options": [
+      "Punt: ask the user to define 'AI applications in healthcare' explicitly before doing any work.",
+      "Decompose for the broadest reasonable interpretation across major sub-domains (clinical, admin, insurance, drug discovery, imaging, telemedicine) and equip the coordinator with an iterative refinement loop so coverage gaps surface during synthesis. Narrowing at the report stage is cheap; under-collecting upstream is expensive to recover from.",
+      "Decompose narrowly (clinical-AI only) to minimize wasted research; let the user request expansion if they wanted more.",
+      "Run the broad and narrow decompositions in parallel and present both reports."
+    ],
+    "explanations": [
+      "Wrong (close call) — clarification questions are sometimes valid but defeat the automation. Task 1.2's prescription for ambiguous-but-reasonable scope is broad decomposition + iterative refinement, not bouncing the question back.",
+      "Correct — broad decomposition + refinement loop is the canonical Task 1.2 pattern. Narrow decomposition is the named anti-pattern (the excerpt explicitly warns about overly narrow decomposition leading to incomplete coverage).",
+      "Wrong — narrow decomposition is exactly the failure mode the excerpt warns against. The 'expand if requested' fallback is more expensive than getting it right upfront.",
+      "Wrong — running parallel reports doubles spend and pushes a synthesis problem (which version) to the user. The architectural answer is one broad decomposition with refinement."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "f6ff21f8-e603-4ff6-8597-2ddde3535316"
+  },
+  {
+    "question": "A coordinator runs a refinement loop. Two iterations have detected and fixed two gaps. The latest synthesis still flags a small gap — a niche sub-genre tangential to the user's stated goal. Should the coordinator iterate again?",
+    "options": [
+      "Yes — always iterate until zero gaps detected; the user deserves complete coverage.",
+      "No — stop now and ship; diminishing returns on niche sub-domains.",
+      "Switch to a stronger synthesis model and re-run.",
+      "It depends on the gap's relevance to the user's stated goal: if the missing sub-niche materially affects the conclusions, iterate; if it's a tangent, accept and ship with a coverage annotation. The coordinator's job is to balance coverage against effort, not to chase 100%."
+    ],
+    "explanations": [
+      "Wrong — chasing zero gaps is an open-ended loop on diminishing returns. A coordinator that can't decide when 'enough is enough' produces unbounded latency and cost.",
+      "Wrong — too dismissive. 'Stop now' gives no principled stopping rule; the next gap might be material.",
+      "Wrong — model swap is upstream of the actual question (is this gap material?). It also doesn't tell you when to stop iterating.",
+      "Correct — iterative refinement is goal-relative. Coverage is a means, not an end; the coordinator must judge each detected gap's materiality against the user's stated goal. A coverage annotation (Task 5.6's provenance pattern) ships acknowledged gaps honestly."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "15e5b6a8-357d-41f4-83ea-606385e3b733"
+  },
+  {
+    "question": "A coordinator has just received structured findings from search subagent A on EV adoption in Norway. It now invokes synthesis subagent B. Which information should the coordinator pass to B?",
+    "options": [
+      "The full session history — user's original turn, coordinator's reasoning, and A's full results.",
+      "Only A's full results — synthesis just needs the evidence.",
+      "The user's original question + the planned scope (subdomains/region/year) + A's relevant findings (filtered/structured) + a brief on B's expected output shape. Pass what B needs to do its job — not coordinator-internal reasoning, not less than B's role requires.",
+      "Just a summary of A's findings — synthesis should not see raw evidence."
+    ],
+    "explanations": [
+      "Wrong — context bloat. The coordinator's reasoning is internal state that B doesn't need; including it dilutes the prompt and forces B to do extraction work the coordinator already did.",
+      "Wrong — without the user's question, B can't focus its synthesis. This is the canonical 'isolated-context' failure: B will produce a generic summary of evidence rather than an answer to the question.",
+      "Correct — focused brief: question + scope + filtered evidence + output shape. This is the structured-handoff pattern (Task 1.4) applied to the synthesis hop. Subagent context is isolated, so the coordinator must brief B with exactly what B needs.",
+      "Wrong — synthesis needs evidence, not just a summary. A summary is what synthesis produces, not what it consumes."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "705b4662-4b8b-41f7-ab3f-6d7f276f9783"
+  },
+  {
+    "question": "A search subagent returns partial results: it encountered transient errors on one source and only retrieved 60% of the planned evidence. What should the coordinator do?",
+    "options": [
+      "Inspect the partial results, then decide whether to retry, route to an alternate source, or proceed with the partial set plus a coverage annotation. The coordinator's job is to handle subagent failures consistently; partial results should not silently degrade the report.",
+      "Retry the search subagent with the same query — transient errors usually clear on retry.",
+      "Treat the partial results as a hard failure and abort the entire pipeline.",
+      "Pass the partial results to synthesis and let synthesis decide what to do with them."
+    ],
+    "explanations": [
+      "Correct — error handling is a named coordinator responsibility (hub-and-spoke routes traffic through the coordinator precisely so it can intervene). The right action depends on the failure shape: retry, route to alternate, or accept-with-annotation. Whichever path, the coordinator decides — not the failing subagent or downstream synthesis.",
+      "Wrong — blanket retry isn't always right. The same query may fail again, the source may be permanently unavailable in this window, or the deadline may not allow a retry. The coordinator must decide based on the actual failure.",
+      "Wrong — too dramatic. Partial results are often usable, especially with a coverage annotation. Aborting throws away both the partial work and the user's time.",
+      "Wrong — pushing the decision to synthesis ad-hocs the policy. Synthesis isn't an orchestrator; if every subagent makes its own decisions about partial results, you've broken hub-and-spoke."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "937840d8-d386-47c6-8203-c53c7ac597e2"
+  },
+  {
+    "question": "A coordinator delegated 'summarise last quarter's earnings for AAPL' to its qualitative-analysis subagent (specialty: comparative qualitative reasoning) instead of its finance-data subagent (specialty: numeric extraction from filings). The output is wrong on the numbers. Per Task 1.2, what's the architectural fix?",
+    "options": [
+      "Add few-shot examples to the coordinator's system prompt showing which subagent fits which task.",
+      "Have the coordinator try the qualitative subagent first, then fall back to the finance-data subagent if the result is unsatisfactory.",
+      "Improve the coordinator's *decomposition step* so the resulting subtasks carry signals (e.g., 'numeric extraction needed,' 'qualitative comparison needed') that map cleanly to subagent specialties — and ensure subagent descriptions/scopes make the match unambiguous. The bug is in the decomposition→delegation match, not in retries or examples.",
+      "Merge qualitative-analysis and finance-data into one subagent so the coordinator can't pick wrong."
+    ],
+    "explanations": [
+      "Wrong — few-shot examples improve probabilistically but don't fix the structural mismatch. Without clear signals from decomposition and clear subagent contracts, examples only patch the most-seen cases.",
+      "Wrong — fallback is wasteful (you've already spent on the wrong subagent's bad output) and assumes you can detect 'unsatisfactory' reliably, which begs the question. It's a downstream patch for an upstream miss.",
+      "Correct — Task 1.2's coordinator responsibility includes 'deciding which subagents to invoke.' That decision quality is bounded by the decomposition's specificity and the subagents' contract clarity. Fix both ends: signals in subtasks, scopes in subagent descriptions.",
+      "Wrong — merging specialties produces a generalist subagent, against the partitioning principle. The right move is sharpening the matching mechanism, not eliminating the choice."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "ff6737ff-4038-4e5a-ba6e-082371d9641c"
+  },
+  {
+    "question": "A team is building a system where the user's request can have hierarchical structure (e.g., 'research the global semiconductor industry, then for each top-5 fab, research its 2025 expansion plans, then synthesize a report'). Should the coordinator-subagent pattern allow nested coordinators (an outer coordinator dispatching to an inner coordinator that has its own subagents)?",
+    "options": [
+      "No — hub-and-spoke is by definition flat. Nested coordinators violate the pattern.",
+      "Yes, but only for systems with more than 3 layers; fewer than 3 should remain flat.",
+      "Yes, but only when the model is fine-tuned for nested orchestration.",
+      "Yes — when the user's request decomposes hierarchically (research a topic AND research per-item sub-topics), nesting is natural: the outer coordinator dispatches to an inner coordinator that runs hub-and-spoke at its layer. The 'flat' property of hub-and-spoke describes each layer's local structure, not a global topology rule."
+    ],
+    "explanations": [
+      "Wrong — hub-and-spoke describes the local arrangement of a coordinator and its subagents at one layer. Nothing in the pattern forbids that pattern from repeating at a deeper layer when the problem decomposes hierarchically.",
+      "Wrong — the excerpt doesn't define a depth threshold. Whether to nest is a structural decision driven by the problem's decomposition shape, not by an arbitrary count.",
+      "Wrong — fine-tuning is unrelated to architectural decomposition. Whether nesting fits is a question of decomposition shape, not model capability.",
+      "Correct — hub-and-spoke is a *local* structural rule (one coordinator per layer routes that layer's traffic). When the problem decomposes hierarchically, the natural mapping is nested layers, each running hub-and-spoke. The outer coordinator delegates a sub-problem to an inner coordinator the same way it would delegate a sub-task to a subagent."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "75573c88-18dc-4dd0-8026-a0c47d698828"
+  },
+  {
+    "question": "Three parallel search subagents are given partitioned subtopics in an EV-industry report: A=batteries, B=motors, C=software. All three converge on Tesla as the dominant case study; synthesis ends up 80% Tesla. Per Task 1.2, what's the architectural diagnosis?",
+    "options": [
+      "The partitioning was correct; the convergence reflects market reality and is fine.",
+      "The coordinator should have anticipated convergence and added a cross-cutting diversity constraint to each subagent's brief (e.g., 'cite findings from at least three distinct companies'). Subtopic partitioning prevents *subtopic* duplication but does nothing to prevent convergence on dominant entities; cross-cutting diversity must be explicit in the brief.",
+      "The partitioning should have been by company instead of subtopic — A=Tesla, B=GM, C=BYD.",
+      "Run a fourth subagent to produce non-Tesla evidence, then average."
+    ],
+    "explanations": [
+      "Wrong — 80% concentration on one company is over-concentration, not market reality. The EV industry has many other relevant companies even if Tesla is prominent.",
+      "Correct — partitioning is multi-axis. Subtopic partitioning is one axis; entity-diversity is another. When the user implicitly cares about diversity (and 'EV industry' usually does), the secondary-axis constraint must live inside each subagent's brief, not be left to synthesis to recover.",
+      "Wrong — company partitioning has its own problems (which 3 companies and why?), and the user may genuinely want subtopic structure. The fix is adding a diversity constraint, not switching the primary axis.",
+      "Wrong — a fourth corrective subagent is a bandage. The architectural fix is in the original brief; a corrective pass treats the symptom and adds latency."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "59d7a979-4a7a-45b0-b2f7-a45d751a30a9"
+  },
+  {
+    "question": "A user asks: 'What's the difference between a coordinator and a subagent?' The coordinator dispatches to research, docs, and synthesis subagents; the output is four paragraphs and takes 12 seconds. What architectural mistake was made?",
+    "options": [
+      "The coordinator over-applied the orchestration pattern to a definitional question that didn't need it. Dynamic subagent selection should have invoked zero or one subagent (e.g., a quick lookup or a direct answer); decomposition for definitional Q&A is the wrong tool.",
+      "The synthesis subagent should have detected the question type and short-circuited.",
+      "Latency budgets should be added so the coordinator stops after 5 seconds.",
+      "The user's question was too vague; the coordinator should ask them to clarify."
+    ],
+    "explanations": [
+      "Correct — dynamic subagent selection means picking the smallest subset that satisfies the query, including zero or one for trivial cases. Decomposition adds value when there are sub-domains to cover; for a one-shot definitional answer, decomposition is overhead.",
+      "Wrong — synthesis can't fix what the coordinator already over-decomposed. The decision to invoke synthesis was already wrong; synthesis can't undo its own invocation.",
+      "Wrong — timeouts treat the symptom, not the cause. The coordinator's over-decomposition isn't fixed by truncating it midway; the call should never have fanned out.",
+      "Wrong — the question is clear and answerable directly. Punting on a clear question is a different anti-pattern."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "7be30d7f-668e-426e-b3f4-eb44dfb3f8d9"
+  },
+  {
+    "question": "A coordinator passes search-subagent results (5000+ tokens of raw findings) to the synthesis subagent. Synthesis is slow and sometimes drops sub-domains. What's the best architectural response?",
+    "options": [
+      "Increase the model's context window to handle the larger payload.",
+      "Have the coordinator pre-aggregate or pre-structure the results before passing to synthesis. Aggregation is one of the coordinator's named responsibilities; passing raw results wholesale offloads aggregation work to synthesis (whose job is the synthesis pass), which is why sub-domains drop — synthesis is doing two jobs in one prompt.",
+      "Replace synthesis with a more capable model.",
+      "Reduce search-subagent output volume by hard-limiting it to the top 5 results."
+    ],
+    "explanations": [
+      "Wrong — a larger context window can hold the bigger payload, but the lost-in-the-middle effect (Task 5.1) and the role-mismatch (synthesis doing aggregation) remain. Bigger context isn't the architectural fix.",
+      "Correct — aggregation is named in the coordinator's responsibilities. Pre-aggregating (filtering, grouping, structuring by sub-domain) hands synthesis a focused brief instead of a raw-evidence dump. Synthesis can then do its actual job — which is *synthesis*, not aggregation.",
+      "Wrong — model swap doesn't add the missing aggregation step. A stronger model just does both jobs slightly better in the same overloaded prompt.",
+      "Wrong — arbitrary truncation throws away evidence that may be relevant. Aggregation is selective and structured; truncation is blunt."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "24d737b5-4e01-46fc-b065-13a2f8609a1f"
+  },
+  {
+    "question": "A team configures parallel synthesis-A and synthesis-B (same evidence, slightly different prompts). The coordinator picks the 'better' output. Is this a good Task 1.2 pattern?",
+    "options": [
+      "Yes — multiple syntheses provide a 'second opinion' that catches synthesis errors.",
+      "Yes, but only if the two synthesis subagents have different system prompts.",
+      "No — this is multi-pass review (a Task 4.6 concern about independent review instances), not coordinator-subagent orchestration. Task 1.2's robustness comes from the iterative refinement loop on a *single* synthesis with gap detection and re-delegation. Parallel duplicate synthesis adds latency and cost without addressing the named failure modes (decomposition coverage, isolated-context briefing).",
+      "No — parallel synthesis subagents are forbidden by the hub-and-spoke architecture."
+    ],
+    "explanations": [
+      "Wrong — 'second opinion' is the Task 4.6 multi-pass review pattern, not Task 1.2 orchestration. Bringing it into Task 1.2 conflates two architectural concerns and obscures the right fix when the real problem is coverage (which refinement loops address) rather than confidence calibration.",
+      "Wrong — different prompts don't change the fact that this is multi-pass review applied where iterative refinement was needed. The mismatch is between the pattern and the problem.",
+      "Correct — the question is whether *this is the right Task 1.2 pattern*. It is not. Task 1.2's robustness mechanism is iterative refinement (gap detect → targeted re-delegate → re-synthesize). If the goal is independent verification of synthesis correctness, that lives in Task 4.6 — and it should be added deliberately, not conflated with orchestration.",
+      "Wrong — parallel subagents aren't forbidden in hub-and-spoke; the question is whether this *use* fits Task 1.2. The architectural mismatch is the real critique, not the parallelism itself."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "bd86954d-b1e4-4441-98f2-b3a5a5739781"
+  },
+  {
+    "question": "Subagent A (search) returns evidence that the synthesis subagent must build on. An engineer argues that since A's output is just an input to synthesis, it would be cleaner — and lower-latency — for A to write directly into the synthesis subagent's input buffer rather than returning to the coordinator first. Per Task 1.2, what's the most precise objection?",
+    "options": [
+      "Latency would actually get worse because the synthesis subagent's queue would block on A's writes.",
+      "The coordinator does aggregation work between A and synthesis (filtering, structuring, attaching the user's question and scope) — direct A-to-synthesis writes skip that aggregation hop and force synthesis to do two jobs in one prompt, on top of breaking observability.",
+      "It violates the API contract that subagent outputs must be returned to their invoker.",
+      "Direct writes are fine if A and synthesis share a system prompt; the architectural concern only applies to heterogeneous subagents."
+    ],
+    "explanations": [
+      "Wrong — queue blocking is an implementation detail, not the architectural objection. Even with a non-blocking queue, the named coordinator responsibilities still get bypassed.",
+      "Correct — the coordinator's named responsibilities include aggregation and consistent error handling. A direct A-to-synthesis path skips aggregation (so synthesis gets raw evidence and must aggregate before synthesising) and breaks hub-and-spoke observability. Both failure modes are named in Task 1.2.",
+      "Wrong — there is no API-level contract being violated; the system would run. The danger is precisely that it runs but degrades silently, which is what makes it an architectural error rather than a runtime one.",
+      "Wrong — shared system prompts don't change the structural problem. Aggregation and observability are coordinator responsibilities regardless of how similar the subagents are."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "b52106d2-e2cb-4804-80a7-26518cbb584d"
+  },
+  {
+    "question": "A user has a multi-turn conversation with a coordinator. On turn 1, the coordinator delegated to a search subagent for 'EV adoption in Norway 2025' and the search subagent returned strong evidence. On turn 2, the user asks 'now compare it to Sweden.' The coordinator invokes the same search subagent for Sweden. What context does the search subagent have about the Norway results from turn 1?",
+    "options": [
+      "It has the full prior turn-1 context automatically because it's the same subagent instance.",
+      "It has whatever the coordinator chooses to include in the turn-2 invocation; nothing carries over implicitly between subagent invocations, even for the same subagent.",
+      "It has a session handle that lets it query the coordinator for prior results when needed.",
+      "It has the user's message history but not the prior subagent results."
+    ],
+    "explanations": [
+      "Wrong — 'same subagent' is a coordinator-side abstraction. Each invocation is a fresh isolated context; there is no persistent subagent instance retaining state across turns.",
+      "Correct — subagent context is isolated *per invocation*, not per session. The coordinator must explicitly carry forward whatever the new invocation needs, including relevant prior-turn results. Same subagent identity does not equal shared memory.",
+      "Wrong — there is no callback handle into coordinator state. The coordinator passes context by value into each invocation; there is no pull-based access.",
+      "Wrong — neither user history nor prior subagent results carry over implicitly. The subagent starts fresh each invocation; everything it needs must be in the brief."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "58e2be58-aa71-4539-8ca2-6b5346a96a55"
+  },
+  {
+    "question": "An engineer wants the iterative refinement loop to be 'principled.' They debate four stopping rules. Which is most consistent with Task 1.2's framing of refinement?",
+    "options": [
+      "Iterate until the synthesis output stabilises across two consecutive iterations (textually unchanged).",
+      "Iterate exactly twice — once for first-pass synthesis and once for refinement — then stop regardless.",
+      "Iterate until a fixed budget (max iterations or max tokens) is exhausted, then ship whatever the latest draft is.",
+      "Iterate while detected gaps are material to the user's goal AND a bounded iteration/cost budget remains; stop when either condition fails, shipping the latest draft with a coverage annotation if material gaps remain unresolved."
+    ],
+    "explanations": [
+      "Wrong — textual stability conflates 'synthesis converged on a fixed wording' with 'coverage is sufficient.' A draft can stabilise while still missing a sub-domain.",
+      "Wrong — a fixed-count rule ignores the actual reason for refining. Some queries need zero refinement; others need three. The decision must be coverage-driven, not count-driven.",
+      "Wrong — budget-only stopping ignores materiality. You might stop at the budget while obvious material gaps remain, or keep iterating past the point of diminishing returns just because budget is left.",
+      "Correct — refinement is goal-relative and bounded. Materiality controls *whether to keep going* (gaps that don't matter to the user's goal don't justify another loop); the budget bounds *how long you can keep going*. When materiality says yes but budget says no, ship with a coverage annotation. Both conditions are needed — neither alone is sufficient."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "08b1df22-a271-490e-a3af-71edafc0ac96"
+  },
+  {
+    "question": "A search subagent returns its findings annotated with a confidence-low flag on two sources (the subagent suspects the dates are stale). Per Task 1.2, where should the policy decision about whether to use those sources live?",
+    "options": [
+      "In the coordinator. Hub-and-spoke routes subagent outputs through the coordinator precisely so it can inspect annotations like confidence flags and decide policy (drop, re-search a fresher source, or pass through with the annotation preserved). Pushing that decision down to synthesis ad-hocs the policy across subagents.",
+      "In the synthesis subagent — synthesis sees all the evidence together and is best positioned to weigh confidence.",
+      "In the search subagent itself — it's the closest to the source and should drop low-confidence findings before returning.",
+      "In a dedicated 'evidence-quality' subagent inserted between search and synthesis."
+    ],
+    "explanations": [
+      "Correct — confidence flags are exactly the kind of intermediate signal that hub-and-spoke is meant to surface. The coordinator decides policy (use, replace, annotate) once, consistently, rather than each subagent applying its own threshold. Centralising the decision is named under 'consistent error handling' in Task 1.2.",
+      "Wrong — synthesis is downstream and shouldn't be making evidence-admission policy. By the time synthesis runs, the coordinator has already lost the chance to re-delegate a fresher search. Pushing policy to synthesis turns it into an orchestrator on top of its actual job.",
+      "Wrong — silently dropping at the source loses observability. The coordinator never sees that something was filtered, which kills its ability to gap-detect or refine. The flag should bubble up, not be acted on locally.",
+      "Wrong — adding more subagents doesn't replace coordinator responsibility for policy decisions. It just splinters the decision across yet another spoke and adds a hop without solving the centralisation problem."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "c3ec9112-d533-459b-bb76-31f7801cb828"
+  },
+  {
+    "question": "Subagent A (search) finds evidence that subagent B (docs analysis) needs in order to focus its document scan. The two subagents must run sequentially because B depends on A's output. An engineer asks: 'Doesn't this dependency justify having A pass directly to B?' Per Task 1.2, what's the right framing?",
+    "options": [
+      "Yes — sequential dependency is exactly when peer-to-peer comms make sense; hub-and-spoke is for parallel fan-out only.",
+      "No — but the coordinator should run A and B in parallel anyway and reconcile in synthesis.",
+      "No — sequential dependency is orchestrated by having A return to the coordinator, which then briefs B with the relevant slice of A's output. Hub-and-spoke handles sequential dependencies the same way it handles parallel ones: every hop goes through the hub. The dependency lives in the coordinator's plan, not in a peer channel.",
+      "Yes — sequential subagents can share context directly because there's no observability concern when only one is running at a time."
+    ],
+    "explanations": [
+      "Wrong — hub-and-spoke applies to all inter-subagent communication, sequential or parallel. Dependency is not a license to bypass the hub; it's a reason for the coordinator to sequence its delegations.",
+      "Wrong — running B in parallel when it depends on A means B gets less-relevant input and you've still skipped the coordinator's filtering step. Sequencing is correct; it just has to flow through the hub.",
+      "Correct — the coordinator brokers sequential hops. A returns; coordinator filters/structures A's output (aggregation); coordinator briefs B with the focused slice plus user question and scope. The dependency is an orchestration plan, not an architectural exception.",
+      "Wrong — observability matters even for one-at-a-time subagents. The coordinator inspects A's output to decide *what* to brief B with — losing that hop loses the structured-handoff benefit, regardless of concurrency."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "c8f919d4-1367-4c32-a44f-70da1fe0df31"
+  },
+  {
+    "question": "Two parallel search subagents return contradictory evidence on the same fact (e.g., one cites a 2024 figure, the other a 2025 update). Where should the contradiction be resolved?",
+    "options": [
+      "In the synthesis subagent — synthesis is the only stage that sees both pieces of evidence in the same prompt.",
+      "In the search subagents themselves — they should cross-check each other before returning.",
+      "In the report subagent — the user-facing layer is where contradictions should be resolved or surfaced.",
+      "In the coordinator. Reconciling cross-subagent contradictions is part of aggregation: the coordinator inspects results, decides whether to re-delegate a tiebreaker search, prefer the more recent source, or pass both forward with the conflict annotated. Synthesis should not be the first place a contradiction is noticed."
+    ],
+    "explanations": [
+      "Wrong — synthesis seeing the contradiction first is exactly the failure pattern. By then, the coordinator has lost the chance to re-delegate a tiebreaker. Synthesis is also the wrong layer to apply a recency-or-source policy that should be uniform across subagents.",
+      "Wrong — search subagents do not talk to each other (peer-to-peer is the named anti-pattern). Cross-checking cannot live there without breaking hub-and-spoke.",
+      "Wrong — by the report stage, the conflict has already propagated through synthesis. Pushing conflict handling to the user-facing surface ships unfiltered contradictions and undermines the coordinator's role as the single point of policy.",
+      "Correct — aggregation is a named coordinator responsibility, and conflict reconciliation is part of it. The coordinator's options are bounded (re-delegate, prefer-by-rule, pass-through-with-annotation) and consistent across subagents. Letting synthesis discover conflicts means synthesis is doing aggregation in addition to its own job — the same role-mismatch failure mode that drops sub-domains."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "628d3bb5-dd89-4069-a498-7a338658ddd6"
+  },
+  {
+    "question": "An engineer reasons: 'If two parallel subagents are good, ten must be better — more parallelism = broader coverage.' They scale a research system from 2 to 10 parallel search subagents on the same broad topic, with no further partitioning changes. What's the most likely outcome?",
+    "options": [
+      "Coverage scales roughly linearly with the number of subagents, since each adds an independent search.",
+      "Coverage stays flat but cost stays flat too, since each subagent finds different results by chance.",
+      "Coverage improves but synthesis quality drops sharply due to context-window limits.",
+      "Coverage gains plateau quickly while cost scales linearly, because without partitioning the subagents converge on overlapping evidence — adding subagents does not add coverage; partitioning does."
+    ],
+    "explanations": [
+      "Wrong — coverage doesn't scale linearly with subagent count when they all run the same broad query. They mostly cover the same ground; the marginal subagent adds little.",
+      "Wrong — cost scales with subagent count (each is a real model call). And they don't 'find different things by chance' — top-ranked search results are highly correlated across runs of the same query.",
+      "Wrong (close call) — context-window pressure exists, but it's not the headline failure. The headline failure is that you spent 5x the budget for negligible coverage gain. Synthesis can usually handle the volume; what it can't fix is upstream duplication.",
+      "Correct — the named principle from Task 1.2: distinct slices, not specific counts, create coverage. Without partitioning, additional subagents converge on the same evidence. The fix is in the coordinator's brief (assign each subagent a distinct subtopic or source-type slice), not in raw parallelism."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "600ea7f0-8f4a-485f-a1d7-9c9f6de5cfb5"
+  },
+  {
+    "question": "A multi-agent research report omits the entire 'regulatory' sub-domain that the user clearly cared about. Three engineers diagnose the bug differently: (E1) the search subagent failed; (E2) the synthesis subagent dropped it; (E3) the coordinator's decomposition never assigned 'regulatory' as a subtask. Logs show search and synthesis only ever received subtasks for 'technical' and 'commercial.' Which diagnosis is correct, and what's the architectural lesson?",
+    "options": [
+      "E3 is correct: when no subtask carries a sub-domain, neither search nor synthesis can fail on it — they had nothing to act on. The lesson is that missing-sub-domain bugs trace upstream to decomposition, and the iterative refinement loop is the recovery mechanism (gap-detect against the original query, then add the missing subtask).",
+      "E1 is correct: search is the first chance to find regulatory content, and it failed to surface any.",
+      "E2 is correct: synthesis is what decides what makes the report, and it filtered the regulatory material out.",
+      "All three are partially correct: the failure is distributed across all three subagents and the fix is to harden each one independently."
+    ],
+    "explanations": [
+      "Correct — diagnosing missing-sub-domain bugs requires asking 'was a subtask for this sub-domain ever issued?' The logs say no, which fingers decomposition. The architectural lesson pairs the diagnosis with the fix: refinement loops detect this *post hoc* by comparing the draft's coverage to the original query's implied scope, then adding the missing subtask.",
+      "Wrong — search can only search what it's asked to search. If 'regulatory' was never delegated to it, there's nothing for search to fail on. Blaming search here is mis-localising the bug upstream.",
+      "Wrong — synthesis can only synthesise the evidence it received. If the search-and-docs delegations never covered regulatory, the synthesis subagent's input never had regulatory evidence to drop. Synthesis is an effect, not the cause.",
+      "Wrong — distributing blame across all three obscures the actual upstream cause and produces three patches where one upstream fix would suffice. Decomposition is the single locus of this failure class."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "cbf9b70c-7f3c-4d13-851c-8884c29b4e01"
+  },
+  {
+    "question": "When briefing a search subagent, an engineer wants to maximise 'shared understanding' and includes the coordinator's full chain-of-thought reasoning (the steps the coordinator took to decompose, what other subagents are running, why this subagent was chosen). Per Task 1.2, what's the issue with this brief?",
+    "options": [
+      "There's no issue — more context makes the subagent's work more aligned with the coordinator's intent.",
+      "The issue is that chain-of-thought from a different model can confuse the subagent's own reasoning trace.",
+      "The brief should be focused on what the subagent needs to do its job (scope, constraints, prior relevant evidence, output shape), not on coordinator-internal reasoning. Dumping coordinator state bloats the subagent's context, dilutes attention away from the actual task, and forces the subagent to do extraction work the coordinator already did.",
+      "The brief is fine technically, but coordinator reasoning is privileged information that subagents shouldn't see for security reasons."
+    ],
+    "explanations": [
+      "Wrong — more context is not strictly better. The relevant principle is *focused* context: the subagent needs what it needs, not the coordinator's internal monologue. Indiscriminate inclusion is a known failure mode.",
+      "Wrong — this is a plausible but wrong-shaped concern. The issue isn't reasoning-trace contamination; it's that coordinator-internal reasoning isn't the subagent's job and dilutes its prompt.",
+      "Correct — Task 1.2's structured-handoff principle says the coordinator briefs each subagent with what *that subagent* needs. Coordinator-internal reasoning is internal; including it in the subagent's brief is the symmetric failure to under-briefing — overloaded context that buries the actual task.",
+      "Wrong — there's no security/privilege model in play here. The architectural objection is about prompt focus and role separation, not about secrecy."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "84ae3a36-2066-4046-8bef-b5dba1b6256f"
+  },
+  {
+    "question": "A coordinator has 8 subagents available, each with a one-line description in its registry: 'search,' 'docs,' 'synthesis,' 'report,' 'finance,' 'legal,' 'qa,' 'translate.' The coordinator sometimes picks the wrong subagent for a query (e.g., routes a regulatory question to 'legal' when 'docs' on a regulatory document set would have been more appropriate). What's the most architecturally sound first fix?",
+    "options": [
+      "Add a 7th-level escalation step where a human reviews subagent selections before invocation.",
+      "Sharpen the subagent registry: each subagent's description should specify its specialty, the input shape it expects, the output shape it produces, and concrete examples of fitting and non-fitting tasks. The coordinator's selection is bounded by the contract clarity of its options; vague descriptions force the coordinator to guess. Better contracts produce better selection without changing the coordinator's logic.",
+      "Have the coordinator try multiple subagents in parallel and pick whichever output looks most relevant.",
+      "Replace the coordinator's selection logic with a rule-based router that maps query keywords to subagents."
+    ],
+    "explanations": [
+      "Wrong — human review treats selection as a ground-truth oracle problem and ruins the automation. It also doesn't fix the structural cause (vague subagent contracts).",
+      "Correct — Task 1.2's coordinator responsibility includes 'deciding which subagents to invoke,' and the quality of that decision depends on how clearly each subagent advertises its scope. Sharpening descriptions (specialty, I/O shape, fitting/non-fitting examples) is the cheapest, most-leveraged fix because it improves every future selection without touching the coordinator's reasoning.",
+      "Wrong — try-them-all-and-pick is wasteful (you spend on losing subagents) and assumes you can post-hoc detect 'most relevant,' which begs the question. It's a runtime workaround for a design-time problem.",
+      "Wrong — keyword routing is a regression to fixed-pipeline thinking. It abandons dynamic subagent selection (Task 1.2's named responsibility) for a brittle rule set. The right move is to make the dynamic selection better-informed, not to remove it."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.2"
+    ],
+    "phase": "post",
+    "qid": "9eb5710f-e54a-4256-a8b6-87b5fbb0d789"
+  }
+]

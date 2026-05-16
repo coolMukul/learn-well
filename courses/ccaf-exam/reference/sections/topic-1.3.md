@@ -1,0 +1,15 @@
+# Task 1.3 — Configure subagent invocation, context passing, and spawning
+
+> Domain 1: Agentic Architecture & Orchestration. Excerpted from the official guide.
+
+## Knowledge of
+- The **Task tool** as the mechanism for spawning subagents, and the requirement that `allowedTools` must include `"Task"` for a coordinator to invoke subagents.
+- That subagent context must be **explicitly provided** in the prompt — subagents do not automatically inherit parent context or share memory between invocations.
+- The `AgentDefinition` configuration including descriptions, system prompts, and tool restrictions for each subagent type.
+- Fork-based session management for exploring divergent approaches from a shared analysis baseline.
+
+## Skills in
+- Including complete findings from prior agents directly in the subagent's prompt (e.g., passing web search results and document analysis outputs to the synthesis subagent).
+- Using **structured data formats** to separate content from metadata (source URLs, document names, page numbers) when passing context between agents to preserve attribution.
+- Spawning **parallel subagents** by emitting multiple `Task` tool calls in a single coordinator response rather than across separate turns.
+- Designing coordinator prompts that specify **research goals and quality criteria** rather than step-by-step procedural instructions, to enable subagent adaptability.

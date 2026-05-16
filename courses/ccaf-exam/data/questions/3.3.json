@@ -1,0 +1,882 @@
+[
+  {
+    "question": "Where do path-scoped rule files live in a Claude Code project?",
+    "options": [
+      "`.claude/rules/` at the project root",
+      "`.claude/commands/` at the project root",
+      "Inside the root `CLAUDE.md` under a `rules:` section",
+      "`~/.claude/rules/` in each developer's home directory"
+    ],
+    "explanations": [
+      "Correct — `.claude/rules/` is the project-scoped directory for path-conditional rule files, version-controlled with the repo.",
+      "`.claude/commands/` holds slash command prompt files, not path-scoped rules.",
+      "`CLAUDE.md` is a memory file, not a container for path-scoped rule definitions.",
+      "That would scope rules to one developer's machine; project rules live in the repo under `.claude/rules/`."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "pre",
+    "qid": "1d60a1a4-119e-49d5-b22f-2414b2834ffc"
+  },
+  {
+    "question": "Which YAML frontmatter field in a `.claude/rules/` file declares which files the rule applies to?",
+    "options": [
+      "`globs`",
+      "`paths`",
+      "`scope`",
+      "`files`"
+    ],
+    "explanations": [
+      "`globs` is not the documented field name; the field is `paths`.",
+      "Correct — `paths` is the documented frontmatter field; its value is an array of glob patterns.",
+      "There is no `scope` field; activation is controlled by `paths` globs.",
+      "`files` is not the documented field; use `paths`."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "pre",
+    "qid": "51cb0266-6038-48bb-8cda-fbcd7501fba1"
+  },
+  {
+    "question": "When does a `.claude/rules/` file with `paths: [\"**/*.test.tsx\"]` enter Claude's context?",
+    "options": [
+      "Only when the developer explicitly invokes a slash command",
+      "On every interaction in the project, the same way `CLAUDE.md` does",
+      "Only when Claude is editing a file whose path matches `**/*.test.tsx`",
+      "Whenever a test file appears anywhere in the repo, regardless of what is being edited"
+    ],
+    "explanations": [
+      "Slash commands are user-triggered; path-scoped rules attach passively based on file path.",
+      "That describes `CLAUDE.md` (always-loaded in scope), not path-scoped rules.",
+      "Correct — path-scoped rules activate conditionally, only when the active file matches one of the globs.",
+      "Activation is keyed to the file Claude is currently editing, not the mere presence of matching files in the repo."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "pre",
+    "qid": "22ad6dd8-223c-4ad8-a92e-61e7d44db09e"
+  },
+  {
+    "question": "Which glob pattern matches every React test file anywhere in the repo, including deeply nested directories?",
+    "options": [
+      "`tests/*.test.tsx`",
+      "`*.test.tsx`",
+      "`./test/*.tsx`",
+      "`**/*.test.tsx`"
+    ],
+    "explanations": [
+      "Restricts to a single `tests/` directory; doesn't match colocated tests.",
+      "Without `**/`, this only matches files in the project root; nested tests are missed.",
+      "Restricts to one directory and doesn't match colocated tests.",
+      "Correct — `**/` walks all directory levels; `*.test.tsx` matches the filename shape."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "pre",
+    "qid": "7d987c4d-7e3e-426e-bedd-5e87c57ef6a4"
+  },
+  {
+    "question": "Tests are colocated next to source files (`Button.test.tsx` next to `Button.tsx`) throughout the repo. Which mechanism best applies test-only conventions without affecting non-test edits?",
+    "options": [
+      "A `.claude/rules/` file with `paths: [\"**/*.test.tsx\"]`",
+      "A subdirectory `CLAUDE.md` in each component folder",
+      "Adding the conventions to the root `CLAUDE.md` under a `## Tests` heading",
+      "A `.claude/skills/test-conventions/SKILL.md`"
+    ],
+    "explanations": [
+      "Correct — globs match files by shape regardless of directory, and the rule only activates when a test file is being edited.",
+      "A directory `CLAUDE.md` applies to every file in that directory, polluting non-test edits with test conventions.",
+      "Always-loaded; relies on Claude inferring which section applies, and tests-spread-across-tree means no clean directory boundary.",
+      "Skills require explicit invocation; they don't auto-attach to file edits."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "pre",
+    "qid": "3577c08a-378c-4e32-ac6e-3492cbf0318f"
+  },
+  {
+    "question": "What is the correct YAML form for the `paths` frontmatter field?",
+    "options": [
+      "A single string, e.g. `paths: \"**/*.test.tsx\"`",
+      "An array of glob strings, e.g. `paths: [\"**/*.test.tsx\"]`",
+      "A regex string, e.g. `paths: \".*\\\\.test\\\\.tsx$\"`",
+      "A comma-separated string, e.g. `paths: \"**/*.test.tsx, **/*.spec.tsx\"`"
+    ],
+    "explanations": [
+      "A bare string isn't the documented shape; the field expects an array.",
+      "Correct — `paths` is an array of globs, even when there is only one entry.",
+      "`paths` uses globs, not regex.",
+      "Comma-separated strings aren't parsed as multiple globs; provide a YAML array instead."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "pre",
+    "qid": "0da3572b-8efe-4e8d-9f25-0c152f8d986c"
+  },
+  {
+    "question": "How does a directory-level `CLAUDE.md` differ from a path-scoped rule in terms of when it loads?",
+    "options": [
+      "Both load only when a matching file is opened",
+      "`CLAUDE.md` loads only when explicitly imported; path-scoped rules load globally",
+      "`CLAUDE.md` loads for every interaction in its scope; a path-scoped rule loads only when a matching file is edited",
+      "Both load globally for every interaction"
+    ],
+    "explanations": [
+      "Only path-scoped rules are conditional on the edited file; `CLAUDE.md` is always loaded.",
+      "`CLAUDE.md` is auto-loaded in scope, not explicitly imported; path-scoped rules are conditional, not global.",
+      "Correct — `CLAUDE.md` is always-loaded in its scope; path-scoped rules are conditional on the edited file.",
+      "`CLAUDE.md` is scope-bound (project or subdirectory) and path rules are conditional — neither is unconditionally global."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "pre",
+    "qid": "d80fc916-9e6e-41d2-9b4a-6256c1299367"
+  },
+  {
+    "question": "Which is a primary token-budget benefit of path-scoped rules over a single large root `CLAUDE.md`?",
+    "options": [
+      "Path-scoped rules are stored on disk only and never sent to the model",
+      "Path-scoped rules are compressed by the harness whereas `CLAUDE.md` is sent verbatim",
+      "Path-scoped rules use prompt caching and `CLAUDE.md` does not",
+      "Conventions you don't need don't sit in the context window — only rules whose globs match the active edit are injected"
+    ],
+    "explanations": [
+      "Rules that activate are sent to the model — they're not just on-disk artefacts.",
+      "There's no documented compression difference; the saving comes from conditional activation.",
+      "Caching behaviour isn't the documented advantage; conditional loading is.",
+      "Correct — conditional activation means irrelevant rules pay zero context cost on edits they don't apply to."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "pre",
+    "qid": "4d721fd0-89c5-4d7b-943c-097f373a22f8"
+  },
+  {
+    "question": "A team wants conventions for SQL migrations to apply regardless of which service folder a migration lives under. Which `paths` value fits best?",
+    "options": [
+      "`paths: [\"**/migrations/*.sql\"]`",
+      "`paths: [\"migrations/*.sql\"]`",
+      "`paths: [\"*.sql\"]`",
+      "`paths: [\"services/*/migrations/*.sql\"]` only"
+    ],
+    "explanations": [
+      "Correct — `**/migrations/*.sql` matches a `migrations/` directory anywhere in the tree.",
+      "Without `**/` this only matches a top-level `migrations/` directory.",
+      "Matches all SQL files, including non-migrations; too broad and missing the `migrations/` segment.",
+      "Restricted to one specific layout; misses migrations elsewhere (e.g., `apps/foo/migrations/*.sql`)."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "pre",
+    "qid": "bf5df038-3475-42c0-967b-6d2bcae58a43"
+  },
+  {
+    "question": "What happens if you create a `.claude/rules/` file with no `paths` field at all?",
+    "options": [
+      "It silently fails to load because `paths` is required",
+      "It loads globally for every interaction (treat as always-on)",
+      "It loads only for files in `.claude/rules/`",
+      "It loads only when explicitly invoked via slash command"
+    ],
+    "explanations": [
+      "A missing `paths` doesn't disable the rule; it removes the conditional filter and the rule loads globally.",
+      "Correct — without a `paths` filter the rule isn't path-conditional; it behaves as a globally-loaded rule, so omit deliberately.",
+      "There's no rule that scopes activation to the rules directory itself.",
+      "Path-scoped rules are auto-attached, not slash-command-invoked."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "pre",
+    "qid": "44f27ba2-6390-4a0c-8163-2b0ffc5595dd"
+  },
+  {
+    "question": "You want React-test conventions to apply to every test file in the repo, even though tests are colocated alongside source. Which is the correct configuration?",
+    "options": [
+      "A `.claude/commands/test.md` slash command developers run before editing tests",
+      "A `tests/CLAUDE.md` file describing the conventions",
+      "A `.claude/rules/test.md` file with frontmatter `paths: [\"**/*.test.tsx\"]`",
+      "An entry in the root `CLAUDE.md` under a `## Test conventions` heading"
+    ],
+    "explanations": [
+      "A slash command is user-triggered; it doesn't auto-apply when a test file is opened.",
+      "A subdirectory `CLAUDE.md` only covers files under `tests/`; it can't reach colocated tests elsewhere.",
+      "Correct — globs match by file shape across the tree; conditional activation keeps the convention out of non-test edits.",
+      "Always-loaded for every interaction; relies on Claude inferring which section applies on each edit."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "3441b635-5ecf-477d-8fdc-219781d917de"
+  },
+  {
+    "question": "Which YAML frontmatter snippet correctly scopes a rule to all test files in a TypeScript repo (both `.ts` and `.tsx`)?",
+    "options": [
+      "`paths: [\"**/*.test.ts\", \"**/*.test.tsx\"]`",
+      "`paths: \"**/*.test.{ts,tsx}\"`",
+      "`globs: [\"**/*.test.ts\", \"**/*.test.tsx\"]`",
+      "`paths: [\"*.test.ts\", \"*.test.tsx\"]`"
+    ],
+    "explanations": [
+      "Correct — `paths` is an array of globs; both extensions are listed and `**/` makes them directory-spanning.",
+      "`paths` expects an array, not a single string; brace expansion alone in a string doesn't make it valid frontmatter.",
+      "The documented field is `paths`, not `globs`.",
+      "Without `**/` these only match the project root, missing nested tests."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "7e1afbdf-1280-408e-a29e-a0b0206399a3"
+  },
+  {
+    "question": "A team adds a `frontend/CLAUDE.md` that describes both component layout AND test conventions. Devs notice Claude occasionally adds `describe` blocks while editing non-test component files. What's the better fix?",
+    "options": [
+      "Move both the component layout and test conventions into the root `CLAUDE.md`",
+      "Tell Claude in the prompt to ignore the test conventions when editing components",
+      "Add a `# Important` section at the top of `frontend/CLAUDE.md` reminding Claude which section applies to which file",
+      "Move the test conventions into a `.claude/rules/` file with `paths: [\"**/*.test.tsx\"]` so they only activate on test edits"
+    ],
+    "explanations": [
+      "Makes the problem worse — now the test conventions are loaded for every interaction in the entire project.",
+      "Per-prompt reminders are a probabilistic patch, not a structural fix; the conflicting context still loads.",
+      "Adds more text without changing the load-time behaviour; the test conventions are still in context for every component edit.",
+      "Correct — the cross-talk comes from always-loading test conventions in component edits; path-scoping eliminates it structurally."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "214686db-c67d-45ea-8132-1fbe58c4f2a8"
+  },
+  {
+    "question": "You define a rule with `paths: [\"*.test.tsx\"]`. Tests at `apps/storefront/components/Button.test.tsx` aren't picking up the conventions. What's the most likely cause?",
+    "options": [
+      "Glob patterns aren't supported — you must list each path individually",
+      "The glob lacks `**/` so it only matches files at the project root, not nested ones",
+      "`.test.tsx` files require a separate `.claude/skills/` definition",
+      "Frontmatter `paths` only matches against files in `.claude/rules/`"
+    ],
+    "explanations": [
+      "Globs are exactly the supported form; listing every path manually isn't required (and would be unmaintainable).",
+      "Correct — `*.test.tsx` is a single-segment match; `**/*.test.tsx` is needed to walk subdirectories.",
+      "Skills require explicit invocation and are unrelated to automatic file-shape activation.",
+      "`paths` matches against files Claude is editing across the repo, not files in the rules directory."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "9718939c-1f35-4063-a661-613a9adc1bc6"
+  },
+  {
+    "question": "Your repo has tests scattered across `apps/*/`, `packages/*/`, and `services/*/`. You want one set of test conventions everywhere. What's the most maintainable mechanism?",
+    "options": [
+      "A single `.claude/rules/tests.md` with `paths: [\"**/*.{test,spec}.{ts,tsx}\"]`",
+      "A `tests/CLAUDE.md` in each top-level area, duplicating the conventions",
+      "A monolithic root `CLAUDE.md` with separate sections for each area's tests",
+      "A `.claude/commands/test.md` slash command developers must invoke before each edit"
+    ],
+    "explanations": [
+      "Correct — one file, one glob array, every test file in the repo activates the same rule.",
+      "Duplicates the convention across many CLAUDE.md files; drifts over time and still doesn't reach colocated tests.",
+      "Always-loaded for every interaction and relies on inference for which section applies.",
+      "Slash commands are user-invoked, not automatic on file edit; impractical as a default convention enforcer."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "2381a791-a92b-4718-8f20-3fcf4def1bf7"
+  },
+  {
+    "question": "Which is a legitimate reason to keep some context in a directory-level `CLAUDE.md` instead of converting everything to path-scoped rules?",
+    "options": [
+      "Migration safety rules that apply only to `.sql` files",
+      "Test naming conventions that apply to test files spread across the directory",
+      "Architecture and ownership context that should always be present for any edit in that subtree, regardless of file type",
+      "Terraform module conventions that apply only to `.tf` files"
+    ],
+    "explanations": [
+      "File-type-specific; a `paths: [\"**/*.sql\"]` rule scopes precisely.",
+      "File-type-specific; better expressed as `paths: [\"**/*.test.*\"]` so non-test edits don't pay the context cost.",
+      "Correct — directory-wide always-on context (what this folder is, who owns it) is a clean fit for a directory `CLAUDE.md`.",
+      "File-type-specific; a `paths: [\"**/*.tf\"]` rule scopes precisely."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "4b0d425b-fd31-4e8c-a0f1-afd76bdd1ba0"
+  },
+  {
+    "question": "Your team has separate conventions for tests, migrations, and Terraform. What's the recommended file organisation under `.claude/rules/`?",
+    "options": [
+      "One mega-rule file containing all three concerns under a combined `paths` array of every glob",
+      "One rule file per concern, each with its own `paths` array",
+      "A single rule file per directory in the repo, listed under `paths`",
+      "Three slash commands (`/tests`, `/migrations`, `/terraform`) that devs invoke as needed"
+    ],
+    "explanations": [
+      "Combining everything under one rule means activating any one glob loads all three concerns, including the unrelated ones.",
+      "Correct — one concern per file keeps each rule readable, deletable, and only injected when its own globs match.",
+      "Rules aren't organised by repo directory; they're organised by file-shape concern.",
+      "Slash commands are user-triggered prompts, not automatic conventions tied to file edits."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "94dc9f06-27e2-4ad8-acd4-e6391ba04631"
+  },
+  {
+    "question": "When is a `.claude/rules/` file with no `paths` field appropriate?",
+    "options": [
+      "Only when the file lives directly under the repo root (not inside `.claude/rules/`)",
+      "Never — `paths` is mandatory and the rule won't load without it",
+      "Only when paired with a `.claude/commands/` slash command of the same name",
+      "When the rule should be globally loaded (always-on) for every interaction — used deliberately"
+    ],
+    "explanations": [
+      "Rule files belong under `.claude/rules/`; the path of the rule file isn't related to whether `paths` is present.",
+      "Omitting `paths` doesn't disable the rule; it removes the conditional filter.",
+      "There's no required pairing with slash commands.",
+      "Correct — omitting `paths` makes the rule globally loaded; treat that as a deliberate choice, not an accident."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "d75ea418-1e0c-4a9b-ab44-e2f21ac8f4f0"
+  },
+  {
+    "question": "Why is `**/*.test.tsx` preferred over `tests/**/*.tsx` for a path-scoped test rule in a repo where tests are colocated?",
+    "options": [
+      "Colocated tests don't live under a `tests/` folder; only `**/*.test.tsx` matches them by file-name shape regardless of directory",
+      "`tests/**/*.tsx` is invalid YAML",
+      "`**/*.test.tsx` is faster because it skips directory traversal",
+      "`tests/**/*.tsx` only matches at the project root"
+    ],
+    "explanations": [
+      "Correct — colocated tests sit next to source files, so a directory-anchored glob misses them; matching by file-name suffix is what reaches every one.",
+      "It's a perfectly valid glob; the issue is that it doesn't match colocated tests.",
+      "Globs are evaluated by the harness; speed isn't the differentiator. Coverage of colocated tests is.",
+      "`tests/**/*.tsx` matches `tests/` at the project root and below; the issue is that there is no such directory in a colocated layout."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "71eef586-aec0-4480-b504-8516043cce81"
+  },
+  {
+    "question": "Which scenario most strongly indicates `.claude/rules/` with globs is the right tool over a `CLAUDE.md`?",
+    "options": [
+      "Project-wide architectural decisions every contributor must know about",
+      "Conventions that apply by file type (e.g., test files, migrations) and whose files are spread across multiple directories",
+      "Per-developer preferences (editor settings, personal alias choices)",
+      "One-off instructions for a single PR"
+    ],
+    "explanations": [
+      "Project-wide always-on context belongs in the root `CLAUDE.md`.",
+      "Correct — the textbook fit: file-type conventions on files that don't share a single subtree.",
+      "Personal preferences belong in user-scoped configuration, not project-shared rules.",
+      "One-off PR instructions belong in the prompt, not in versioned rule files."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "e153353c-ec7f-4a53-a0a8-31e1a8ed063d"
+  },
+  {
+    "question": "A team adds `paths: [\"**/migrations/*.sql\"]` to a rule, but during a planning step where Claude has not yet opened any migration files, the migration safety conventions don't appear to influence the plan. What's actually happening?",
+    "options": [
+      "The harness silently de-prioritises plan-mode context; rules never load in plan mode",
+      "Path-scoped rules activate only when a matching file is being edited; during planning before any migration file is opened, the rule has not loaded",
+      "The glob is wrong — `**/migrations/*.sql` should be `migrations/**.sql`",
+      "Rule files require explicit `enabled: true` in frontmatter to take effect"
+    ],
+    "explanations": [
+      "There is no documented plan-mode-specific de-prioritisation of rules; the issue is conditional activation.",
+      "Correct — conditional activation is keyed to the file Claude is editing; planning steps that haven't opened a migration don't trigger it.",
+      "The glob is fine; activation timing is the issue, not pattern shape.",
+      "There is no `enabled` flag in the documented frontmatter; the conditional behaviour is by design."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "931535e5-f7c9-4f9a-8197-ca1ce926e057"
+  },
+  {
+    "question": "Your `.claude/rules/` directory has separate files for tests, migrations, and Terraform. A developer edits a file matching multiple rules' globs (e.g., a `migrations/*.test.sql` file). What should you expect?",
+    "options": [
+      "An error — a file may match at most one path-scoped rule",
+      "Only the alphabetically-first matching rule activates",
+      "Only the most-specific glob wins; all other rules are suppressed",
+      "Every rule whose `paths` matches loads — multiple rules can activate together for a single file"
+    ],
+    "explanations": [
+      "Multiple matches aren't an error condition; they're expected when concerns overlap.",
+      "There's no documented alphabetical precedence; matching rules compose.",
+      "There's no documented specificity ranking that suppresses others; matches compose.",
+      "Correct — rule activation is per-file independent; if multiple rules' globs match, all of them inject their content."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "018ab177-80bd-47b5-8805-5eef3c9bd3ab"
+  },
+  {
+    "question": "A reviewer suggests replacing `.claude/rules/tests.md` (with `paths: [\"**/*.test.tsx\"]`) with a `.claude/skills/test-conventions/SKILL.md` so tests get \"the same conventions.\" What's the meaningful difference that argues against the swap?",
+    "options": [
+      "Path-scoped rules attach automatically when matching files are edited; skills require explicit invocation",
+      "Skills can't include Markdown content; rules can",
+      "Skills only run inside CI; rules only run in IDE",
+      "Skills override `CLAUDE.md` whereas rules merge with it"
+    ],
+    "explanations": [
+      "Correct — automatic file-shape activation is precisely what makes path-rules the right choice here; skills require deliberate invocation.",
+      "Skills do contain Markdown content; the differentiator is invocation model, not content type.",
+      "Both mechanisms work in interactive and headless modes; the differentiator is invocation, not environment.",
+      "There is no documented override-vs-merge precedence framed this way; the relevant difference is auto-attachment."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "cbda572e-1758-4683-8e58-7015279269f8"
+  },
+  {
+    "question": "Conventions for `terraform/` are placed in `terraform/CLAUDE.md`. Devs report that when editing unrelated `terraform/scripts/lint.sh`, Claude still applies HCL-style suggestions. What's the cleanest fix?",
+    "options": [
+      "Move `lint.sh` out of the `terraform/` directory",
+      "Add a `# Note` to `terraform/CLAUDE.md` saying the rules don't apply to shell scripts",
+      "Move the HCL-specific guidance to `.claude/rules/terraform.md` with `paths: [\"**/*.tf\", \"**/*.tfvars\"]` so it only activates on Terraform files",
+      "Add `paths` frontmatter to the existing `terraform/CLAUDE.md`"
+    ],
+    "explanations": [
+      "Reorganising the repo to dodge a directory-scoped CLAUDE.md is awkward and doesn't address the underlying mechanism mismatch.",
+      "Adding a prose note still leaves the conventions in context for every edit in `terraform/`; structural fix is needed.",
+      "Correct — HCL conventions are file-type-specific, not directory-wide; path-scoping by `.tf`/`.tfvars` solves the cross-talk.",
+      "`CLAUDE.md` files don't take a `paths` filter — that's what `.claude/rules/` files are for."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "dc24f966-3aed-48bb-a59e-fdca80d8de99"
+  },
+  {
+    "question": "A path-scoped rule has frontmatter `paths: \"**/*.test.tsx\"` (a string, not an array). What is the most likely failure mode?",
+    "options": [
+      "The rule activates globally instead of being scoped",
+      "The frontmatter doesn't conform to the documented array shape, so the rule may not parse correctly or scope as intended",
+      "The rule activates only for files literally named `**/*.test.tsx`",
+      "The rule activates with double the intended frequency"
+    ],
+    "explanations": [
+      "Global activation isn't the documented fallback for malformed `paths`; treat the schema mismatch as a bug to fix.",
+      "Correct — `paths` is documented as an array; a bare string violates the schema and behaviour is at best unspecified.",
+      "Globs aren't matched as literal filenames; that mode of failure isn't what happens.",
+      "There's no documented frequency-doubling behaviour; the field is simply mis-shaped."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "5f030afe-ea12-4e6a-8762-9e2c6cba3b56"
+  },
+  {
+    "question": "A team member proposes consolidating ten small `.claude/rules/` files into a single mega-rule with one combined `paths` array of every glob. Why is this generally a worse design?",
+    "options": [
+      "Any single matching glob loads all ten concerns, dragging unrelated conventions into context for every matching edit",
+      "Mega-rule files can't be parsed beyond a hard limit",
+      "`paths` arrays accept at most three entries",
+      "Combined globs trigger duplicate activation on the same file"
+    ],
+    "explanations": [
+      "Correct — fan-in coupling: a `.tf` edit shouldn't pull in test or migration conventions, but a combined rule would.",
+      "There's no documented size cap that motivates the split.",
+      "There's no documented entry-count cap; multi-entry arrays are normal.",
+      "Activation isn't doubled for a single file; the issue is over-scoped content per activation."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "12a78882-743c-4dc4-8541-23551990d588"
+  },
+  {
+    "question": "Which combination best handles a repo that needs (a) project-wide architecture context always loaded and (b) per-file-type conventions only when those files are touched?",
+    "options": [
+      "Subdirectory `CLAUDE.md` files for both, mirroring the repo layout",
+      "Only `.claude/rules/` files — duplicate the architecture into every rule's body",
+      "Only a root `CLAUDE.md` — include the file-type conventions as nested sections and let Claude infer applicability",
+      "Root `CLAUDE.md` for the architecture context, plus per-concern files in `.claude/rules/` with `paths` globs for the file-type conventions"
+    ],
+    "explanations": [
+      "Subdirectory CLAUDE.md can't reach files spread across directories and over-applies to non-matching files within the same directory.",
+      "Duplication drifts and over-loads context for every activation.",
+      "Inference-driven applicability is exactly what path-scoped rules eliminate.",
+      "Correct — the two mechanisms compose: always-on context where it belongs, conditional context where it belongs."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "5c739bd0-bd4c-42a6-88a9-48532610b7a8"
+  },
+  {
+    "question": "A `.claude/rules/migrations.md` file sets `paths: [\"**/migrations/*.sql\"]`. The team starts placing migrations under `db/changes/` instead. Without updating the rule, what behaviour should you predict?",
+    "options": [
+      "The rule activates globally as a fallback when no path matches",
+      "The rule still activates because migration files are recognised by content",
+      "The rule no longer activates for the new migration files because their paths don't match the glob",
+      "The rule activates once per directory in the repo regardless of `paths`"
+    ],
+    "explanations": [
+      "There's no documented global fallback when the glob misses.",
+      "Path-scoped rules match by path glob, not by file content.",
+      "Correct — activation is purely path-glob-driven; renaming the directory means the glob no longer matches.",
+      "Activation is keyed to the file being edited matching a glob, not to directory enumeration."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "adab572b-8782-4f74-8b96-baaa508de70d"
+  },
+  {
+    "question": "Why might a developer prefer a path-scoped rule over a subdirectory `CLAUDE.md` even when matching files all happen to live in one directory today?",
+    "options": [
+      "Path-scoped rules are always cheaper to load than `CLAUDE.md`",
+      "Path-scoping decouples the convention from the directory layout, so it keeps working when files move or the layout is refactored",
+      "`CLAUDE.md` files are deprecated for subdirectories",
+      "Path-scoped rules support frontmatter and `CLAUDE.md` files do not"
+    ],
+    "explanations": [
+      "Cost depends on whether the rule activates; that's not a universal claim.",
+      "Correct — declarative file-shape matching survives reorganisation that would break a directory-bound `CLAUDE.md`.",
+      "Subdirectory `CLAUDE.md` is documented and supported; not deprecated.",
+      "`CLAUDE.md` files don't take a `paths` filter, but that's a feature gap, not a deprecation."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "b89741ba-4086-4251-9d60-0069e8681732"
+  },
+  {
+    "question": "A path-scoped rule and the root `CLAUDE.md` give slightly different guidance on a niche edge case. When Claude edits a matching file, what's the realistic expectation about how they interact?",
+    "options": [
+      "Both bodies are present in context; the rule's specific guidance applies to the matching file alongside the always-loaded `CLAUDE.md`, so keep them complementary rather than contradictory",
+      "The rule wins via a documented precedence flag and the `CLAUDE.md` section is suppressed",
+      "The `CLAUDE.md` always wins because it loaded first",
+      "The harness throws a conflict error and refuses to apply either"
+    ],
+    "explanations": [
+      "Correct — both load and the model reasons over both; the practical advice is to author them so they don't contradict, not to rely on a precedence rule.",
+      "There is no documented precedence flag that suppresses `CLAUDE.md` content.",
+      "Load order doesn't grant `CLAUDE.md` automatic dominance; both are in context.",
+      "There is no documented conflict-detection error."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "a74916e4-55fc-4049-890e-f3edac164c93"
+  },
+  {
+    "question": "A `.claude/rules/security-headers.md` enforces specific HTTP-header conventions for API handlers; it has `paths: [\"apps/*/api/**/*.ts\"]`. A reviewer notes that a strictly-equivalent `apps/<each>/api/CLAUDE.md` file in every API directory would inject the exact same content for the same files. What is still meaningfully better about the path-scoped version?",
+    "options": [
+      "Path-scoped rules use the prompt cache while `CLAUDE.md` does not",
+      "The path-scoped rule is loaded faster because the harness skips parsing `CLAUDE.md` when a rule is present",
+      "The path-scoped rule wins precedence over `CLAUDE.md` and avoids merge conflicts",
+      "One canonical source of truth — adding a new app or moving APIs around requires no per-directory `CLAUDE.md` duplication or upkeep"
+    ],
+    "explanations": [
+      "There is no documented caching difference between rules and `CLAUDE.md`.",
+      "Load-speed isn't the documented differentiator; maintainability and reach are.",
+      "There is no documented precedence rule of that shape; both can coexist and merge.",
+      "Correct — declarative file-shape matching avoids the duplication-drift cost of N hand-maintained `CLAUDE.md` files; that's the lasting advantage even when content is identical today."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "852e2dc5-fbfb-411a-aa46-64be484c6ece"
+  },
+  {
+    "question": "An engineer notices the test rule occasionally seems \"already in effect\" while Claude is reasoning about an unrelated component edit, even though the file being modified isn't a test. Which is the most likely real explanation?",
+    "options": [
+      "Path-scoped rules silently bleed into adjacent edits via fuzzy file matching",
+      "The rule was activated in an earlier turn (when a test file was edited) and its content remains in the conversation history; activation isn't time-travelling, it's just persistent across turns once injected",
+      "The harness applies path-scoped rules to neighbouring files within the same directory",
+      "Path-scoped rules become globally active after the third file edit in a session"
+    ],
+    "explanations": [
+      "There is no fuzzy-matching activation; `paths` is exact-glob.",
+      "Correct — once a rule's content has been injected into the conversation, it stays in history; the rule didn't re-activate, but its earlier content is still visible.",
+      "There is no documented neighbouring-file expansion; activation is per edited file.",
+      "There is no documented session-edit threshold that flips activation to global."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "204db8c1-33c7-49f9-be86-5725c462e341"
+  },
+  {
+    "question": "A senior reviewer claims `.claude/rules/` is just \"a more compact `CLAUDE.md`\" and that any pattern of CLAUDE.md hierarchy could be re-expressed as a single global rule. Identify the most precise principle that pushes back on this framing.",
+    "options": [
+      "Path-scoped rules can't contain Markdown; they must be plain text",
+      "Path-scoped rules are mandatory and `CLAUDE.md` is optional",
+      "Path-scoped rules differ from `CLAUDE.md` in *when* they load — only on matching file edits — not just where the content lives; that conditional activation is the core feature, not a packaging detail",
+      "`CLAUDE.md` is loaded at session start while rules are loaded only on session resume"
+    ],
+    "explanations": [
+      "Path-scoped rule bodies are Markdown, just like `CLAUDE.md`.",
+      "Both are optional; mandate isn't the differentiator.",
+      "Correct — the distinguishing property is conditional, file-driven activation, which directly affects token cost and cross-talk; reframing as packaging misses the point.",
+      "Both are sent at request time; there's no documented session-resume distinction."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "3105fa64-0680-4a27-812e-d6d282c6fae2"
+  },
+  {
+    "question": "A team has `paths: [\"**/*.test.tsx\"]` and a separate `paths: [\"apps/web/**/*\"]` rule. While editing `apps/web/components/Button.test.tsx` they observe both rules' content in context. A teammate insists this is a bug and asks which rule \"should win.\" What's the precise principle?",
+    "options": [
+      "Both rules legitimately match and both load — there is no winner; design rules to be additive, and split content so simultaneous activation produces complementary, not contradictory, guidance",
+      "The narrower glob wins; the broader one is suppressed",
+      "The first rule alphabetically wins",
+      "Only the most recently modified rule file wins"
+    ],
+    "explanations": [
+      "Correct — multi-rule activation is expected; the load-time model is union, not precedence, so authoring discipline is what keeps it useful.",
+      "There is no documented narrowness-based precedence ranking.",
+      "There is no documented alphabetical precedence.",
+      "There is no documented mtime-based precedence."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "6f0ff12c-fb6c-4a2b-b207-f96093b85570"
+  },
+  {
+    "question": "A team moves test conventions from the root `CLAUDE.md` into `.claude/rules/tests.md` (`paths: [\"**/*.test.tsx\"]`). Token usage on non-test edits drops, but they observe Claude still occasionally applies test conventions to non-test files in the same chat session. Which explanation is most consistent with how rules and conversation history work?",
+    "options": [
+      "The non-test files secretly match the glob via case-insensitive matching",
+      "The harness retroactively re-applies the most recent rule to all subsequent edits",
+      "Path-scoped rules become global after the first matching activation",
+      "When Claude edited a test file earlier in the session, the rule content was injected and remains in the conversation history; the new non-test edits see that history, even though the rule wouldn't activate fresh for those files"
+    ],
+    "explanations": [
+      "There is no documented case-insensitive glob matching of that kind.",
+      "No retroactive re-application is documented; the cause is plain conversation history persistence.",
+      "There is no documented \"sticky\" activation model that flips to global.",
+      "Correct — rules are injected at activation time, but conversation history is sticky; this is a session-state effect, not a re-activation."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "aedc72b9-73e6-4858-8173-49110c59458c"
+  },
+  {
+    "question": "Faced with the choice between `frontend/CLAUDE.md` (covers everything in `frontend/`) and `.claude/rules/frontend-components.md` with `paths: [\"frontend/**/*.{ts,tsx}\"]`, which is the strongest reason to pick the path-scoped form even though every matching file is under `frontend/`?",
+    "options": [
+      "Path-scoped rules can be uploaded to remote skills marketplaces while `CLAUDE.md` cannot",
+      "It restricts activation to TypeScript/TSX files within `frontend/`, so non-TS files (configs, scripts, fixtures) in the same tree don't pay context cost for component conventions",
+      "`CLAUDE.md` files are limited to 4 KB; rules are unlimited",
+      "Path-scoped rules can include code blocks and `CLAUDE.md` cannot"
+    ],
+    "explanations": [
+      "There is no documented marketplace differentiator framed this way.",
+      "Correct — directory-scope `CLAUDE.md` is uniform across file types; the path-rule narrows by file type within the directory and avoids over-application.",
+      "There is no documented hard size cap of that shape on `CLAUDE.md`.",
+      "Both formats accept Markdown including code blocks."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "650e5666-bb98-481e-9e2c-dcb3045a9c1d"
+  },
+  {
+    "question": "A rule has `paths: [\"**/*.test.tsx\"]`. A developer edits `Button.test.tsx.snap` (a Jest snapshot). The convention does not activate, and the developer files a bug. What's the correct explanation?",
+    "options": [
+      "Globs implicitly match any extension after a dot",
+      "Snapshot files always activate the corresponding test rule by convention",
+      "Globs match against the full filename including extension; `**/*.test.tsx` does not match `*.test.tsx.snap` — the rule isn't broken, the glob simply doesn't cover that file. Add `**/*.test.tsx.snap` (or a broader pattern) if you want it to.",
+      "Path-scoped rules ignore extensions entirely and match on basename only"
+    ],
+    "explanations": [
+      "Globs do not implicitly accept arbitrary extension suffixes.",
+      "There is no documented \"by convention\" snapshot inclusion.",
+      "Correct — globs are literal up to wildcards; `.tsx` is a different extension than `.tsx.snap`, and you have to opt the latter in.",
+      "Globs match the full path, not just the basename."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "d79586a7-7323-4f06-a171-388585f3e8dd"
+  },
+  {
+    "question": "Given (a) `frontend/CLAUDE.md` describing the React component architecture and (b) `.claude/rules/tests.md` with `paths: [\"**/*.test.tsx\"]`, and Claude is asked to add a snapshot test next to `frontend/components/Modal.tsx`, which content is in context as Claude writes `Modal.test.tsx`?",
+    "options": [
+      "Both — `frontend/CLAUDE.md` is always loaded for files under `frontend/`, and the test rule activates because the new file matches `**/*.test.tsx`",
+      "Only `frontend/CLAUDE.md` — path-scoped rules don't load for newly-created files until they're saved",
+      "Only the test rule — directory `CLAUDE.md` files are suppressed when a path-scoped rule activates",
+      "Neither — until the test passes, neither configuration is considered active"
+    ],
+    "explanations": [
+      "Correct — `CLAUDE.md` is always-on in scope; the path-rule activates because the file Claude is editing matches the glob; both contribute.",
+      "There is no documented \"saved file\" gate on activation.",
+      "There is no documented suppression of `CLAUDE.md` by activated rules; they coexist.",
+      "Activation isn't gated on test execution."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "f749bf55-1721-4a30-806e-60f200af1d14"
+  },
+  {
+    "question": "A team enforces fixture conventions via a `.claude/rules/fixtures.md` file with `paths: [\"**/__fixtures__/**\"]`. A developer asks: \"why not just put it in the root `CLAUDE.md`? It's only ten lines.\" Which response captures the principled reason most precisely?",
+    "options": [
+      "Path-scoped rules are mandatory for any file under a `__` prefixed directory",
+      "Ten-line conventions exceed the documented size threshold for `CLAUDE.md`",
+      "`CLAUDE.md` cannot describe fixture conventions; that's a `.claude/rules/`-only category",
+      "Always-loading those ten lines means they're in context for every interaction in the project, including unrelated production-code edits where they create noise; path-scoping injects them only when a fixture file is actually being touched"
+    ],
+    "explanations": [
+      "There is no documented requirement keyed to `__` prefixes.",
+      "There is no documented size threshold of that shape.",
+      "`CLAUDE.md` can describe any conventions; the question is whether always-loading them is appropriate.",
+      "Correct — the cost of \"only ten lines\" is paid on every interaction project-wide; conditional activation prevents unrelated edits from dragging in fixture-specific guidance."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "997ed615-3cbf-4763-8beb-09ee344ad88b"
+  },
+  {
+    "question": "A `.claude/rules/` file has frontmatter with `paths` omitted (no field). The author intends \"only loads when a `*.md` file is edited\" because the rule is itself a Markdown file. What's the precise correction?",
+    "options": [
+      "The rule won't load at all because `paths` is required",
+      "Rule activation is keyed to the *edited* file's path matching `paths`, not to the rule file's own path; without `paths` the rule loads globally. Add `paths: [\"**/*.md\"]` if you want activation tied to Markdown edits.",
+      "The rule will activate when any other rule file is edited",
+      "The rule will activate only inside `.claude/rules/` editing sessions"
+    ],
+    "explanations": [
+      "Omitting `paths` doesn't disable the rule; it removes the constraint.",
+      "Correct — the field constrains the *target* file Claude is editing, not the rule's own filename; missing `paths` means \"no constraint\" i.e. global.",
+      "Activation isn't tied to other rule files being edited.",
+      "Activation isn't tied to the rules directory itself."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.3"
+    ],
+    "phase": "post",
+    "qid": "9ed7a0a2-1a4b-4f9b-a6c0-5c10ffa95bb8"
+  }
+]

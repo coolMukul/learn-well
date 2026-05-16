@@ -1,0 +1,882 @@
+[
+  {
+    "question": "Your CI step runs `claude \"Review this diff for security issues\"` and the job hangs until the runner kills it. What flag fixes this?",
+    "options": [
+      "`-p` (or `--print`) for non-interactive mode.",
+      "`--batch` to enable pipeline mode.",
+      "`CLAUDE_HEADLESS=true` as an environment variable.",
+      "Redirect stdin from `/dev/null`."
+    ],
+    "explanations": [
+      "Correct. `-p` / `--print` is the documented non-interactive flag — Claude Code processes the prompt, writes to stdout, and exits.",
+      "`--batch` is not a Claude Code flag; nothing handles the missing-TTY case.",
+      "There is no documented `CLAUDE_HEADLESS` env var; the supported switch is `-p`.",
+      "Stdin redirection silences the prompt but doesn't put Claude Code in non-interactive mode; it can still hang."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "pre",
+    "qid": "7f93c89f-b0d8-4021-8de3-4e42749d1307"
+  },
+  {
+    "question": "You want CI to post structured PR comments. Which combination produces parseable findings without regex?",
+    "options": [
+      "Add `--format markdown` and parse the headings.",
+      "Add `--output-format json` and `--json-schema findings.schema.json`.",
+      "Tell Claude in the prompt to \"respond as JSON.\"",
+      "Use `--output-format text` and split lines on punctuation."
+    ],
+    "explanations": [
+      "Markdown is still prose; heading parsing breaks on wording changes.",
+      "Correct. Harness-level structured output plus a JSON Schema constrains the response to the required shape.",
+      "Prompt-only JSON is probabilistic — sometimes wrapped in prose or trailing commentary.",
+      "Splitting prose lines is exactly the brittle regex anti-pattern."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "pre",
+    "qid": "5d97913e-080e-4ca5-b94f-6ed31ab6db66"
+  },
+  {
+    "question": "Where should team-wide testing standards (fixture names, valuable-test criteria) live so every CI Claude Code invocation honours them?",
+    "options": [
+      "As environment variables set by the CI runner.",
+      "Inlined into every CI prompt.",
+      "In CLAUDE.md, version-controlled with the repo.",
+      "In a `.env.testing` file passed via `--env-file`."
+    ],
+    "explanations": [
+      "Env vars don't shape Claude's prompt context; they're job parameters, not project context.",
+      "Workable but fragile and verbose; CLAUDE.md is the canonical place.",
+      "Correct. CLAUDE.md is the documented project-context channel and is read on every invocation.",
+      "There's no `--env-file` flag for project standards; this is invented mechanics."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "pre",
+    "qid": "b60e062b-5431-4ca0-b148-f949862e08b5"
+  },
+  {
+    "question": "The same Claude Code session generates code and then reviews the diff it just produced. Why is this problematic?",
+    "options": [
+      "Two roles in one session always exhausts the context window.",
+      "Claude Code refuses to review a diff it generated.",
+      "Tool calls from generation prevent the reviewer from running Read.",
+      "The generation rationale in shared context biases the review toward defending the original choices."
+    ],
+    "explanations": [
+      "Token budget isn't the core issue; bias is.",
+      "There's no such refusal; the model will happily review.",
+      "There's no such prevention; tool access is governed by configuration, not prior calls.",
+      "Correct. Context isolation is needed so the reviewer evaluates artifacts without the generator's reasoning."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "pre",
+    "qid": "806436eb-06b1-4e9b-8250-331c678a474c"
+  },
+  {
+    "question": "After a fixup commit, your re-run review bot keeps posting the same five comments it posted last time. What's the right fix?",
+    "options": [
+      "Pass the prior review findings into the next run with instructions to suppress already-reported issues.",
+      "Lower the model's temperature so it's more conservative.",
+      "Increase iteration caps so Claude has more turns to detect duplicates.",
+      "Switch to a larger context-window model."
+    ],
+    "explanations": [
+      "Correct. The bot is missing the context of what it already said; provide the priors.",
+      "Temperature/caution is the wrong root cause — duplication isn't a recklessness problem.",
+      "Iteration caps don't carry memory across invocations.",
+      "Context size doesn't help when the prior findings aren't in context at all."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "pre",
+    "qid": "744fcecf-8adf-4577-bbab-4ab7e39e5dec"
+  },
+  {
+    "question": "Your test-generation bot keeps proposing tests already covered by the existing suite. What's the most direct fix?",
+    "options": [
+      "Add a stronger system prompt telling Claude not to duplicate.",
+      "Pass the existing test file(s) into the run and instruct Claude to extend coverage rather than duplicate scenarios.",
+      "Run the generator twice and diff the outputs, dropping duplicates.",
+      "Train a smaller classifier to detect duplicate test names before they're written."
+    ],
+    "explanations": [
+      "Without the existing tests in context the model has nothing to compare against.",
+      "Correct. The bot can only dedupe against scenarios it can see.",
+      "Doesn't address duplication of existing tests; only deduplicates within the new run.",
+      "Over-engineered relative to the prompt-context fix."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "pre",
+    "qid": "a76c8a59-a91f-4dfd-9e18-d07d79006a05"
+  },
+  {
+    "question": "Which long-form spelling of the non-interactive flag is correct?",
+    "options": [
+      "`--non-interactive`",
+      "`--no-tty`",
+      "`--print`",
+      "`--exec`"
+    ],
+    "explanations": [
+      "Not a documented Claude Code flag.",
+      "Not a documented Claude Code flag.",
+      "Correct. `-p` is short for `--print`.",
+      "Not a documented Claude Code flag."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "pre",
+    "qid": "6a547149-e72e-4027-8ea8-d63ab8c9b486"
+  },
+  {
+    "question": "Which statement best describes the role of `--json-schema` in CI?",
+    "options": [
+      "It validates the prompt's JSON syntax before sending the request.",
+      "It enables tool-calling with JSON-typed parameters.",
+      "It's a synonym for `--output-format json`.",
+      "It supplies a schema that constrains Claude Code's structured output to the exact shape the pipeline expects."
+    ],
+    "explanations": [
+      "It governs output, not prompt validation.",
+      "Tool-calling schemas are a separate API-level concept; this flag is about CLI output.",
+      "They are complementary: `--output-format json` enables structure; `--json-schema` defines its shape.",
+      "Correct. The schema is enforced at the harness layer so the pipeline can read fields like `severity`, `file`, `line`, `message` directly."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "pre",
+    "qid": "885629ae-154d-466a-8be4-bd9a27642c86"
+  },
+  {
+    "question": "Three things a CI test-generation pipeline should load into context for best results are:",
+    "options": [
+      "Source under test, existing test file(s) for that source, and the testing-standards section of CLAUDE.md.",
+      "The full repository tree, build logs, and the previous PR's review comments.",
+      "Only the source file — Claude infers everything else.",
+      "The source file and the runtime configuration of the CI runner."
+    ],
+    "explanations": [
+      "Correct. With these three the generator produces tests that complement the suite and follow team conventions.",
+      "Repo-wide loading wastes context; build logs and prior PR comments are the wrong artifacts here.",
+      "Source-only is exactly the cause of duplicate test generation.",
+      "Runner configuration is unrelated to test design."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "pre",
+    "qid": "b6a661f2-ecc4-49d9-9d47-b71460a7ee90"
+  },
+  {
+    "question": "In a typical CI pipeline, how is generator/reviewer session isolation actually achieved?",
+    "options": [
+      "Run generator and reviewer on different runners so they cannot share memory.",
+      "Each `claude -p` invocation is a fresh process; the reviewer step does not `--resume` the generator's session.",
+      "Pass `--isolate` on the reviewer invocation.",
+      "Use the Message Batches API for reviews so context is cleared between requests."
+    ],
+    "explanations": [
+      "Process separation is sufficient on the same runner; different runners aren't required.",
+      "Correct. Isolation is the default; the bug is reusing a session id across steps.",
+      "There is no `--isolate` flag.",
+      "Batches API doesn't relate to session isolation; the issue is shared session state, not endpoint."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "pre",
+    "qid": "212e9cc7-bdf4-40de-a4b0-a41be6e8f703"
+  },
+  {
+    "question": "Your GitHub Actions step is `run: claude \"summarize this PR\"` and the job times out. What is the correct fix?",
+    "options": [
+      "Replace with `run: claude -p \"summarize this PR\"`.",
+      "Set `timeout-minutes: 60`.",
+      "Add `shell: bash -i` so stdin is interactive.",
+      "Switch to `claude --interactive=false`."
+    ],
+    "explanations": [
+      "Correct. `-p` runs Claude Code non-interactively so it processes the prompt and exits.",
+      "Increases the timeout but doesn't stop the hang; the job will still fail eventually.",
+      "Forcing interactivity is the opposite of what's needed.",
+      "Not a documented flag."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "206848c7-fc56-48a1-b266-792f652472b6"
+  },
+  {
+    "question": "Which statement about `--output-format json` is correct?",
+    "options": [
+      "It only affects the assistant's tone, not the output shape.",
+      "It produces a structured envelope so the pipeline can parse fields without regex.",
+      "It is mutually exclusive with `-p`.",
+      "It disables tool use."
+    ],
+    "explanations": [
+      "It's a structural switch; tone is governed by the prompt.",
+      "Correct.",
+      "They are commonly used together.",
+      "Output formatting is unrelated to tool-use availability."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "cf1f4723-3e27-4dcc-8ef0-7988f7d0b157"
+  },
+  {
+    "question": "A team wants every CI run to follow the same review priorities (security > data integrity > error handling > readability). Where should the priorities be documented?",
+    "options": [
+      "As a Markdown section pasted into each prompt.",
+      "As shell variables in the CI runner.",
+      "In CLAUDE.md at the project root.",
+      "In the JSON Schema passed to `--json-schema`."
+    ],
+    "explanations": [
+      "Workable but verbose, and breaks the moment one prompt is updated and another isn't.",
+      "Shell vars don't enter the prompt context.",
+      "Correct. CLAUDE.md is the documented channel for project context; it's read on every invocation.",
+      "JSON Schema constrains output shape, not review philosophy."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "7b72d282-2e01-416f-888f-177461ac1764"
+  },
+  {
+    "question": "Why is generator/reviewer isolation important in a CI Claude Code workflow?",
+    "options": [
+      "Sharing sessions doubles API cost.",
+      "It prevents cross-account billing leaks.",
+      "It is the only way to keep the review under the context window limit.",
+      "Sharing the generator's session leaks generation rationale into the review and biases it."
+    ],
+    "explanations": [
+      "Cost isn't the concern; bias is.",
+      "Not a session-isolation issue.",
+      "Isolation is about correctness, not budget.",
+      "Correct."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "8eb49c22-c52c-482c-9ed0-84e6f925bd7c"
+  },
+  {
+    "question": "Your re-run review bot duplicates comments after fixup commits. The most effective change is to:",
+    "options": [
+      "Pass prior review findings as context with instructions to skip already-reported issues.",
+      "Reduce model temperature.",
+      "Switch to a smaller faster model.",
+      "Move the review step earlier in the pipeline."
+    ],
+    "explanations": [
+      "Correct. The bug is missing context of prior runs; supply it.",
+      "Temperature is unrelated to cross-run memory.",
+      "Smaller model exacerbates rather than fixes the duplication.",
+      "Order of pipeline steps doesn't address the issue."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "17022f9d-3080-4905-8de4-d538bd5b15e9"
+  },
+  {
+    "question": "A pipeline runs `claude -p \"generate tests for src/payment.ts\"` and the proposed tests duplicate scenarios in `src/payment.test.ts`. What's the right fix?",
+    "options": [
+      "Delete `src/payment.test.ts` so Claude regenerates the full suite.",
+      "Also pass `src/payment.test.ts` into context and instruct Claude to extend coverage rather than duplicate.",
+      "Increase the model's max tokens.",
+      "Tell the prompt that the bot is \"experienced\" so it acts more carefully."
+    ],
+    "explanations": [
+      "Destructive — and it doesn't solve the underlying context-blindness.",
+      "Correct.",
+      "Output budget doesn't control duplication.",
+      "Persona prompts don't substitute for missing context."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "447fa7e5-2266-4a99-8cd2-3cddd412ce4c"
+  },
+  {
+    "question": "Which is the most appropriate use of `--json-schema` in a PR-review pipeline?",
+    "options": [
+      "Define a schema for the prompt itself.",
+      "Define a schema for the developer's commit message.",
+      "Define an array of findings with required `severity`, `file`, `line`, `message` fields so the pipeline can post inline comments.",
+      "Define a schema that lists every file in the repo."
+    ],
+    "explanations": [
+      "The flag governs output, not prompt structure.",
+      "Unrelated to the flag's purpose.",
+      "Correct.",
+      "Not a useful schema for review output."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "16302f9d-bf1c-4dff-968c-bfe165729e3e"
+  },
+  {
+    "question": "What does CLAUDE.md add to a non-interactive `claude -p` invocation in CI?",
+    "options": [
+      "It selects the model variant.",
+      "It overrides the `--output-format` flag.",
+      "It is ignored in non-interactive mode.",
+      "Project context (testing standards, conventions, review criteria) is read automatically and shapes the run."
+    ],
+    "explanations": [
+      "Model selection is via flags or config, not CLAUDE.md.",
+      "CLAUDE.md doesn't override CLI flags.",
+      "It is read in non-interactive mode the same as interactive.",
+      "Correct."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "626bea4d-cf84-4971-b157-4469a0bc2af5"
+  },
+  {
+    "question": "Which artifact, *not* shared session state, should pass between the generator and reviewer pipeline steps?",
+    "options": [
+      "The diff (and code) under review.",
+      "The generator's `--resume` session id.",
+      "A serialized snapshot of the generator's chat transcript.",
+      "The generator's tool-call log."
+    ],
+    "explanations": [
+      "Correct. Artifacts move; transcripts don't.",
+      "Sharing the session id re-couples the two roles and biases the review.",
+      "That's the transcript whose absence is the whole point of isolation.",
+      "Tool-call logs from generation also leak rationale into the review."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "82b73dbe-eda9-4162-b126-3475d08b54fa"
+  },
+  {
+    "question": "A schema for review findings includes a `severity` field. Which JSON Schema construct best constrains it to {info, warning, error}?",
+    "options": [
+      "A `pattern` matching `.*`.",
+      "An `enum` listing those three string values.",
+      "A `default` value of `info`.",
+      "A `description` mentioning the three options."
+    ],
+    "explanations": [
+      "A wide-open pattern accepts anything.",
+      "Correct. `enum` enforces the exact set.",
+      "Defaults don't constrain accepted values.",
+      "Documentation alone isn't enforcement."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "c3a6d4cc-b3aa-4934-a06a-04057f704d0f"
+  },
+  {
+    "question": "Your CI script invokes `claude -p \"...\" --output-format json --json-schema schema.json` and a teammate proposes also adding \"Please respond strictly in JSON\" to the prompt as a belt-and-braces measure. What's the trade-off?",
+    "options": [
+      "It's redundant — schema enforcement happens at the harness level — and doesn't strengthen guarantees materially.",
+      "It is essential; the flags only request JSON, they don't enforce it.",
+      "It conflicts with `--output-format json` and will cause errors.",
+      "It improves output by switching the model into structured mode."
+    ],
+    "explanations": [
+      "Correct. The harness flags do the constraining; prompt instructions are at best defensive duplication.",
+      "The flags do enforce structure at the harness layer.",
+      "There's no documented conflict.",
+      "The flags drive structured output, not prompt phrasing."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "0137cb93-8dda-4d63-bfcf-a6869d273e0a"
+  },
+  {
+    "question": "A developer proposes putting per-fixture mocks into a `.env.test` file and reading them via env vars in every CI invocation, since \"flags are simpler than CLAUDE.md.\" What's the principled objection?",
+    "options": [
+      "Env vars are case-sensitive and hard to spell.",
+      "Testing standards are project context, not job parameters; CLAUDE.md is the documented channel and is read automatically.",
+      "CI runners don't expose env vars to subprocesses.",
+      "CLAUDE.md is mandatory for all Claude Code invocations to start."
+    ],
+    "explanations": [
+      "Trivial issue, not the principled point.",
+      "Correct.",
+      "They do; this isn't the issue.",
+      "It is not mandatory; absence is fine, but it's the right place for standards."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "d2278fb6-2dcb-446a-b067-5e237bbb6fa0"
+  },
+  {
+    "question": "Your reviewer sometimes \"defends\" sub-optimal generated code in its review. Logs show both steps run as `claude -p` but the reviewer step uses `--resume <generator-session-id>`. Best fix?",
+    "options": [
+      "Lower the reviewer's temperature.",
+      "Append \"be critical\" to the reviewer's prompt.",
+      "Drop `--resume` from the reviewer step so it runs as a fresh session with no generator transcript.",
+      "Add a second reviewer that resumes the same session for cross-validation."
+    ],
+    "explanations": [
+      "Doesn't remove the leaked rationale.",
+      "Persona instructions don't beat shared rationale.",
+      "Correct. The reused session is exactly the bias source.",
+      "Adds another biased reviewer, not an unbiased one."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "e19b466e-aa38-4dfd-9ff4-54a459e69648"
+  },
+  {
+    "question": "A re-run review bot is given the prior findings as context but still posts duplicates. The prompt says only \"Here are the prior findings.\" The most likely missing piece is:",
+    "options": [
+      "A higher token budget for the re-run.",
+      "A secondary review pass with a different model.",
+      "Disabling tool use for the reviewer.",
+      "An explicit instruction to *suppress* findings already covered and report only new or unaddressed issues."
+    ],
+    "explanations": [
+      "Token budget doesn't drive deduplication behaviour.",
+      "Adds cost without addressing the missing instruction.",
+      "Tool access is irrelevant to deduplication.",
+      "Correct. Showing the priors isn't enough; instruct the model on how to use them."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "9c3ef9fa-288f-4cf1-8730-606d89007d21"
+  },
+  {
+    "question": "Which combination is *most* likely to make a CI review pipeline robust against prose wording drift in Claude's output?",
+    "options": [
+      "`-p` plus `--output-format json` plus `--json-schema` defining required fields.",
+      "`-p` plus a regex parser for the prose output.",
+      "`--output-format markdown` plus heading-based parsing.",
+      "`--output-format json` alone (no schema) plus heuristic field extraction."
+    ],
+    "explanations": [
+      "Correct. Schema-enforced structure removes wording-dependence.",
+      "Regex over prose is the brittleness being avoided.",
+      "Heading parsing is still wording-dependent.",
+      "JSON without a schema can drift in field naming."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "6c5ab8c0-9480-45d8-b185-f95124334c19"
+  },
+  {
+    "question": "Your test-generation step receives the existing test file but still produces overlapping tests. Which prompt addition is most likely to actually reduce duplication?",
+    "options": [
+      "\"Try to write better tests than the existing ones.\"",
+      "\"Treat the attached existing tests as already-asserted behaviour. Identify uncovered branches and missing error paths and write tests only for those gaps.\"",
+      "\"Use TypeScript best practices throughout.\"",
+      "\"Write at least 10 new tests.\""
+    ],
+    "explanations": [
+      "Vague and doesn't establish the existing tests as a baseline.",
+      "Correct. Names the artifact's role and tells the model how to use it.",
+      "Style guidance, not deduplication guidance.",
+      "Quota prompts encourage padding, which worsens duplication."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "648b037b-c83f-4b9e-b16c-df96af193d8b"
+  },
+  {
+    "question": "Why is encoding review priorities (e.g., \"security > data integrity > error handling > readability\") into a `--json-schema` an *anti-pattern*?",
+    "options": [
+      "Schema files are too small to hold prose.",
+      "Schema validation runs before the model sees the prompt.",
+      "Schema constrains output shape, not behaviour or judgement; priorities are project context that belongs in CLAUDE.md.",
+      "Schema causes Claude Code to ignore the priorities."
+    ],
+    "explanations": [
+      "Size isn't the principled issue.",
+      "Schema validates output, not input.",
+      "Correct. Conflates structural enforcement with content guidance.",
+      "It doesn't ignore them; it just isn't the right channel."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "06ec3107-4aa0-4d9a-a60b-7fcbf5426467"
+  },
+  {
+    "question": "A pipeline reads `findings.json` and posts each entry as an inline PR comment. Which schema field is *most* important for correct inline placement?",
+    "options": [
+      "`severity` (an enum).",
+      "`message` (a string).",
+      "`suggestion` (an optional string).",
+      "`line` (an integer line number paired with a `file` path)."
+    ],
+    "explanations": [
+      "Severity affects display, not placement.",
+      "Message is the body, not the position.",
+      "Suggestion is auxiliary.",
+      "Correct. Inline comments need (file, line) coordinates to attach to the diff."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "739af5f1-b2e3-480b-803e-dd11083c3e36"
+  },
+  {
+    "question": "Your CI test generator is producing tests that contradict assertions in the existing suite (e.g., asserts a different shape for the same return value). Most likely cause?",
+    "options": [
+      "The existing test file isn't being passed into context, so the generator inferred different behaviour from the source than the existing tests assert.",
+      "The model is being too creative.",
+      "The CI runner is using the wrong Node version.",
+      "`--output-format json` is corrupting the test output."
+    ],
+    "explanations": [
+      "Correct. Without the existing tests visible, the model lacks ground truth on intended behaviour.",
+      "Vague — and the cure (\"less creative\") doesn't address the missing ground truth.",
+      "Unrelated to test correctness.",
+      "Output format doesn't change the test contents the model writes."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "152ad0cc-9066-46ec-8792-1bde92a47c12"
+  },
+  {
+    "question": "A team's CLAUDE.md says \"do not flag style issues — the linter handles those,\" but the bot keeps posting style comments. Which is the most likely root cause to investigate first?",
+    "options": [
+      "Claude Code ignores instructions about negative behaviour.",
+      "The CI invocation is running in a directory where CLAUDE.md isn't being picked up (wrong working directory or missing checkout step).",
+      "The repository's CLAUDE.md needs to be encrypted to be read.",
+      "Style comments are emitted by `--output-format json` automatically."
+    ],
+    "explanations": [
+      "It honours negative-instruction prompts when they're in context.",
+      "Correct. CLAUDE.md is read from the working directory; if the runner cd's elsewhere or the checkout is shallow, it's invisible.",
+      "There's no encryption requirement.",
+      "Output format doesn't add content."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "8533b094-b567-41e9-9fee-4d426e5a1127"
+  },
+  {
+    "question": "Engineers report that the pre-merge Claude review bot \"randomly\" misses findings and the pipeline silently continues. The bot runs `claude -p \"review the diff\" --output-format text` and `grep -E 'Issue: ' output.txt`. Which change addresses the root cause?",
+    "options": [
+      "Switch to `--output-format json` plus `--json-schema findings.schema.json` and read fields directly.",
+      "Pin the model version so the response wording stops drifting.",
+      "Add a stricter system prompt requiring `\"Issue: \"` prefixes.",
+      "Run the review three times and majority-vote the regex matches."
+    ],
+    "explanations": [
+      "Correct. The brittleness comes from prose-regex coupling; structured output with a schema removes wording-dependence.",
+      "Pinning helps marginally but doesn't eliminate wording variation across diffs.",
+      "Forcing a wording in prose is still probabilistic; a single deviation drops findings.",
+      "Triple-running adds cost and still depends on regex matching prose."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "f8dc959c-b7da-489a-9123-c249d607e90a"
+  },
+  {
+    "question": "A CI re-review bot keeps posting duplicate comments after fixup commits. The team proposes four fixes; which is the *one anti-pattern* to reject?",
+    "options": [
+      "Pass prior findings into the next run with instructions to suppress already-reported issues.",
+      "Lower the model's temperature and add \"be cautious\" to the prompt so it stops emitting duplicates.",
+      "Store findings as a workflow artifact keyed by PR number so the next run can fetch them.",
+      "Instruct Claude to dedupe against the prior findings list and report only new or unaddressed issues."
+    ],
+    "explanations": [
+      "Legitimate fix — feeds the missing context.",
+      "Correct: this is the trap. Duplication isn't a recklessness problem; it's a missing-context problem. Caution doesn't conjure memory of prior runs.",
+      "Legitimate plumbing for the legitimate fix.",
+      "Legitimate — this is the prompt-side half of the fix."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "e3988dbd-4e64-4488-a392-73f89024e18b"
+  },
+  {
+    "question": "Your generator/reviewer pipeline adds `--resume` to the reviewer step \"so it has full context and reviews faster.\" Symptom: reviewer routinely approves changes peer reviewers later flag as wrong. Best diagnosis?",
+    "options": [
+      "Resuming exhausts the context window so the reviewer skips parts of the diff.",
+      "`--resume` disables tool use, leaving the reviewer unable to read the diff.",
+      "Resuming the generator session leaks generation rationale into the reviewer, biasing it toward defending earlier choices.",
+      "`--resume` only resumes the system prompt, so context isn't actually shared."
+    ],
+    "explanations": [
+      "Window size isn't the bias mechanism here.",
+      "`--resume` does not disable tools.",
+      "Correct. Session isolation is about preventing rationale leakage, not budget.",
+      "`--resume` resumes the conversation, not just the system prompt."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "15627ccc-5b6e-4608-8502-cc3686f9d770"
+  },
+  {
+    "question": "A team wants to reduce \"noise\" tests where Claude re-asserts what the implementation already does. Which combination most directly raises *signal*, not just style?",
+    "options": [
+      "Switch the generator to a larger model and increase max tokens.",
+      "Add a CI step that deletes any test whose name overlaps an existing test name.",
+      "Lower temperature aggressively so Claude is more conservative.",
+      "(a) Document a \"valuable test asserts behaviour the implementation could plausibly get wrong\" criterion in CLAUDE.md, and (b) pass the existing tests so the generator targets uncovered branches."
+    ],
+    "explanations": [
+      "Capacity isn't the limiter; rubric and prior coverage are.",
+      "Name-overlap deletion is brittle and doesn't capture semantic duplication.",
+      "Conservative tests can still re-state implementation.",
+      "Correct. CLAUDE.md sets the rubric; existing-tests context lets the generator target gaps."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "afebfb3c-241c-4ffd-b6cf-bc9b6ca504f3"
+  },
+  {
+    "question": "Which of the following CI patterns *correctly* handles all four of: non-interactive run, parseable output, generator/reviewer isolation, and avoiding duplicate review comments on fixup commits?",
+    "options": [
+      "Two `claude -p` jobs (generate and review) without `--resume`; review uses `--output-format json` + `--json-schema`; review job fetches prior findings (workflow artifact) and is instructed to suppress already-reported issues.",
+      "One `claude -p` job that generates, then asks itself to review, with `--output-format markdown` for human readability.",
+      "Two `claude` jobs without `-p`, sharing a session via `--resume`, with prose output parsed by regex.",
+      "One `claude -p` job that emits prose findings; a follow-up job re-prompts the same session to dedupe across runs."
+    ],
+    "explanations": [
+      "Correct. Isolated processes, schema-constrained output, plumbed prior findings — all four bases covered.",
+      "Same-session generate-then-review violates isolation; markdown still requires brittle parsing.",
+      "Missing `-p` causes hangs; `--resume` violates isolation; regex over prose is brittle.",
+      "Re-using the session for dedup violates isolation, and prose findings break parsing."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "4c698bb6-cecc-4dc6-aa5b-efda7fc032ea"
+  },
+  {
+    "question": "A platform engineer suggests \"just lower the model's temperature to fix duplicate comments and contradictory tests in one go.\" Why is this the wrong root-cause fix for *both* symptoms?",
+    "options": [
+      "Lower temperature is fine for review but breaks test generation.",
+      "Both symptoms are missing-context bugs (no prior findings; no existing tests). Temperature controls sampling, not what's in the prompt.",
+      "Temperature can only be set on Anthropic API calls, not Claude Code.",
+      "Lower temperature increases latency past CI timeout limits."
+    ],
+    "explanations": [
+      "Diagnostic isn't symptom-specific; both have the same root cause.",
+      "Correct. The fix is feeding in the prior findings and the existing tests, respectively.",
+      "Inaccurate framing of the underlying issue.",
+      "Latency claim isn't the principled objection."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "729f32a9-6287-45c0-acac-3cdb27ea027e"
+  },
+  {
+    "question": "A reviewer pipeline produces high-quality JSON findings but PR-comment posting fails because the bot occasionally emits a 6th severity value (`critical`) outside the schema. The schema currently uses `\"type\": \"string\"` for severity. Best fix?",
+    "options": [
+      "Catch the unknown severity in the posting script and silently drop it.",
+      "Add a system-prompt sentence reminding Claude of the allowed severities.",
+      "Replace the string type with an `enum` listing exactly the allowed values so the harness rejects out-of-set responses.",
+      "Switch to `--output-format text` and parse with regex."
+    ],
+    "explanations": [
+      "Silent drops cause exactly the \"missed findings\" symptom the schema is meant to prevent.",
+      "Probabilistic; the harness should enforce.",
+      "Correct. Schema-level enforcement is the point of `--json-schema`.",
+      "Throws away the structure that's already mostly working."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "7a27bf7a-3bd3-44d5-9530-f679674f21ae"
+  },
+  {
+    "question": "Reviewer is over-eager: it re-flags issues that the developer already addressed in the latest commit (the original buggy lines no longer exist on the branch). The prior findings *are* passed in. The most likely remaining gap is:",
+    "options": [
+      "Lower temperature to reduce eagerness.",
+      "A larger context window.",
+      "Disabling JSON Schema so Claude can express nuance in prose.",
+      "Instructions to *verify against the current diff* before reporting — i.e., suppress prior findings whose underlying lines no longer exist or are no longer problematic."
+    ],
+    "explanations": [
+      "Eagerness here is a missing-instruction issue, not a sampling issue.",
+      "Window size doesn't tell the model what to do with the priors.",
+      "Removing structure makes posting worse, not better.",
+      "Correct. Priors must be cross-checked against the current state, not blindly re-reported."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "54728005-b3f2-4abb-8672-c25ec3d88ec9"
+  },
+  {
+    "question": "A new engineer asks why the team uses CLAUDE.md instead of a `.github/claude-config.yml` they invented. Which justification is *correct and load-bearing*?",
+    "options": [
+      "CLAUDE.md is the documented project-context channel that Claude Code reads automatically; a custom YAML file is not read unless explicit logic loads it into the prompt.",
+      "YAML cannot hold Markdown content.",
+      "GitHub Actions doesn't allow files under `.github/`.",
+      "CLAUDE.md is faster to parse than YAML."
+    ],
+    "explanations": [
+      "Correct. The mechanism — automatic discovery and inclusion — is what makes CLAUDE.md the right channel.",
+      "It can; that's not the issue.",
+      "Inaccurate.",
+      "Parse speed isn't the principled reason."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "b50847ef-40b8-4cc4-8116-53691944b4e5"
+  },
+  {
+    "question": "A pipeline runs generator and reviewer as separate `claude -p` invocations but the reviewer still seems biased toward the generator's choices. Inspection shows the reviewer step's prompt includes `\"Here is the generator's reasoning: ...\"` pulled from the generator's stdout. What's wrong, and what's the fix?",
+    "options": [
+      "Nothing is wrong; this is the recommended pattern.",
+      "Pasting the generator's reasoning *into* the reviewer's prompt re-introduces the bias that fresh sessions were supposed to prevent. Pass artifacts (diff, code, prior findings) but not generation rationale.",
+      "The fix is to encrypt the generator's reasoning before passing it.",
+      "The fix is to pass the reasoning via env var rather than prompt text."
+    ],
+    "explanations": [
+      "It's the anti-pattern.",
+      "Correct. Isolation is about *what* gets into the reviewer's context, not just *which session id* runs.",
+      "Channel doesn't matter; content does.",
+      "Same content via env var is the same leak."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.6"
+    ],
+    "phase": "post",
+    "qid": "31c1ddbc-eb63-468b-9df4-c69cc0944d8c"
+  }
+]

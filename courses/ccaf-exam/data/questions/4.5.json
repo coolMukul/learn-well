@@ -1,0 +1,882 @@
+[
+  {
+    "question": "What cost discount does the Message Batches API offer versus the synchronous API?",
+    "options": [
+      "About 50% off the synchronous price.",
+      "About 25% off the synchronous price.",
+      "Exactly the same price; the difference is throughput.",
+      "Free for the first 24 hours of each month."
+    ],
+    "explanations": [
+      "Correct. The Message Batches API is priced at roughly 50% of the synchronous API.",
+      "25% understates the discount; the documented figure is ~50%.",
+      "Pricing is genuinely lower for batches, not the same.",
+      "There is no documented free-window pricing; the discount is a flat ~50%."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "pre",
+    "qid": "4f58b945-f7ad-4193-9e2b-59f752faf843"
+  },
+  {
+    "question": "What is the processing-window guarantee for the Message Batches API?",
+    "options": [
+      "Guaranteed 24-hour delivery exactly.",
+      "Up to 24 hours, with no latency SLA.",
+      "Guaranteed 1-hour delivery for premium tiers.",
+      "Best-effort under 5 minutes."
+    ],
+    "explanations": [
+      "There is no exact-24h guarantee; 24h is an upper bound.",
+      "Correct. The documented characteristic is 'up to 24 hours' with no SLA — an upper bound, not a guarantee.",
+      "No premium tier accelerates batches to 1 hour; the API has no latency SLA.",
+      "There is no sub-5-minute target; most batches finish faster than 24h but no SLA applies."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "pre",
+    "qid": "d9e23e6b-2e42-4efa-9aee-9db883def98f"
+  },
+  {
+    "question": "Which workload is the canonical good fit for the Message Batches API?",
+    "options": [
+      "An interactive chat assistant for live customer support.",
+      "A pre-merge check that gates developer merging.",
+      "An overnight technical-debt report read at the morning standup.",
+      "A synchronous HTTP API endpoint with a 3-second timeout."
+    ],
+    "explanations": [
+      "Live chat is blocking; users won't wait hours for replies.",
+      "Pre-merge checks block developers; 'up to 24h, no SLA' is incompatible.",
+      "Correct. Overnight reports are the textbook non-blocking, latency-tolerant workload.",
+      "A 3-second HTTP timeout cannot tolerate up-to-24h batch processing."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "pre",
+    "qid": "60356f42-5246-4a21-bf5d-0690eee51c0a"
+  },
+  {
+    "question": "Why is the Message Batches API a poor fit for a CI pre-merge security check?",
+    "options": [
+      "Batched requests cost more for code-review workloads.",
+      "The Batches API doesn't support security-related prompts.",
+      "The Batches API can't accept code as input.",
+      "Pre-merge checks block a developer; up-to-24h, no-SLA processing breaks the merge gate."
+    ],
+    "explanations": [
+      "Batches are ~50% cheaper, not more expensive.",
+      "There's no content restriction on security prompts.",
+      "Code is just text input; batches accept it fine.",
+      "Correct. Blocking workflows can't tolerate the no-SLA, up-to-24h window."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "pre",
+    "qid": "722951af-f726-48f1-87da-0bf9ec8c1c33"
+  },
+  {
+    "question": "Does the Message Batches API support a multi-turn tool-use loop within a single request?",
+    "options": [
+      "No — multi-turn tool calling requires the synchronous API.",
+      "Yes, with up to 4 tool turns per batched request.",
+      "Yes, but only for built-in web search.",
+      "Yes — batched requests run an internal tool loop transparently."
+    ],
+    "explanations": [
+      "Correct. The Batches API does not orchestrate tool loops mid-request; that requires the sync API.",
+      "There is no documented N-turn limit because the feature isn't supported.",
+      "The limit is not 'web search only'; multi-turn tool-use is unsupported in batch.",
+      "There is no transparent internal loop; your code must orchestrate, which requires sync."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "pre",
+    "qid": "adc99b59-215f-4e69-9c78-7e5cdc3d06a4"
+  },
+  {
+    "question": "What is the purpose of the `custom_id` field on a batched request?",
+    "options": [
+      "It's a server-assigned token used for billing reconciliation.",
+      "It's a caller-supplied identifier echoed back on the response so you can correlate which result belongs to which input.",
+      "It selects which model variant the batch should use.",
+      "It encrypts the request payload end-to-end."
+    ],
+    "explanations": [
+      "Billing identifiers are separate; `custom_id` is for application-level correlation.",
+      "Correct. `custom_id` is set by the caller and returned on the matching response for correlation.",
+      "Model selection uses the `model` field, not `custom_id`.",
+      "`custom_id` doesn't encrypt anything; transport is TLS."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "pre",
+    "qid": "ab59d45a-83ab-4c42-9b5d-daf0fd4f1049"
+  },
+  {
+    "question": "A nightly batch of 50,000 requests has 3 failures (context-length errors). What's the right resubmission strategy?",
+    "options": [
+      "Skip the failures and update the dashboard with partial results, ignoring the 3.",
+      "Resubmit the entire batch from scratch.",
+      "Identify the 3 failed `custom_id`s, chunk the inputs as needed, and resubmit only those.",
+      "Switch to the synchronous API and re-run all 50,000 immediately."
+    ],
+    "explanations": [
+      "Silently dropping records is bad data hygiene and the failure mode is fixable.",
+      "Wastes a 24-hour cycle and money on the 49,997 already-successful requests.",
+      "Correct. Resubmit only the failed `custom_id`s, chunked or fixed; don't waste a 24h cycle on the 49,997 successes.",
+      "Re-running 50,000 sync defeats the cost savings and isn't necessary when only 3 failed."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "pre",
+    "qid": "284c6cdf-e2e5-4f08-b280-f88894b863c1"
+  },
+  {
+    "question": "An SLA promises customers results within 30 hours of upload. Batches process in up to 24 hours. What submission cadence honours the SLA worst case?",
+    "options": [
+      "Submit only when 10,000 requests have queued.",
+      "Submit once a day at the same UTC hour.",
+      "Submit every 30 hours, matching the SLA.",
+      "Submit every ~4 hours (so worst case is queue + 24h ≈ 28h)."
+    ],
+    "explanations": [
+      "Volume-triggered submission doesn't bound queue wait; an SLA-driven cadence does.",
+      "An item arriving 1 minute after the daily submission waits 24h queued + 24h processing = 48h, breaking the 30h SLA.",
+      "30h cadence + 24h processing = 54h worst case, far outside the SLA.",
+      "Correct. Worst-case end-to-end = queue wait + 24h processing; with 4h cadence, that's 28h, inside the 30h SLA."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "pre",
+    "qid": "e7a603bf-48d9-4578-99fd-e8ac82353044"
+  },
+  {
+    "question": "A team plans to batch a 200,000-document JSON-extraction job. What should they do *before* submitting the batch?",
+    "options": [
+      "Run a small representative sample synchronously, refine the prompt until first-pass success is high, then batch.",
+      "Submit the batch and rely on Anthropic's automatic retries to fix failures.",
+      "Skip prompt refinement; the batch processing is deterministic.",
+      "Use the synchronous API for the whole job to ensure correctness."
+    ],
+    "explanations": [
+      "Correct. Pre-batch refinement on a sample maximises first-pass success and avoids burning a 24-hour cycle on a prompt bug.",
+      "Anthropic doesn't auto-fix prompt bugs; failures show up in your response file as your problem.",
+      "Prompt quality directly drives first-pass success; skipping refinement risks a 24h re-run.",
+      "Sync defeats the 50% savings; the right move is to keep the batch but validate the prompt first."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "pre",
+    "qid": "50bef8ce-cfb9-4710-9b17-3ab93659fd51"
+  },
+  {
+    "question": "Your manager proposes switching both an overnight tech-debt report and a blocking pre-merge check to the Batches API for 50% cost savings. How should you respond?",
+    "options": [
+      "Switch both; the cost savings outweigh latency concerns.",
+      "Switch the overnight report only; keep the pre-merge check synchronous.",
+      "Switch both, with a sync fallback if a batch runs over 1 hour.",
+      "Switch neither; the Batches API isn't production-ready."
+    ],
+    "explanations": [
+      "The pre-merge check blocks a developer; up-to-24h, no-SLA processing makes the merge gate unusable.",
+      "Correct. Batch fits the non-blocking overnight report; the blocking pre-merge check must stay sync.",
+      "Sync fallback doubles cost (you pay for the abandoned batch slot) and doesn't beat plain sync's worst case.",
+      "Batches are production-ready; the issue is matching workload to API."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "pre",
+    "qid": "90f60819-56bc-4fce-93a0-90f0d63b74d3"
+  },
+  {
+    "question": "A team is planning a nightly bulk classification run. Which fact about the Message Batches API most directly determines whether it's an appropriate choice?",
+    "options": [
+      "There is no latency SLA; processing can take up to 24 hours.",
+      "Batched requests can include up to 100,000 messages each.",
+      "Batches are billed on the input token count alone.",
+      "Batched responses are returned in submission order."
+    ],
+    "explanations": [
+      "Correct. The latency characteristic is the deciding factor — overnight bulk work fits because nothing is waiting.",
+      "Throughput limits aren't the architectural fit question; latency tolerance is.",
+      "Pricing is on input + output tokens; in any case, billing details don't decide workload fit.",
+      "Order is not guaranteed — that's why `custom_id` exists, and it's not the deciding fit factor."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "3e2d01ea-ef68-46fb-aef7-9524643d1915"
+  },
+  {
+    "question": "An overnight research workflow runs a tool-use loop: Claude calls `web_search`, your code runs it and appends the result, Claude calls `fetch_page`, etc. The team wants 50% savings via batches. What's the correct migration?",
+    "options": [
+      "Move the entire loop into a single batched request — the batch runtime executes tools internally.",
+      "Keep the agentic loop on the sync API, or pre-fetch all data deterministically and batch only the final single-turn synthesis.",
+      "Wrap each tool call in its own batched request and stitch responses together.",
+      "Use batches with a 4-hour timeout to bound loop length."
+    ],
+    "explanations": [
+      "Batch runtime does not execute tools mid-request; the loop never advances past turn one.",
+      "Correct. Batches don't support multi-turn tool-use; either keep the loop on sync or decompose into pre-fetch + batched synthesis.",
+      "One batched request per tool call doesn't reproduce loop semantics — you need the model to see prior tool_results in context.",
+      "There is no per-batch tool-loop timeout because the feature isn't supported."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "ea62f894-20c1-4031-8593-813e8a674405"
+  },
+  {
+    "question": "A pipeline submits a batch of 200,000 invoices. The response file arrives unordered. How should the pipeline match each response to its source invoice?",
+    "options": [
+      "Match by input prompt prefix; identical prefixes share an output.",
+      "Match by index — request N corresponds to response N in the response file.",
+      "Set `custom_id` to a stable per-invoice identifier (e.g., the invoice ID) at submission and key the response file by it.",
+      "Use a hash of the model's response text to look up the source invoice."
+    ],
+    "explanations": [
+      "Prompt prefixes aren't unique correlation keys, especially with shared system prompts or templates.",
+      "Response order isn't guaranteed; positional matching silently misaligns results.",
+      "Correct. `custom_id` is the documented correlation mechanism — caller-supplied, echoed back on the response.",
+      "Hashing response text is post-hoc and unreliable; correlation must be built in at submission time."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "7770819b-8785-46c3-a726-2e27bc3fb1bc"
+  },
+  {
+    "question": "A vendor processes uploaded contracts in batches with a 30-hour SLA. They currently submit one batch per day at 02:00 UTC. Customers report their results sometimes arrive ~48 hours after upload. What is the fix?",
+    "options": [
+      "Cache responses for 24 hours to mask the latency.",
+      "Renegotiate the SLA to 48 hours.",
+      "Move every customer to the synchronous API.",
+      "Submit batches every 4–6 hours so worst-case `queue_wait + 24h` stays within the 30h SLA."
+    ],
+    "explanations": [
+      "Caching responses doesn't help requests that haven't been processed yet.",
+      "Renegotiating the SLA is a business workaround, not a technical fix; the math problem is solvable.",
+      "Sync defeats the 50% cost savings on a workload that's perfectly suited to batches.",
+      "Correct. With a daily cadence, an upload arriving just after 02:00 waits 24h queued + 24h processing = 48h. A 4–6h cadence keeps worst case inside 30h."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "89c0c356-0f1d-493d-9ee4-05883c97e177"
+  },
+  {
+    "question": "A team batches 100,000 documents through a JSON-extraction prompt and finds 18% fail schema validation due to an ambiguous instruction. What's the most cost-effective remediation pattern going forward?",
+    "options": [
+      "Refine the prompt on a small synchronous sample until first-pass success is high, then run the full batch.",
+      "Always submit two batches in parallel — the second as a backup if the first fails.",
+      "Add a sync fallback that re-runs each schema-failed request immediately after the batch.",
+      "Lower the temperature to 0 and ignore prompt refinement."
+    ],
+    "explanations": [
+      "Correct. Pre-batch refinement on a sample exposes ambiguity in minutes; fixing it post-batch costs another 24h cycle.",
+      "Parallel batches double cost without addressing the root cause (the ambiguous prompt).",
+      "A sync re-run is a band-aid; refining the prompt eliminates the 18% failure rate at the source.",
+      "Temperature 0 doesn't fix instruction ambiguity — it just makes the wrong interpretation deterministic."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "7540587e-2aad-4f59-8e9f-b18cdb477e82"
+  },
+  {
+    "question": "A developer says: 'I'll batch the nightly job because it's huge — 1M documents.' What's wrong with the reasoning?",
+    "options": [
+      "Nothing — large jobs are exactly when batching is required.",
+      "Volume isn't the criterion for batching — latency tolerance is. The right question is whether anyone is waiting on each response.",
+      "1M documents exceeds the per-batch maximum, so it can't be batched at all.",
+      "The 50% savings vanish above 100k requests."
+    ],
+    "explanations": [
+      "Large jobs don't automatically belong on batches; a huge interactive workload still needs sync.",
+      "Correct. Volume can make batching attractive, but a small overnight job is also a great fit and a huge real-time job still isn't.",
+      "1M documents can be split across batched requests; volume isn't the blocker.",
+      "There's no documented step-down in the discount based on volume."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "1a0ea53d-2c80-4241-a5ae-a25878ffece8"
+  },
+  {
+    "question": "A weekly eval run currently uses the synchronous API for ~10,000 requests and finishes in about 20 minutes on Friday afternoons. The team wants to halve the cost. Should they migrate to batches?",
+    "options": [
+      "No — eval runs require multi-turn tool calling, which batches don't support.",
+      "No — anything that currently completes in 20 minutes is too latency-sensitive for batches.",
+      "Yes — eval runs are non-blocking; submit on Friday morning and tolerate the up-to-24h window for the cost saving.",
+      "No — the 50% discount only applies to overnight jobs."
+    ],
+    "explanations": [
+      "Eval runs are typically single-turn classifications or scorings; tool-use loops are uncommon.",
+      "20 minutes vs 24h doesn't matter if no one is waiting on the result; latency tolerance is the criterion, not current speed.",
+      "Correct. Evals are a textbook non-blocking workload; pay half as much in exchange for tolerating the 24h upper bound.",
+      "The 50% discount applies generally, not 'overnight only'; the timing fit makes it work for any latency-tolerant workload."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "d3b7e3b4-e934-4212-8dad-0b240edb4786"
+  },
+  {
+    "question": "Which statement most accurately describes the Batches API's processing latency in production planning?",
+    "options": [
+      "Treat batches as effectively synchronous because they 'usually finish in a few minutes.'",
+      "Treat 24h as the expected delivery time and align deadlines accordingly.",
+      "Treat 24h as a soft target; Anthropic compensates if it slips.",
+      "Treat 24h as a worst-case upper bound; design so deadlines hold even if the batch finishes at hour 23."
+    ],
+    "explanations": [
+      "'Usually finishes fast' is observation, not guarantee; production design must hold at the worst case.",
+      "Designing to the upper bound as 'expected' confuses upper bound with mean — fast runs don't mean future ones will match.",
+      "There is no SLA, so there's no documented compensation for slippage.",
+      "Correct. 24h is an upper bound, not an expected time; plans must hold at the worst case."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "ba7d850d-8121-4a8b-9990-66a45111d4e4"
+  },
+  {
+    "question": "A team's batch returns 1,200 of 50,000 responses with `isError: true` because those documents exceeded the context limit. The simplest reliable remediation is:",
+    "options": [
+      "Identify the 1,200 by `custom_id`, chunk those documents into smaller pieces, and resubmit only the chunks.",
+      "Resubmit the entire 50,000-request batch with a higher `max_tokens`.",
+      "Drop the 1,200 documents from the dataset; they're outliers.",
+      "Switch to a model with a smaller context window."
+    ],
+    "explanations": [
+      "Correct. `custom_id` makes targeted resubmission cheap — chunk the oversized inputs and re-batch only those.",
+      "Re-running all 50,000 wastes a 24h cycle and money; the 48,800 already-successful results are unchanged.",
+      "Silently dropping data is bad hygiene and the failure mode (context overflow) is fixable by chunking.",
+      "Smaller context shrinks capacity, which makes the failure worse, not better."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "5375fff3-9392-48ef-ba43-5008e2f0ba4a"
+  },
+  {
+    "question": "Which workload combination is correctly matched to the Message Batches API?",
+    "options": [
+      "Live customer support chatbot and an overnight tech-debt scan.",
+      "Weekly compliance audit over 50k transactions and a nightly classification of 1M documents.",
+      "Pre-merge security check and a CI lint job.",
+      "Synchronous HTTP endpoint with a 5s timeout and a real-time fraud-detection feed."
+    ],
+    "explanations": [
+      "Live chat is blocking; only the overnight scan fits batch.",
+      "Correct. Both are non-blocking and latency-tolerant — exactly the batch sweet spot.",
+      "Both pre-merge and CI lint typically block a developer; sync is required.",
+      "Sync HTTP and real-time fraud detection are both blocking; neither fits batch."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "99d3fa73-c2ef-48f5-87ed-131228b16c3a"
+  },
+  {
+    "question": "An engineer asks: 'Can I just look up which response goes with which input by their order in the response file?' What's the correct answer?",
+    "options": [
+      "No — response order isn't guaranteed. Use the `custom_id` field on each response to correlate to the original request.",
+      "Yes — responses are returned in submission order by default.",
+      "Yes, but only if you submit fewer than 1,000 requests per batch.",
+      "No — you must wait for the batch to fully complete before reading any response."
+    ],
+    "explanations": [
+      "Correct. Order isn't guaranteed; correlation must be done by `custom_id`.",
+      "There's no documented order guarantee; positional matching silently misaligns.",
+      "There's no documented small-batch ordering exception.",
+      "Whether you wait for completion is unrelated to ordering — even after completion, order isn't guaranteed."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "77e82731-1a9e-426b-b5e9-93e235cec036"
+  },
+  {
+    "question": "A new SLA requires results within 12 hours of submission. You're on the Message Batches API. What does the math say about whether this is feasible?",
+    "options": [
+      "Feasible if you submit every 6 hours.",
+      "Not feasible with batches alone — the 24h upper bound on processing exceeds the 12h SLA before any queue time is added.",
+      "Feasible if you set `priority: high` on each request.",
+      "Feasible if you cap each batch at 1,000 requests."
+    ],
+    "explanations": [
+      "Submission cadence can't shrink the 24h processing upper bound; the SLA itself exceeds it.",
+      "Correct. Batch processing alone can take up to 24h; that's already double the 12h SLA. SLAs tighter than 24h require sync (or a hybrid with sync for SLA-bound traffic).",
+      "There is no documented priority field that bypasses the 24h upper bound.",
+      "Smaller batches don't change the per-batch processing upper bound."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "f9d2badf-a475-4dd0-baaf-42ade05ba9ce"
+  },
+  {
+    "question": "Why is 'batch with sync fallback if a batch runs longer than expected' usually a bad design?",
+    "options": [
+      "Sync and batch results aren't comparable, so the fallback returns inconsistent answers.",
+      "It violates Anthropic's terms of service.",
+      "You pay for the abandoned batch slot AND the sync re-run, and the worst case is no better than running plain sync from the start.",
+      "Sync API requests can't accept the same prompt format as batched ones."
+    ],
+    "explanations": [
+      "Results from the same prompt are comparable across both APIs; that's not the issue.",
+      "There's no ToS prohibition on this pattern; it's just an anti-pattern.",
+      "Correct. Cost goes up (paid for both modes) and worst-case latency doesn't improve over plain sync. Choose one mode based on workload.",
+      "Prompt formats are the same; both APIs use Messages."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "b1ddeb83-63fa-46e9-a6da-c1dd36ff6841"
+  },
+  {
+    "question": "A developer batches a workload that previously used a synchronous tool-use loop with 3 tool calls per request. Each batched response now contains a single `tool_use` block with no follow-up. What is most likely happening?",
+    "options": [
+      "The `tool_use` blocks need to be parsed differently in batch responses than in sync.",
+      "The model has been silently downgraded to a tool-incapable variant.",
+      "The batched response is corrupted and should be discarded.",
+      "The Batches API doesn't orchestrate multi-turn tool-use; it returns the first tool request and stops, because there's no harness to run tools mid-batch."
+    ],
+    "explanations": [
+      "Block parsing is the same across APIs; the issue is missing orchestration, not formatting.",
+      "The model isn't silently swapped; the limitation is that batches don't orchestrate tool loops.",
+      "The response isn't corrupted — it's the documented behaviour for tool calls in batches.",
+      "Correct. Batches don't run tool loops mid-request — they emit the first tool_use and stop. The remediation is to keep the loop on sync (or pre-fetch and batch only the synthesis turn)."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "855d20fd-ea59-480e-bd19-63bba9694a2c"
+  },
+  {
+    "question": "Which best describes how to use a small sample run before submitting a large batch?",
+    "options": [
+      "Run 10–100 representative items synchronously, measure first-pass success against the validation rule (schema, classification), refine the prompt until success is high, then submit the full batch.",
+      "Submit 10 items as a small batch; iterate until they all pass; then scale.",
+      "Skip sampling — the model is deterministic on temperature 0.",
+      "Sample only after the first batch fails, to triage which prompts to fix."
+    ],
+    "explanations": [
+      "Correct. Sync sampling exposes prompt issues in minutes; full-batch debugging costs 24h per cycle.",
+      "Even a small batch costs a 24h cycle to iterate; sync sampling is dramatically faster.",
+      "Determinism doesn't fix instruction ambiguity; it just makes the wrong interpretation consistent.",
+      "Sampling after failure means you've already paid the 24h cost — sample first."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "d5acf09d-e803-4972-a278-dab80f8442d3"
+  },
+  {
+    "question": "An overnight document classification batch finishes in 2 hours on most nights. The dashboard team plans for 'results by 4am.' What's the architectural risk?",
+    "options": [
+      "Anthropic charges more when batches finish faster than expected.",
+      "The 24h upper bound can hit any night with no warning; planning to typical-case latency means the dashboard occasionally has stale data.",
+      "The Batches API caches results for only 1 hour, so 2-hour completions risk losing data.",
+      "Batches finishing under 6h are automatically retried."
+    ],
+    "explanations": [
+      "Pricing doesn't penalise fast completions; it's flat ~50% of sync.",
+      "Correct. Plan to the upper bound, not the typical case; 'usually fast' isn't a guarantee.",
+      "There's no documented 1-hour expiry; the issue is delivery time, not result retention.",
+      "There's no auto-retry policy based on completion time."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "57a34f46-5c14-4fca-a1e5-b632da88e857"
+  },
+  {
+    "question": "A team plans to 'batch all of our Claude calls' to capture the 50% cost saving across the platform. Which call site, if migrated, will most clearly break behaviour?",
+    "options": [
+      "The weekly KPI report rendered into a dashboard on Monday morning.",
+      "The nightly anomaly-detection summary emailed at 7am.",
+      "The interactive chat UI where users type a question and wait for a response.",
+      "The monthly cost-allocation classifier triggered by a cron job."
+    ],
+    "explanations": [
+      "Weekly KPI reports are non-blocking; batch fits.",
+      "Nightly summaries are non-blocking; batch fits.",
+      "Correct. Live chat is blocking; up-to-24h responses make the UX unusable.",
+      "Monthly cron-driven jobs are non-blocking; batch fits."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "5e1913a2-7ded-4e63-85af-cc24ae7f3116"
+  },
+  {
+    "question": "An engineer suggests using `custom_id` only when batches occasionally have failures, and skipping it for 'clean' workloads. What's the issue?",
+    "options": [
+      "Anthropic charges extra to batches without `custom_id`.",
+      "Nothing — `custom_id` is only for failure tracking.",
+      "The batch will reject submissions over 1,000 requests if `custom_id` is missing.",
+      "Without `custom_id` you can't reliably correlate any response to its input — the response file isn't guaranteed to preserve submission order."
+    ],
+    "explanations": [
+      "Pricing is flat; no fee for missing `custom_id`.",
+      "Correlation is the primary use, not just failure tracking.",
+      "There's no documented 1,000-request gate tied to `custom_id`.",
+      "Correct. `custom_id` is the only reliable correlation mechanism; without it, even a fully successful batch's responses can't be safely matched to inputs."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "7bcaf88d-d532-4cf8-8d5f-22bf6cc37577"
+  },
+  {
+    "question": "Which of the following is NOT a valid use case for the Message Batches API?",
+    "options": [
+      "A real-time PR review bot that comments on opened pull requests.",
+      "A nightly dataset-labeling job over 500k examples.",
+      "A weekly compliance audit run on Sunday evening.",
+      "An eval run executed once per release."
+    ],
+    "explanations": [
+      "Correct. PR review bots are tied to the developer's workflow — they need fast, blocking responses; batch is wrong here.",
+      "Nightly labeling is non-blocking; batch is a great fit.",
+      "Weekly audits are non-blocking; batch is a great fit.",
+      "Per-release evals are non-blocking; batch is a great fit."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "20e8ad8f-62c4-46e6-9644-ee9222d2ba3a"
+  },
+  {
+    "question": "An overnight extraction batch is submitted at 22:00 and the dashboard refreshes at 08:00 the next day. The team observes that on most nights, the batch finishes by 02:00 — but last Thursday it finished at 21:30 the next evening, missing the 08:00 dashboard refresh. What's the right interpretation?",
+    "options": [
+      "Anthropic violated their SLA; the team should request a credit.",
+      "This is consistent with the documented behaviour: up to 24 hours, no SLA. Plan to the worst case (submit earlier or accept later refresh).",
+      "The batch was internally retried because of a transient model error.",
+      "The batch finishing later than usual indicates the prompt has a bug."
+    ],
+    "explanations": [
+      "There is no SLA on the Batches API, so no SLA was violated and no credit applies.",
+      "Correct. The 24h upper bound can be hit on any given night; production design must hold at the worst case, not the median.",
+      "There's no documented user-visible internal retry; the more likely cause is normal variation within the 24h window.",
+      "Slow completion is a latency phenomenon; prompt bugs surface as failed responses, not slow ones."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "adba7c3c-95f6-4b52-8853-9c97aef60590"
+  },
+  {
+    "question": "A team needs to extract structured data from PDFs. The pipeline currently calls a `lookup_company_metadata` tool for each PDF as part of a multi-turn loop with Claude. They want to batch this for 50% savings. Which decomposition makes batching feasible while preserving the model's access to the metadata?",
+    "options": [
+      "Run `lookup_company_metadata` deterministically in code before submission, embed the result in each batched request's prompt, and use a single-turn batched extraction.",
+      "Submit a batch where each request includes the `lookup_company_metadata` tool definition; the batch runtime will resolve the tool calls.",
+      "Send one batch with the lookup, then a second batch with the extraction, correlated by `custom_id`.",
+      "Use a hybrid 'batch with sync fallback' so the tool loop runs sync if needed."
+    ],
+    "explanations": [
+      "Correct. Pre-fetch the metadata deterministically, then batch a single-turn synthesis — no tool loop required at submission time.",
+      "Batches don't orchestrate tool calls mid-request; the loop never advances.",
+      "Two-batch correlation via `custom_id` works for some pipelines but doesn't help if the lookup result depends on Claude's reasoning — and even when it does work, the lookup itself doesn't need a model and shouldn't go through Claude at all.",
+      "Hybrid sync fallback doubles cost and doesn't address the architectural mismatch."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "4c449f76-9b44-4d03-b640-b5e7600646f2"
+  },
+  {
+    "question": "An SRE asks: 'If we include the `tools` parameter in a batched request, will the model emit a `tool_use` block?' What's the most accurate answer?",
+    "options": [
+      "No — `tools` is silently ignored in batched requests.",
+      "Yes — the model can emit a single `tool_use` block, but the batch runtime won't execute it; you'd need a sync follow-up to run the tool and continue the conversation.",
+      "Yes — and the batch runtime executes the tool transparently before returning the final answer.",
+      "Yes — and the batch runtime returns multiple turns of tool calls and results."
+    ],
+    "explanations": [
+      "`tools` isn't ignored; the model can request a tool, but execution doesn't happen in batch.",
+      "Correct. `tools` works at the request-shape level — the model can emit one tool_use — but mid-request orchestration is absent, so multi-turn loops still need sync.",
+      "There is no transparent tool execution inside batches.",
+      "Multiple-turn orchestration isn't supported; you get at most a single `tool_use` per request."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "878bf3b1-0f45-4bd4-b9e6-cf28edb7d80b"
+  },
+  {
+    "question": "A 30h SLA pipeline currently submits batches every 4 hours and meets the SLA worst case at 28h. Engineering proposes increasing the cadence to every 1 hour to 'have more headroom.' What's the trade-off?",
+    "options": [
+      "Increasing cadence eliminates the 24h upper bound.",
+      "Cadence under 4h is forbidden by the API.",
+      "More batches mean more orchestration overhead and per-batch fixed costs but minimal SLA improvement — the 24h processing upper bound dominates the worst case regardless of cadence under ~6h.",
+      "Hourly cadence cuts processing time by 4x."
+    ],
+    "explanations": [
+      "Cadence affects queue time, not processing time; the 24h upper bound stays the same.",
+      "There's no documented minimum cadence.",
+      "Correct. Worst-case end-to-end is `queue_wait + 24h`; cadence below the SLA buffer point gives diminishing returns because 24h dominates.",
+      "Per-batch processing time isn't reduced by submitting more often."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "b14abad1-103b-4cca-8a4c-d59eb41f0304"
+  },
+  {
+    "question": "A team batches a 10,000-document classification job using `custom_id` values like 'doc-001' through 'doc-10000'. After the run, 12 responses come back with `custom_id` values they don't recognise (e.g., 'doc-99999'). What's the most likely explanation?",
+    "options": [
+      "Failed responses receive a generic `custom_id` like 'doc-99999'.",
+      "Anthropic auto-generates `custom_id`s when collisions occur.",
+      "Batches occasionally inject test traffic that customers can ignore.",
+      "Their submission code has a bug — `custom_id`s are returned exactly as submitted; an unexpected value means it was sent that way."
+    ],
+    "explanations": [
+      "Failed responses preserve the original `custom_id`; they don't get a generic one.",
+      "There's no auto-generation behaviour; the field is caller-supplied.",
+      "Batches don't inject test traffic into customer responses.",
+      "Correct. `custom_id` is caller-controlled and returned verbatim; unexpected values indicate a submission-side bug (off-by-one, log re-use, mis-keyed loop, etc.)."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "5cf740e2-a6a8-40a0-8ea5-0edc0e608471"
+  },
+  {
+    "question": "Which of the following best illustrates the cadence math for honoring a 36-hour SLA with batches whose processing takes up to 24 hours?",
+    "options": [
+      "Submit at least every 12 hours so worst case is 12h queued + 24h processing = 36h.",
+      "Submit every 36 hours, matching the SLA exactly.",
+      "Submit every 24 hours.",
+      "Submit only after batches start failing."
+    ],
+    "explanations": [
+      "Correct. SLA buffer = 36h − 24h = 12h; submit at least every 12h so the oldest queued item never exceeds the buffer.",
+      "36h cadence + 24h processing = 60h worst case, far past the SLA.",
+      "24h cadence + 24h processing = 48h worst case, still 12h over the SLA.",
+      "Cadence isn't event-triggered by failures; it must be planned proactively."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "5f93f881-da73-43a0-a221-bd6d6c1a25f0"
+  },
+  {
+    "question": "A legacy nightly job uses the synchronous API at full price. Migrating to batches yields ~50% savings, but the team also wants to know if they should keep the sync path 'just in case' as a primary route on busy nights. What's the right framing?",
+    "options": [
+      "Always keep both paths in production for resilience.",
+      "Pick one mode based on whether the workload is blocking. The 'maybe sync, maybe batch' design doubles infrastructure complexity and erases most of the savings.",
+      "Batch is unreliable; sync should always be the default with batch as backup.",
+      "Use batch on weekdays, sync on weekends."
+    ],
+    "explanations": [
+      "Dual paths add infra complexity; the workload is non-blocking, so sync isn't needed.",
+      "Correct. The migration should be decisive — non-blocking workload goes to batch; sync goes elsewhere. Hybridising the same workload across both modes adds cost and complexity.",
+      "Batch isn't unreliable — it has a different latency profile, which is fine for non-blocking work.",
+      "Day-of-week heuristics don't reflect any documented latency variation; pick by workload, not calendar."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "71f1205e-7c5f-483a-a508-ae88ac792bfa"
+  },
+  {
+    "question": "A senior engineer claims: 'The Batches API guarantees delivery within 24 hours, so we can promise customers a 25-hour SLA.' Which response is correct?",
+    "options": [
+      "The 24h figure is actually the median, so the worst case is unbounded — a 25h customer SLA is far too tight.",
+      "Correct — the upper bound effectively functions as an SLA.",
+      "The 24h figure is an upper bound but Anthropic publishes no SLA — there's no guarantee, only a worst-case window. A customer SLA built on it would be promising what Anthropic doesn't.",
+      "The 24h figure only applies to single-region deployments; multi-region has its own SLA."
+    ],
+    "explanations": [
+      "24h is the documented upper bound, not the median; this misstates the figure.",
+      "Upper bounds without SLAs aren't enforceable — Anthropic doesn't owe credits for slippage.",
+      "Correct. 'Up to 24 hours' is a documented characteristic, not a contractual SLA; customer-facing SLAs need a buffer or a sync component.",
+      "There's no documented region-specific SLA structure for batches."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "b8e9371f-72e6-451a-bd44-04077ba16e3c"
+  },
+  {
+    "question": "Which sequence is the most resilient design for a vendor running structured-extraction batches under a 30h customer SLA?",
+    "options": [
+      "Sync everything to avoid batch's lack of SLA, even at 2x cost.",
+      "Single daily batch at 02:00 UTC → email customers if a batch slips → resubmit the entire batch on any failure.",
+      "Batch every request initially → fall back to sync per request if a batch runs over 6 hours.",
+      "Sync sample for prompt validation → 4h cadence batches with `custom_id` → targeted resubmission of only failed `custom_id`s → keep blocking workflows (e.g., CI lint) on sync."
+    ],
+    "explanations": [
+      "All-sync defeats the 50% savings on the bulk workload that's perfectly suited to batches.",
+      "Daily cadence breaks the 30h SLA worst case; whole-batch resubmission wastes a 24h cycle on partial failures.",
+      "Batch+sync fallback doubles cost (you pay for the abandoned slot) and doesn't beat plain sync's worst case.",
+      "Correct. Pre-batch refinement maximises first-pass success, 4h cadence honours the 30h SLA worst case, `custom_id` enables targeted resubmission, and sync stays where blocking demands it."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "3a5616e2-f9fd-4839-8ae2-fd574ec3cecf"
+  },
+  {
+    "question": "A team submits 50,000 batched extractions, all using `custom_id` values that are valid but happen to be reused from a previous run (e.g., 'invoice-1' to 'invoice-50000' overlapping with last week's IDs). What's the operational risk?",
+    "options": [
+      "If the team merges this run's responses into the same store keyed only by `custom_id`, this run's results will silently overwrite or conflict with last week's. `custom_id` should be unique within the namespace your pipeline uses to look results up.",
+      "Anthropic rejects batches whose `custom_id`s collide with prior batches.",
+      "The Batches API auto-namespaces `custom_id`s by batch ID, so reuse is safe.",
+      "Reusing `custom_id`s halves the cost saving for the second batch."
+    ],
+    "explanations": [
+      "Correct. `custom_id` is opaque to Anthropic — reuse is fine API-side, but downstream stores keyed on `custom_id` alone will collide. Either include the batch ID/date in the key or use globally unique identifiers.",
+      "Anthropic doesn't enforce cross-batch `custom_id` uniqueness; collisions are a downstream concern.",
+      "`custom_id` is returned verbatim; there's no auto-namespacing.",
+      "Pricing isn't affected by `custom_id` content."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "ec2193e9-bdac-4861-b364-c081a2dd9e55"
+  },
+  {
+    "question": "A team migrating to batches is told \"tool calling works in Batches.\" They build a workflow assuming a multi-turn loop will run. After deployment, every batched response stops at the first tool_use block. What was the most critical misunderstanding?",
+    "options": [
+      "They forgot to set tool_choice to \"auto\" in the batched request.",
+      "Conflating \"tools is a supported request parameter\" with \"multi-turn tool-use loops are orchestrated mid-request.\" The former is true; the latter is not — loops require sync.",
+      "They submitted batches with the wrong model ID for tool support.",
+      "Their custom_id values collided with the tool_use_id values, causing truncation."
+    ],
+    "explanations": [
+      "tool_choice doesn't enable mid-request orchestration; it just shapes which tools the model considers.",
+      "Correct. Including tools doesn't enable orchestration; the model can request tools, but no harness runs them mid-batch.",
+      "There's no model-ID gate on tool support that's specific to batch.",
+      "custom_id and tool_use_id are different fields; they don't interact."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.5"
+    ],
+    "phase": "post",
+    "qid": "5f06993b-3115-48e9-bba0-7f6d3a455699"
+  }
+]

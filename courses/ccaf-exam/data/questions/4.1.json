@@ -1,0 +1,882 @@
+[
+  {
+    "question": "Your CI reviewer is producing too many false positives. A teammate suggests adding 'Only report findings you are highly confident in' to the system prompt. Why is this unlikely to improve precision?",
+    "options": [
+      "Claude has no calibrated confidence axis to filter on, so the instruction reduces volume but not the false-positive rate.",
+      "The instruction conflicts with Claude's safety training, which forces it to surface uncertain findings anyway.",
+      "Confidence-based filtering only works when paired with a temperature setting below 0.2.",
+      "It works, but only when wrapped in a tool_use schema rather than a text instruction."
+    ],
+    "explanations": [
+      "Correct. 'High confidence' is not a quantity Claude measures against a held-out set; the instruction collapses into 'be slightly less verbose', which doesn't move the per-category FP rate.",
+      "Wrong cause — there is no safety override that forces uncertain findings to surface. The reason is the absence of a calibrated confidence axis.",
+      "Temperature affects sampling diversity, not whether 'high confidence' is meaningful as a filter; the instruction would still fail at temperature 0.",
+      "Wrapping the same vague instruction in a schema doesn't make 'high confidence' a measurable quantity; the structural problem is the criterion, not the format."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "pre",
+    "qid": "49b6af2d-8c8a-41c2-980e-2ecfb64f2370"
+  },
+  {
+    "question": "Which prompt fragment is the better example of an explicit categorical criterion for a comment-accuracy reviewer?",
+    "options": [
+      "'Be conservative when flagging comments. Only report comments you are confident are inaccurate.'",
+      "'Flag a comment only when its claimed behavior contradicts the adjacent code's actual behavior; do not flag comments that merely paraphrase, omit edge cases, or use different wording.'",
+      "'Review all comments and report any that seem suboptimal, outdated, or unclear.'",
+      "'Examine each comment carefully and use your best judgement about whether it should be improved.'"
+    ],
+    "explanations": [
+      "Vague hedge with no decision boundary; this is the anti-pattern the topic warns against.",
+      "Correct. Names in-scope code shape (claim contradicts behavior) and explicitly excludes superficially similar shapes — the canonical structure of an explicit categorical criterion.",
+      "'Suboptimal/outdated/unclear' are adjectives, not categorical criteria; produces inconsistent classifications.",
+      "'Best judgement' is the maximally vague version of the anti-pattern."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "pre",
+    "qid": "8d695297-1a7f-4771-9d26-ed0d61155f1d"
+  },
+  {
+    "question": "A reviewer agent has five categories. Per-category precision is: SQLi 91%, null-check 78%, comment-accuracy 32%, dead-code 70%, naming 45%. PR authors auto-resolve the bot without reading. What is this phenomenon called?",
+    "options": [
+      "Severity drift — the model is rebucketing findings between runs.",
+      "False-positive contagion — high-FP categories undermine trust in the accurate ones.",
+      "Recall collapse — the model is missing real bugs because of over-tuning.",
+      "Category leakage — findings are being attributed to the wrong category."
+    ],
+    "explanations": [
+      "Severity drift is about inconsistent classification across runs, not about whole-channel trust loss.",
+      "Correct. The hallmark of contagion: aggregate looks acceptable but a noisy category trains reviewers to dismiss the channel, including findings from the accurate (91%, 78%) categories.",
+      "Recall collapse is a recall-side problem; here the issue is precision and reviewer trust, not missed bugs.",
+      "Category leakage is a labelling/attribution issue, not a trust issue."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "pre",
+    "qid": "81b33080-53a4-489b-b44c-d8629b15a98e"
+  },
+  {
+    "question": "Your severity rubric currently reads: 'Critical = severe issue, Major = important issue, Minor = small issue, Trivial = cosmetic'. Two runs over the same PR disagree on severities. What is the most likely root cause?",
+    "options": [
+      "The model needs a higher max_tokens budget to reason consistently about severity.",
+      "Severity is defined by adjectives without code-shape anchors, so the model has nothing to apply consistently.",
+      "Temperature is too high; lowering it to 0 will fix consistency.",
+      "The rubric needs to be moved into a tool schema rather than the system prompt."
+    ],
+    "explanations": [
+      "Token budget doesn't make ambiguous adjectives unambiguous.",
+      "Correct. Adjective-only rubrics ('severe', 'important') are ambiguous; the fix is concrete code-shape examples per level.",
+      "Lower temperature reduces sampling variance but cannot resolve a genuinely ambiguous criterion.",
+      "Rubric format isn't the issue; the criterion's vagueness is."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "pre",
+    "qid": "5b3b8320-ced7-4571-ab32-70aced012b8a"
+  },
+  {
+    "question": "A category is firing at 35% precision while the team iterates on its criteria. A teammate argues 'leave it enabled in production — it occasionally catches a bug nobody else would have'. What is the strongest counter-argument?",
+    "options": [
+      "Anthropic's terms of service require disabling categories below 50% precision.",
+      "Disabling avoids the cost of the additional API call.",
+      "Leaving it on causes the model to drift further; precision will degrade unless disabled.",
+      "Reviewers who have already disengaged from the channel don't read the rare correct finding either, so the practical recall of the noisy category is near zero."
+    ],
+    "explanations": [
+      "There is no such ToS requirement; the reasoning is empirical, not policy-based.",
+      "Cost is a real but minor consideration; the dominant argument is trust.",
+      "Models don't 'drift' from being left enabled; this conflates with concept drift in supervised systems.",
+      "Correct. Trust loss is per-reviewer; once a reviewer auto-resolves the bot, even genuinely correct findings die in unread threads — so 'sometimes catches a bug' overstates the real-world recall."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "pre",
+    "qid": "97e8e4c8-8afc-43b7-86e2-d109b63e49ce"
+  },
+  {
+    "question": "Which of these is the best severity rubric for a CI code reviewer?",
+    "options": [
+      "Critical / Major / Minor / Trivial — escalate based on the model's judgement.",
+      "P0 / P1 / P2 / P3 with a one-line description of impact for each level.",
+      "P0–P3 with a concrete code-shape example for each (e.g., 'P0: user-controlled input flowing into exec(...)' ; 'P3: style/comment tone — skip').",
+      "A single 'should-fix' boolean — let humans assign severity downstream."
+    ],
+    "explanations": [
+      "Adjective rubric — the canonical anti-pattern; produces inconsistent classifications.",
+      "Better than adjectives but still description-driven; impact phrases ('would corrupt persistent state') are ambiguous without an anchor.",
+      "Correct. Concrete code-shape examples per level are the topic's prescription — they anchor classification consistently.",
+      "Removing severity altogether dumps the prioritisation problem on humans and forfeits the model's bucketing benefit."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "pre",
+    "qid": "f2fbc4e6-e172-43b0-9711-ae5f069a3fe9"
+  },
+  {
+    "question": "An engineer says 'we'll fix the false-positive problem by emailing reviewers a reminder to read each finding carefully before resolving'. Why is this not a valid fix?",
+    "options": [
+      "Reviewers will eventually comply if reminded weekly enough times.",
+      "Trust loss is structural and per-reviewer; you cannot patch a precision problem at the human layer — the fix has to be in the prompt criteria or by disabling the category.",
+      "The reminder only works if combined with a 'be careful' instruction in the system prompt.",
+      "Email reminders aren't logged in the audit trail required for ISO compliance."
+    ],
+    "explanations": [
+      "Repeating a reminder doesn't restore trust once a reviewer has trained themselves to skim past the bot.",
+      "Correct. The topic's anti-pattern: precision problems must be cured at the prompt or deployment layer, never offloaded to humans.",
+      "Adding the same instruction in two places doesn't make it work; the precision problem is in the criteria.",
+      "Compliance/audit is an unrelated concern."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "pre",
+    "qid": "068c4a16-cce7-4fb8-80f2-b9bafee28bec"
+  },
+  {
+    "question": "Which workflow correctly describes 'disable-and-iterate' for a high-FP category?",
+    "options": [
+      "Lower the model's temperature for that category, monitor for one week, then decide whether to disable.",
+      "Remove the category from the active prompt; iterate offline against a labelled PR sample; re-enable only when offline precision clears the threshold (e.g., 85%).",
+      "Keep the category active but suppress its findings in the UI until precision improves.",
+      "Reduce the category's max_tokens to force the model to be more selective."
+    ],
+    "explanations": [
+      "Temperature is not a precision dial; this leaves noise firing while you tune.",
+      "Correct. The exact disable-and-iterate workflow described in the topic.",
+      "Suppressing in the UI still causes the model to spend time on the category and risks accidental exposure; remove it from the prompt.",
+      "Token caps don't sharpen criteria; they truncate output."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "pre",
+    "qid": "34ae6288-441b-4bf7-9ced-4e6decc85c75"
+  },
+  {
+    "question": "Aggregate precision across all categories is 70%, which the team considers 'fine'. But developer trust has collapsed. What is the most likely explanation?",
+    "options": [
+      "Aggregate precision is the wrong metric; one category is dragging trust down even though the average looks acceptable.",
+      "70% precision is below industry standard; the team should target 95% across the board before deploying.",
+      "Recall is too low — developers can tell the bot is missing findings they care about.",
+      "The bot's tone is too curt; developers need a friendlier UX."
+    ],
+    "explanations": [
+      "Correct. Trust is per-reviewer, not per-aggregate; a single 35%-precision category at high volume can poison a 70% aggregate.",
+      "There is no universal precision standard; the issue is variance across categories, not the average.",
+      "Recall might also be a problem, but the symptom (collapsed trust under acceptable aggregate) points to FP contagion, not missed findings.",
+      "Tone may matter at the margin but doesn't explain a trust collapse under acceptable aggregate precision."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "pre",
+    "qid": "3fac58b3-1331-4a59-8e4c-348d0a948f5a"
+  },
+  {
+    "question": "Which of the following is NOT a valid way to improve a noisy review category?",
+    "options": [
+      "Rewrite the criterion to name in-scope code shapes and explicitly exclude similar-looking out-of-scope shapes.",
+      "Anchor each severity level to a concrete code-shape example.",
+      "Disable the category in production while iterating offline.",
+      "Lower the temperature so the model is 'more cautious' and produces fewer findings."
+    ],
+    "explanations": [
+      "Valid — this is the canonical structural fix.",
+      "Valid — concrete code-shape examples are the prescribed severity anchor.",
+      "Valid — disable-and-iterate is the correct workflow when criteria aren't yet sharp.",
+      "Correct (the invalid option). Temperature affects sampling diversity, not the criteria the model applies; noise stays noisy. The topic explicitly calls this out as an anti-fix."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "pre",
+    "qid": "a215ef88-162e-45ac-a04b-e8e73bfa848e"
+  },
+  {
+    "question": "Your Claude Code reviewer has a 'comment accuracy' category at 32% precision. Engineering leadership wants the lowest-risk move that restores developer trust this sprint. What do you do?",
+    "options": [
+      "Disable the comment-accuracy category in the production prompt; iterate offline against labelled PRs; re-enable only after offline precision clears 85%.",
+      "Add 'be conservative when flagging comments' to the system prompt and monitor for one week.",
+      "Increase the severity threshold so only 'critical' comment findings surface.",
+      "Have a human review every comment-accuracy finding before it posts to the PR."
+    ],
+    "explanations": [
+      "Correct. Disable-and-iterate is the standard remediation: stop firing noise, sharpen criteria offline, re-enable on a precision threshold.",
+      "Vague hedges don't move the FP rate; trust will keep eroding for another week.",
+      "There is no 'severity threshold' that filters a poorly-defined category — severities are buckets within a criterion, not a precision filter.",
+      "Adds a human bottleneck and doesn't fix the underlying criterion; the moment the human falls behind, the noise returns."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "8e3c7b5b-8a1d-4cd2-ac8c-bd3a02b2cf35"
+  },
+  {
+    "question": "Which severity rubric is most likely to produce consistent classifications across runs?",
+    "options": [
+      "Critical, Major, Minor, Trivial — defined as 'most severe' down to 'least severe'.",
+      "P0 = blocks merge; P1 = needs change; P2 = nice-to-have; P3 = skip.",
+      "P0–P3 each anchored with a one-line code-shape example (e.g., 'P0: user input flowing into exec(...)' ; 'P2: dead branch like if (x) return x; return x;').",
+      "A continuous severity score 0.0–1.0 reported as a confidence value alongside each finding."
+    ],
+    "explanations": [
+      "Pure adjective rubric — the canonical inconsistent shape.",
+      "Description-only rubric; 'needs change' and 'nice-to-have' are still adjective-equivalents and produce drift.",
+      "Correct. Code-shape anchors per level are what the topic prescribes for consistent classification.",
+      "Self-reported confidence/severity scores are poorly calibrated; the topic warns against confidence-based axes."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "52bc9b6f-1316-479d-84fe-9398622e9f2c"
+  },
+  {
+    "question": "Per-category precision: SQLi 91%, null-check 78%, comment-accuracy 32%. Aggregate: 67%. PR authors are dismissing the entire bot. Which action best preserves the value of the SQLi category?",
+    "options": [
+      "Disable comment-accuracy in production immediately; keep SQLi and null-check firing; sharpen comment-accuracy offline.",
+      "Lower the temperature globally so the model is more cautious across all categories.",
+      "Tell the bot to label SQLi findings as '[HIGH-PRIORITY]' so reviewers see them first.",
+      "Switch to a more capable model so all categories converge at higher precision."
+    ],
+    "explanations": [
+      "Correct. The trust signal is per-channel; removing the contagious category restores attention to the precise ones.",
+      "Temperature is not a precision dial; this won't restore trust in any category.",
+      "Labels don't fix trust loss — reviewers who auto-resolve don't read the labels either.",
+      "Model swaps may help the disabled category eventually but don't address the immediate trust collapse."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "125ede9a-9e84-4c08-a223-2be6d5939ee4"
+  },
+  {
+    "question": "Which prompt change is the strongest fix for 'the model keeps flagging terse but accurate comments as inaccurate'?",
+    "options": [
+      "Add 'Be conservative — only flag comments you are highly confident are wrong.'",
+      "Add a confidence-score self-report and filter findings below 0.8.",
+      "Lower the model's temperature to 0 so it's deterministic.",
+      "Replace the criterion with: 'Flag a comment only when its claimed behavior contradicts the adjacent code's actual behavior. Do not flag comments that merely paraphrase, omit edge cases, or are terser than ideal.'"
+    ],
+    "explanations": [
+      "Vague hedge — fails to specify which shapes are out of scope; terse comments will keep getting flagged.",
+      "Self-reported confidence is poorly calibrated; the model is already 'confidently wrong' on these findings.",
+      "Temperature 0 makes outputs reproducible but doesn't change what the criterion considers an inaccurate comment.",
+      "Correct. Names the in-scope shape (claim contradicts behavior) and explicitly excludes 'terse but accurate' as out of scope."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "9a6585b9-32f5-4520-943d-c444c8b8da65"
+  },
+  {
+    "question": "An engineer proposes: 'Let's keep the noisy category live but add a banner above each PR saying \"please read the bot's findings carefully.\"' Why won't this restore trust?",
+    "options": [
+      "Banners aren't supported by GitHub's PR UI.",
+      "Trust loss is structural — once reviewers have learned to dismiss the channel, prompting them to 'read carefully' doesn't reverse the conditioning; the fix has to be in the prompt or by disabling the category.",
+      "It will restore trust, but only after 4–6 weeks of consistent banner display.",
+      "The banner conflicts with the team's CONTRIBUTING.md guidelines."
+    ],
+    "explanations": [
+      "GitHub PR UI capabilities aren't the issue.",
+      "Correct. Patching at the human layer is the topic's anti-pattern; trust must be restored by changing the bot's output, not by exhorting reviewers.",
+      "There is no evidence such an effect exists; the topic explicitly rejects human-layer fixes.",
+      "Style-guide alignment isn't the substantive objection."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "098c16fc-d2d3-49bd-a10d-141aba6a3698"
+  },
+  {
+    "question": "Which of the following is the clearest example of false-positive contagion?",
+    "options": [
+      "A reviewer's null-check category drifts from 80% to 65% precision over a quarter.",
+      "Two categories both have 70% precision; reviewers complain about both equally.",
+      "One category at 30% precision drowns the channel; reviewers stop reading even the 92%-precise SQLi findings.",
+      "The bot misses a real bug in a critical PR."
+    ],
+    "explanations": [
+      "That's drift in a single category, not contagion across categories.",
+      "Equal complaints proportional to precision is normal triage, not contagion.",
+      "Correct. Contagion is the cross-category trust collapse triggered by one noisy category.",
+      "A miss is a recall problem, not a precision/contagion problem."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "bfd448d2-fb38-4dc3-83b8-d8437134029e"
+  },
+  {
+    "question": "Your team adds 'only report high-confidence findings' to the system prompt and observes a 30% drop in finding volume. False-positive *rate* is unchanged. What's the best interpretation?",
+    "options": [
+      "The instruction is starting to work; precision will improve over the next week.",
+      "Volume reduction without rate improvement is the predicted outcome of vague hedges — the model produced fewer findings but didn't change the criterion, so the FP rate is structurally the same.",
+      "The model is sandbagging — it could be more precise but is being lazy.",
+      "Volume drop indicates the model has lost calibration and needs retraining."
+    ],
+    "explanations": [
+      "Vague hedges don't 'kick in' over time; the criterion is unchanged.",
+      "Correct. The topic predicts exactly this: hedge instructions reduce volume non-uniformly, leaving the per-category FP rate untouched.",
+      "Anthropomorphising; the model isn't withholding effort.",
+      "Models don't lose calibration from prompt instructions; this misuses ML terminology."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "5b68a7a5-29db-4f2d-87df-335ac894a96f"
+  },
+  {
+    "question": "Which of these is a valid reason to PREFER explicit categorical criteria over a confidence-score-based filter?",
+    "options": [
+      "Categorical criteria are cheaper because they use fewer tokens than confidence scores.",
+      "LLM self-reported confidence scores are poorly calibrated; categorical criteria define a decision boundary the model can apply consistently.",
+      "Confidence scores are not supported by the Anthropic API for tool calls.",
+      "Categorical criteria automatically reduce temperature, which improves consistency."
+    ],
+    "explanations": [
+      "Token cost is not the principled reason.",
+      "Correct. The topic's central argument: confidence is not a calibrated axis the model can filter on, but a categorical decision boundary is something the model can apply turn after turn.",
+      "Confidence scores can be requested via tool schemas; the API doesn't block them. The issue is calibration, not support.",
+      "Criteria don't change temperature; this conflates concepts."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "3b6d667e-9bb7-4c67-a951-b9e26a1097be"
+  },
+  {
+    "question": "Which severity-level definition is most exam-aligned for a P0 'block-merge' bucket?",
+    "options": [
+      "P0 = a critical issue that must be fixed before merge.",
+      "P0 = an issue with severe security or correctness implications.",
+      "P0 = user-controlled input flowing into shell/SQL/template execution without sanitisation, e.g., `exec('ls ' + req.body.path)`.",
+      "P0 = an issue the bot is highly confident about."
+    ],
+    "explanations": [
+      "Adjective-driven; produces inconsistent classifications.",
+      "Description-only; 'severe' is still ambiguous.",
+      "Correct. Concrete code-shape example anchors P0 consistently — the topic's prescription.",
+      "Confidence-based; the topic explicitly rejects this axis."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "3e66d4bf-8f7d-44a1-a3c8-c4cb24e9c39e"
+  },
+  {
+    "question": "A team's reviewer is at 70% aggregate precision but trust has collapsed. Per-category data is unavailable. What's the highest-leverage diagnostic step?",
+    "options": [
+      "Lower the model's temperature and re-measure aggregate precision.",
+      "Switch to a larger model and re-measure.",
+      "Compute per-category precision; identify the worst category and check whether disabling it would restore aggregate trust signal.",
+      "Add 'be conservative' to the prompt and re-measure aggregate precision."
+    ],
+    "explanations": [
+      "Doesn't diagnose anything; doesn't reveal the contagious category.",
+      "Doesn't diagnose; treats a measurement gap as a model gap.",
+      "Correct. Aggregate hides contagion; per-category breakdown is the diagnostic the topic prescribes.",
+      "Hedges don't diagnose and don't fix the rate; aggregate may even drop while contagion persists."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "eee07f2a-bd8e-4bbf-b91d-06b5a442aa7e"
+  },
+  {
+    "question": "Your reviewer flags many minor formatting issues and obscures the occasional security finding. The team wants the simplest prompt-only fix. What's the strongest move?",
+    "options": [
+      "Add 'do not flag formatting issues' as a single bullet at the end of the system prompt.",
+      "Anchor severities with code-shape examples, with formatting/style explicitly placed in a default-skip P3 bucket.",
+      "Lower temperature to 0 to reduce 'creative' findings.",
+      "Ask the model to self-report a confidence score and filter below 0.8."
+    ],
+    "explanations": [
+      "A single negation may help slightly but doesn't establish the severity structure that prevents future drift; brittle.",
+      "Correct. Severity anchored by code-shape with a default-skip bucket for formatting is the topic's prescribed structural fix.",
+      "Temperature isn't a precision dial.",
+      "Self-reported confidence is poorly calibrated; doesn't address the criterion."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "ba47f6db-caec-484f-9cb9-fbdac457c616"
+  },
+  {
+    "question": "After disabling a high-FP category, the team is iterating offline. What is the correct re-enable criterion?",
+    "options": [
+      "Re-enable when the category has been disabled for two weeks, regardless of offline precision.",
+      "Re-enable as soon as the criteria have been edited in the prompt.",
+      "Re-enable only when offline precision on a labelled sample clears a pre-set threshold (commonly 80–90%).",
+      "Re-enable after a single successful run on one labelled PR."
+    ],
+    "explanations": [
+      "Time alone doesn't measure precision; this trades waiting for measurement.",
+      "Editing the prompt without measuring offline precision is precisely the gap the topic warns against.",
+      "Correct. The disable-and-iterate workflow re-enables on an offline precision threshold against a labelled sample.",
+      "A single PR isn't a labelled sample; one run is noise, not signal."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "7eedeacc-a55a-40d6-9c9d-1b526e1b0d79"
+  },
+  {
+    "question": "An engineer argues 'aggregate precision is what matters — categories are an internal detail'. Which counter-argument is most exam-aligned?",
+    "options": [
+      "Aggregate precision is the right metric; the engineer is correct.",
+      "Aggregate precision is meaningless because it averages over arbitrary buckets.",
+      "Trust is per-reviewer/per-channel; one noisy category at high volume can poison a healthy aggregate, so per-category precision is the actionable metric.",
+      "Aggregate precision should be replaced with recall, since recall correlates with developer satisfaction."
+    ],
+    "explanations": [
+      "The engineer is wrong precisely because of contagion.",
+      "Aggregate isn't meaningless — it's just hiding within-channel variance that drives trust.",
+      "Correct. Per-category precision is the metric the topic prescribes for diagnosing and preventing contagion.",
+      "Recall and precision both matter; replacing one ambiguity with another isn't the fix."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "bc14d08e-6eb1-4b15-baa2-788c3134e093"
+  },
+  {
+    "question": "Two valid prompt fixes are: (a) sharpen the criterion with explicit categorical criteria, (b) anchor severities with code-shape examples. A third proposed fix is 'lower temperature for the noisy category only'. Why is (c) wrong even though it sounds plausible?",
+    "options": [
+      "Per-category temperature isn't supported by the Anthropic API, so the proposal is impossible.",
+      "Temperature controls sampling diversity, not the criteria the model applies; lower temperature makes the noise more reproducible, not less noisy.",
+      "Lowering temperature suppresses real findings disproportionately, hurting recall.",
+      "Temperature must always be set globally; per-category overrides aren't a coherent concept."
+    ],
+    "explanations": [
+      "API-feature objections sidestep the principle.",
+      "Correct. The topic's anti-pattern: temperature is not a precision dial; the criterion is what determines precision.",
+      "Recall might suffer too, but the principled objection is that temperature doesn't address the criterion.",
+      "Conceptual point about scope, not the underlying reason temperature fails as a precision tool."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "13c16a34-35b5-4d53-866a-eebaabe6a0ee"
+  },
+  {
+    "question": "Which of these symptoms most strongly suggests a 'criterion problem' rather than a 'model capability problem'?",
+    "options": [
+      "The reviewer misses subtle race conditions that require deep cross-file reasoning.",
+      "The reviewer flags many comments as 'inaccurate' that are merely terse rephrasings of the code's behavior.",
+      "The reviewer's findings vary in length depending on the PR size.",
+      "The reviewer is slower on PRs with more than 10 files."
+    ],
+    "explanations": [
+      "Cross-file reasoning misses are typically capability/context-window issues, not criterion issues.",
+      "Correct. Terse-but-accurate comments being flagged is exactly the criterion problem the topic targets — the criterion fails to exclude paraphrase/terseness.",
+      "Output length variance is a stylistic artefact, not a criterion issue.",
+      "Latency is an infra/orchestration issue, not a criterion issue."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "19f97266-b998-47c5-9ec5-1c457b4ee054"
+  },
+  {
+    "question": "Your team wants to A/B test 'be conservative' against 'explicit categorical criteria' on the same review category. Which outcome would the topic predict?",
+    "options": [
+      "Both arms reduce volume; only the explicit-criteria arm reduces the false-positive *rate*.",
+      "The 'be conservative' arm wins on precision because Claude responds well to natural-language hedging.",
+      "Both arms produce identical metrics because the prompts mean the same thing.",
+      "The explicit-criteria arm reduces recall to near-zero because it's too restrictive."
+    ],
+    "explanations": [
+      "Correct. The topic's empirical claim: hedges reduce volume but not rate; explicit criteria are the structural fix that moves the rate.",
+      "Claude does not 'respond' to hedging in a calibrated way; the topic explicitly rejects this.",
+      "The two prompts mean very different things — one is vague, one is structural.",
+      "Explicit criteria are scoped, not necessarily restrictive; the prediction is improved precision, not destroyed recall."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "dd43cbad-360b-40e5-9288-84c41c564056"
+  },
+  {
+    "question": "An engineer says: 'I added five examples of bad findings to the prompt as a few-shot block; precision improved from 30% to 80%.' Why is this consistent with the topic's principles?",
+    "options": [
+      "Few-shot examples bypass the model's calibration, which is normally locked.",
+      "Concrete examples function as anchors that establish a categorical decision boundary, which is what the topic prescribes — they're a form of explicit criterion.",
+      "Few-shot prompting changes the model's internal confidence threshold.",
+      "Examples are what trigger the model's 'be careful' mode."
+    ],
+    "explanations": [
+      "There is no 'locked calibration' to bypass; this is mechanistically wrong.",
+      "Correct. Examples make the criterion concrete and consistent — the same role code-shape examples play in severity rubrics.",
+      "Few-shot doesn't manipulate a confidence threshold; it shapes the decision boundary by example.",
+      "There is no internal 'be careful' mode."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "b9c0f5bd-e02a-40f8-b75c-8265a5a13f85"
+  },
+  {
+    "question": "Your reviewer is firing hundreds of 'naming convention' findings per PR, each one technically defensible. Developer trust is collapsing. Most exam-aligned fix?",
+    "options": [
+      "Disable the naming-convention category in production; if naming review is required, sharpen the criterion offline (e.g., 'flag a name only when it directly conflicts with a documented convention') and re-enable on a precision threshold.",
+      "Add 'limit naming-convention findings to 5 per PR' to the system prompt.",
+      "Tell the bot to phrase naming findings more politely.",
+      "Lower temperature so the bot is less inclined to nitpick."
+    ],
+    "explanations": [
+      "Correct. The exact disable-and-iterate move; volume-driven contagion is one of the canonical reasons to disable.",
+      "Caps suppress symptoms but don't address that the criterion is too broad; contagion continues at lower volume.",
+      "Tone doesn't restore trust once reviewers have disengaged.",
+      "Temperature isn't a precision dial."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "98de03d9-3b8b-4f5a-9b84-3a6db365d028"
+  },
+  {
+    "question": "Why is 'flag a comment only when claimed behavior contradicts actual code behavior' a stronger criterion than 'flag inaccurate comments'?",
+    "options": [
+      "It uses fewer tokens.",
+      "It names a specific code shape (claim vs behavior contradiction) the model can detect, which excludes paraphrase, terseness, and tone — categories the vague version would sweep in.",
+      "It triggers Claude's structured-output mode, which has higher precision.",
+      "It contains the word 'only', which Claude weights more heavily than other words."
+    ],
+    "explanations": [
+      "Token count is incidental.",
+      "Correct. Naming the in-scope shape and implicitly excluding similar-looking out-of-scope shapes is the structural property of an explicit criterion.",
+      "There is no 'structured-output mode' triggered by a phrasing.",
+      "Word-weighting folklore."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "f84de10b-49a7-4a17-a7f0-0affc51d237a"
+  },
+  {
+    "question": "Which of these is the WEAKEST argument for keeping a 35%-precision category live in production?",
+    "options": [
+      "It occasionally catches a real bug nobody else would.",
+      "Disabling categories looks bad on the team's roadmap.",
+      "Disabling means we'll never find that 35% of real bugs.",
+      "Reviewers will eventually learn to triage the noise."
+    ],
+    "explanations": [
+      "A weak argument, but not the weakest — at least it appeals to recall.",
+      "A non-technical political argument — weak but honest.",
+      "Mathematically wrong: 35% is precision, not recall — it doesn't mean 35% of real bugs are found.",
+      "Correct (the weakest). Asks reviewers to absorb the noise — patching at the human layer, which is the topic's explicit anti-pattern, and reviewers in practice disengage rather than triage harder."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "fd55efdf-9d7f-4cf7-bac6-38f1e14bd294"
+  },
+  {
+    "question": "A staff engineer argues: 'lowering temperature to 0 effectively gives us deterministic precision — same input, same output, so the FP rate is bounded by the criterion.' Why does this miss the point of the topic?",
+    "options": [
+      "Determinism doesn't fix the criterion; if the criterion is vague, the model deterministically produces noise. Reproducibility is orthogonal to precision.",
+      "Temperature 0 is not actually deterministic across model versions, so the argument is unsound on its own terms.",
+      "Temperature 0 increases hallucinations because the model can't sample alternative completions.",
+      "Anthropic's API doesn't support temperature 0; only 0.1 minimum."
+    ],
+    "explanations": [
+      "Correct. The deepest critique: a deterministic noisy reviewer is still a noisy reviewer. Temperature affects sampling variance, not the criterion that drives precision.",
+      "Tangentially true but not the principled point.",
+      "Hallucinations don't increase at low temperature in the way described.",
+      "Temperature 0 is supported."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "52b1e420-ec41-49b6-bfb2-28d73c1b3df5"
+  },
+  {
+    "question": "Two prompts are proposed to fix a noisy security reviewer. Prompt A: 'flag XSS only when user-controlled input flows into innerHTML/document.write/dangerouslySetInnerHTML without sanitisation; do not flag innerHTML use on static strings or sanitised input'. Prompt B: 'be highly precise on XSS findings, only report ones you are confident in'. Per the topic, which is stronger and why?",
+    "options": [
+      "B, because it appeals to the model's calibrated confidence, which is robust at production scale.",
+      "A, because it names in-scope code shapes (user input flowing into specific sinks) AND explicitly excludes similar-looking out-of-scope shapes (static or sanitised inputs) — a categorical decision boundary the model can apply consistently.",
+      "Equally strong — they communicate the same intent in different words.",
+      "B, because shorter prompts always outperform longer ones."
+    ],
+    "explanations": [
+      "Self-reported confidence is poorly calibrated; the topic explicitly rejects this axis.",
+      "Correct. Naming the in-scope sinks and explicitly excluding sanitised/static cases is the canonical structure of an explicit categorical criterion.",
+      "They differ structurally — A defines a decision boundary, B is a hedge.",
+      "Length isn't the metric; structural specificity is."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "4b86841d-0a40-47d7-bb98-12bcdf342e33"
+  },
+  {
+    "question": "Your team observes that the reviewer is 90% precise on PRs from the platform team but 40% precise on PRs from the experiments team. Same prompt, same model. What's the most exam-aligned diagnosis?",
+    "options": [
+      "The criteria likely match platform-team idioms but are too broad for the experiments team's code patterns; sharpen criteria to be team-agnostic, or accept that one criterion may not fit both codebases and fork the prompt.",
+      "The model is biased against the experiments team for non-technical reasons.",
+      "Temperature drift between teams.",
+      "The experiments team's PRs are inherently noisier; nothing can be done."
+    ],
+    "explanations": [
+      "Correct. The criterion is mismatched to one codebase's idioms — the structural fix is sharpening the criterion or splitting it, not asking reviewers to triage harder.",
+      "Anthropomorphic; not a useful diagnosis.",
+      "Temperature is per-call, not per-team.",
+      "Defeatist and not the topic's prescription; criteria can be sharpened or scoped."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "87db7048-9b95-49df-946e-2769df135318"
+  },
+  {
+    "question": "A 'comment-accuracy' category has been disabled in production for two weeks. Offline precision on the latest labelled sample is 67%. Should the team re-enable?",
+    "options": [
+      "Yes — two weeks is the standard cooldown.",
+      "Yes — 67% is above the 50% bar.",
+      "No — re-enable only when offline precision clears the pre-set threshold (commonly 80–90%); 67% is below the bar and would re-introduce contagion.",
+      "Yes — disabled categories can't be improved further; re-enabling is the only way to gather more signal."
+    ],
+    "explanations": [
+      "Time isn't the gating criterion.",
+      "There's no rationale for 50% — re-enabling at that level would re-introduce contagion.",
+      "Correct. Disable-and-iterate re-enables on a precision threshold against a labelled sample, not on time or improvement direction.",
+      "Wrong — offline iteration against a labelled sample is exactly how to keep improving without re-enabling."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "6581790c-e49a-4d71-994d-46faffb6a440"
+  },
+  {
+    "question": "Reviewing a system prompt, you see this severity rubric: 'P0: would corrupt persistent state. P1: would degrade user experience. P2: would waste developer time.' Why is this still problematic per the topic?",
+    "options": [
+      "It uses 'P' nomenclature instead of 'critical/major/minor' — the model prefers verbal labels.",
+      "It has too few levels; production needs at least five.",
+      "Each level is defined by impact phrases that are themselves ambiguous ('persistent state', 'degrade UX'); without code-shape examples per level, classification will still drift across runs.",
+      "Severity rubrics shouldn't appear in system prompts at all — they belong in tool schemas."
+    ],
+    "explanations": [
+      "Naming convention isn't the issue.",
+      "Number of levels isn't the issue.",
+      "Correct. Replacing adjectives with impact phrases is an improvement but still leaves ambiguity; the topic prescribes concrete code-shape examples per level for consistent classification.",
+      "Severity rubrics in system prompts are fine; the issue is anchoring."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "2222acf8-259e-4500-8a39-ba8c75aeac71"
+  },
+  {
+    "question": "Engineering leadership is convinced that 'recall is everything — better to flag 10 false positives than miss 1 real bug'. Per the topic, what is the strongest pushback?",
+    "options": [
+      "Recall and precision are equally important; the leadership statement is balanced.",
+      "Once reviewers disengage from a noisy channel, effective recall on the channel approaches zero — so prioritising raw recall over precision destroys the very recall it's trying to protect.",
+      "Recall is irrelevant; only precision matters in code review.",
+      "The right balance is set by the model, not by the team."
+    ],
+    "explanations": [
+      "Doesn't address the asymmetry the topic highlights.",
+      "Correct. The topic's deepest point: trust is the gating resource — a high-recall, low-precision reviewer that nobody reads has effective recall of zero, dominating any recall gain.",
+      "Recall obviously matters — the topic doesn't reject it; it argues precision protects effective recall.",
+      "Hand-waves the question."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "b40f996c-6cc7-455b-a272-88b3e15b9b76"
+  },
+  {
+    "question": "Which of these is the MOST subtle anti-fix for a noisy review category — i.e., one that sounds principled but doesn't actually move per-category precision?",
+    "options": [
+      "Adding 'be conservative' to the system prompt.",
+      "Lowering temperature to 0.",
+      "Switching to a larger model.",
+      "Asking the model to self-report a confidence score per finding and filtering below a threshold."
+    ],
+    "explanations": [
+      "Obvious anti-fix — a vague hedge.",
+      "Obvious anti-fix once you know temperature isn't a precision dial.",
+      "Larger models may help marginally but don't address vague criteria; medium-subtle.",
+      "Correct (most subtle). Self-reported confidence sounds principled but is poorly calibrated; the topic explicitly rejects confidence-based filtering as a precision tool, and many engineers reach for it because it sounds quantitative."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "6532d153-0aec-4e20-8e46-f8850d3bcbb5"
+  },
+  {
+    "question": "Your reviewer's 'naming convention' category fires 200 findings per PR, each technically correct against your style guide. Aggregate precision is therefore 100% by audit, yet developers ignore the bot. What's happening, per the topic?",
+    "options": [
+      "The auditors are wrong — precision must be lower than reported.",
+      "Volume itself is a contagion vector; even at 100% precision, a category whose findings are not actionable trains reviewers to dismiss the channel. The fix is to scope the category to a smaller, higher-leverage set or default-skip it.",
+      "Developers are unprofessional and need management intervention.",
+      "Aggregate precision being 100% means the system is healthy; the developer behaviour is a separate culture problem."
+    ],
+    "explanations": [
+      "Audit is fine; precision is a per-finding-correctness metric, not an actionability metric.",
+      "Correct. The topic's deeper point: trust is sensitive not only to precision but to *signal-to-actionability*. Technically-correct-but-irrelevant findings cause the same disengagement as false positives. The fix is to scope or skip.",
+      "Human-layer blame — the topic's anti-pattern.",
+      "Conflates 'precision is fine' with 'the channel is healthy'; they're different."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "7f656323-1ffc-455f-b4d1-a7c2bcca2c25"
+  },
+  {
+    "question": "A peer says: 'Our reviewer's 32%-precision comment-accuracy category is fine — we just need to ask Claude to *also* output a confidence score, then filter findings below 0.85, and we'll have an effectively precise reviewer without disabling anything.' Per the topic, what is wrong with this reasoning?",
+    "options": [
+      "Confidence scores are not part of the Anthropic API and would require a custom fine-tune.",
+      "0.85 is too high a threshold; 0.7 would have worked.",
+      "The right move is to lower temperature alongside the confidence filter, which the peer omitted.",
+      "Self-reported LLM confidence is poorly calibrated against ground-truth correctness; a model that is confidently wrong on 65% of comment-accuracy findings will report high confidence on those same wrong findings, so the threshold filter doesn't actually filter false positives."
+    ],
+    "explanations": [
+      "Confidence scores can be requested via tool schemas; API support isn't the issue.",
+      "Threshold tuning sidesteps the calibration problem.",
+      "Stacking anti-fixes doesn't make them work.",
+      "Correct. The topic's central principle: confidence isn't a calibrated axis. The model is already confidently producing the false positives, so a self-reported confidence threshold can't separate them. The fix is criteria sharpening or disable-and-iterate."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "1bae4230-2e41-4b76-bc9a-1b9b3669377c"
+  },
+  {
+    "question": "Your reviewer's 'potential null deref' category is at 35% precision. The team has shipped TWO fixes simultaneously: (1) added 'be conservative on null-deref' to the system prompt, (2) lowered temperature to 0.1 for the whole reviewer. Volume drops 40%; offline precision is unchanged at 35%. What does the topic predict and what should the team do?",
+    "options": [
+      "Both fixes worked; the offline measurement must be flawed.",
+      "The volume drop is the predicted no-op of vague hedges plus temperature changes — neither touches the criterion. Disable the null-deref category in production, sharpen its criteria offline against a labelled sample with explicit categorical scope (e.g., 'flag only when the variable is dereferenced inside a branch where its return-from-nullable origin is unchecked'), and re-enable when offline precision clears the threshold.",
+      "Roll back both fixes and try a higher temperature instead; sometimes more sampling diversity surfaces better findings.",
+      "Add a third hedge ('only flag null-deref when extremely confident') and re-measure."
+    ],
+    "explanations": [
+      "Offline precision unchanged is the diagnostic; the volume drop without rate change is exactly the topic's predicted outcome.",
+      "Correct. Maps to the topic's full anti-pattern stack (vague hedge AND temperature) and prescribes the disable-and-iterate workflow with an explicit categorical replacement criterion.",
+      "Temperature isn't the problem in either direction.",
+      "Stacking hedges doesn't change the criterion."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.1"
+    ],
+    "phase": "post",
+    "qid": "67ca0f61-3e05-4bbc-bca6-daa321028c0a"
+  }
+]

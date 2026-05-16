@@ -1,0 +1,882 @@
+[
+  {
+    "question": "Your team asks the same Claude conversation 'Are you sure that's correct?' immediately after Claude produces an answer, and treats that as a verification step. Why is this an unreliable safety net?",
+    "options": [
+      "The same session retains the generation reasoning context, so the model tends to confirm its own prior decisions rather than challenge them.",
+      "The Anthropic API forbids self-reflection turns, so the second turn's content is silently dropped.",
+      "Confidence on the second turn is always lower than on the first, so the model defers to the original answer.",
+      "Self-review only works if extended thinking is enabled on the second turn."
+    ],
+    "explanations": [
+      "Correct. Same-session self-review is not independent — the prior reasoning is still in context, so the model confirms rather than catches errors.",
+      "Wrong. The API has no such restriction; the failure is reasoning-context retention, not a platform rule.",
+      "Wrong. There is no built-in confidence-decay on second turns; the failure mode is conceptual (anchoring on prior reasoning), not numeric.",
+      "Wrong. Extended thinking inside the same context does not create independence; the prior rationale is still filtered through."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "pre",
+    "qid": "821438a8-7f15-47de-ab1c-d585794f9d9e"
+  },
+  {
+    "question": "What is the architecturally correct way to get a 'second opinion' on a piece of generated code from Claude?",
+    "options": [
+      "Add 'double-check carefully' to the same prompt that generated the code.",
+      "Open a new conversation turn in the same session and ask Claude to review the previous output.",
+      "Make a separate API call with a fresh context, no prior conversation history, and only the artifact plus review criteria as input.",
+      "Run the same prompt three more times and majority-vote the outputs."
+    ],
+    "explanations": [
+      "Wrong. Modifying the prompt of the original generation is not review at all.",
+      "Wrong. A new turn in the same session is not independent — the generation reasoning context is still present.",
+      "Correct. Independence is architectural: a separate API call with no prior history is what makes the reviewer free of the generator's anchoring.",
+      "Wrong. Repeating the same prompt is not independent review and majority-voting can suppress real findings."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "pre",
+    "qid": "78f5e79f-177a-444e-b1c6-be4b471c2293"
+  },
+  {
+    "question": "A pull request modifies 14 files. A single review prompt over the whole PR produces detailed feedback for some files, superficial review for others, and contradictory findings on identical code. What is this symptom called?",
+    "options": [
+      "Context-window exhaustion.",
+      "Attention dilution.",
+      "Tool-call starvation.",
+      "Schema drift."
+    ],
+    "explanations": [
+      "Wrong. The window may not even be full; the issue is attention quality across the prompt, not raw size.",
+      "Correct. Spreading one pass across many files dilutes attention — depth becomes inconsistent and cross-file comparisons get muddled.",
+      "Wrong. Tool-call starvation is unrelated; this scenario isn't about tools.",
+      "Wrong. Schema drift describes structural-output mismatches over time, not multi-file review behaviour."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "pre",
+    "qid": "92a6b627-aca4-461b-abfe-a4f61b702079"
+  },
+  {
+    "question": "What is the recommended multi-pass review architecture for a large multi-file pull request?",
+    "options": [
+      "One pass per file for line-level issues, plus a separate cross-file integration pass for data flow and contracts.",
+      "One large pass that reviews everything at once with a long checklist.",
+      "One pass per file only — cross-file relationships will surface naturally.",
+      "Three identical full-PR passes, then majority-vote the findings."
+    ],
+    "explanations": [
+      "Correct. Splitting into per-file local + a dedicated cross-file integration pass keeps depth uniform and gives data-flow issues a focused pass.",
+      "Wrong. This is exactly the single-pass pattern that causes attention dilution.",
+      "Wrong. Per-file passes alone miss contracts, shared invariants, and cross-file data flow.",
+      "Wrong. Identical passes aren't independent and majority-voting can suppress real bugs only one reviewer caught."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "pre",
+    "qid": "3a74d23d-bf76-4d31-8199-d6bd560f9ca4"
+  },
+  {
+    "question": "A reviewer instance attaches a 'high / medium / low' confidence label to each finding. Before wiring auto-block to fire on every 'high' finding, what must you do?",
+    "options": [
+      "Nothing — LLM self-reported confidence is calibrated by default.",
+      "Switch to extended thinking so the labels are more accurate.",
+      "Validate calibration: on a labeled sample, check whether 'high' findings empirically hit the rate the label implies, and re-bucket if not.",
+      "Increase the model's max_tokens so it has more room to reason about confidence."
+    ],
+    "explanations": [
+      "Wrong. LLM self-reported confidence is famously uncalibrated by default.",
+      "Wrong. Extended thinking does not by itself produce calibration; calibration is an empirical property of the labels vs hit rates.",
+      "Correct. Calibration means stated probability matches empirical hit rate; you must validate on labeled data and re-bucket as needed.",
+      "Wrong. Token budget has nothing to do with calibration of confidence labels."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "pre",
+    "qid": "989b621a-9954-4ca2-ac3b-276457a50b1e"
+  },
+  {
+    "question": "Two truly independent reviewers caught most bugs on a high-stakes release. Your manager proposes scaling to five independent reviewers and majority-voting their findings. What's the right pushback?",
+    "options": [
+      "Five reviewers always strictly improve quality — no pushback needed.",
+      "The value is independence, not count; past two you hit diminishing returns and majority-voting can suppress real bugs only one reviewer caught.",
+      "Five reviewers will exceed the rate limit, so it's infeasible regardless of value.",
+      "Five reviewers will always disagree, making the output unusable."
+    ],
+    "explanations": [
+      "Wrong. Past two, additional reviewers add cost without much extra signal.",
+      "Correct. Independence is the value; majority-voting can suppress correct minority findings, and extra reviewers re-discover the same issues.",
+      "Wrong. Rate limits are an implementation detail, not the conceptual reason.",
+      "Wrong. The issue isn't 'they always disagree' — it's that voting suppresses a correct lone finding and the marginal extra reviewer adds little signal."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "pre",
+    "qid": "459db48a-5be9-480f-808f-5a9e6179d872"
+  },
+  {
+    "question": "Which fix correctly addresses inconsistent depth on a 14-file PR review?",
+    "options": [
+      "Force developers to split every PR into 3–4 files.",
+      "Run the same review three times and union all findings.",
+      "Switch to a model with a much larger context window.",
+      "Restructure the review into per-file local passes plus a cross-file integration pass."
+    ],
+    "explanations": [
+      "Wrong. Shifts the burden to developers and doesn't fix the review architecture.",
+      "Wrong. Repeated identical runs aren't independent and unioning findings just amplifies noise.",
+      "Wrong. Larger context doesn't solve attention quality; the same dilution recurs.",
+      "Correct. Splitting the review (not the PR) fixes depth and gives cross-file issues a dedicated pass."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "pre",
+    "qid": "e48973f9-e3df-4836-bba4-06ffa2ed3ad9"
+  },
+  {
+    "question": "Which best describes 'calibrated' confidence in the context of automated code review?",
+    "options": [
+      "Confidence is always reported on a 1–10 scale.",
+      "Confidence is recomputed on every turn of the conversation.",
+      "The model's confidence equals its log-probability on the answer token.",
+      "The stated confidence label matches the empirical hit rate over many findings (e.g., 'high' findings are right ~90%+)."
+    ],
+    "explanations": [
+      "Wrong. The scale isn't what 'calibrated' means.",
+      "Wrong. Recomputation isn't the definition of calibration.",
+      "Wrong. Internal log-probabilities aren't what end-to-end calibration of finding labels means.",
+      "Correct. Calibration is the empirical property that label probabilities match observed accuracy."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "pre",
+    "qid": "ab7f4897-3326-4f2b-a382-63e24bbfed9d"
+  },
+  {
+    "question": "What is fed to the second, independent review instance for it to do its job?",
+    "options": [
+      "Only the artifact under review plus the criteria/spec it should evaluate against — fresh context, no generator history.",
+      "The full conversation transcript from the original generation.",
+      "Only the model's reasoning trace from the original generation.",
+      "Only a short natural-language summary of what the generator decided."
+    ],
+    "explanations": [
+      "Correct. The reviewer needs the artifact and the criteria — and crucially not the generator's rationale — to read it like a stranger would.",
+      "Wrong. Including the generator's transcript reintroduces the reasoning anchor and destroys independence.",
+      "Wrong. The reasoning trace is precisely what creates anchoring; it must not be passed.",
+      "Wrong. A summary still re-introduces generator framing and isn't sufficient as the only input."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "pre",
+    "qid": "3eb00bfb-ed1f-4165-b9a0-bd8a0a63c959"
+  },
+  {
+    "question": "Which statement best summarises the relationship between multi-instance and multi-pass review?",
+    "options": [
+      "They are the same technique under different names.",
+      "Multi-instance gives you independence (fresh reviewer separate from the generator); multi-pass gives you decomposition (splitting a big review into smaller scoped passes). They are usually combined.",
+      "Multi-pass replaces multi-instance whenever the codebase is large.",
+      "Multi-instance only matters for prose review; multi-pass only matters for code review."
+    ],
+    "explanations": [
+      "Wrong. They solve different failure modes.",
+      "Correct. Multi-instance addresses anchoring; multi-pass addresses attention dilution. Production review architectures usually use both together.",
+      "Wrong. Decomposition does not eliminate the need for an independent reviewer.",
+      "Wrong. Both apply across artifact types; the distinction is purpose, not domain."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "pre",
+    "qid": "c759acbe-cef2-425d-94e6-37223c7e12ae"
+  },
+  {
+    "question": "A team's CI pipeline asks Claude to review a generated migration script in the same session that produced it, prompted with 'List any issues you see in the migration above.' The reviewer almost never disagrees with the generator. Which restructuring most directly fixes the failure mode?",
+    "options": [
+      "Append 'Be very critical and skeptical' to the review prompt.",
+      "Issue the review as a separate API call with a fresh context, given only the migration and the team's review checklist.",
+      "Run the same review prompt twice in the same session and union the findings.",
+      "Lower the temperature on the review turn to zero."
+    ],
+    "explanations": [
+      "Wrong. The failure is architectural (shared reasoning context), not tone.",
+      "Correct. Independence is architectural — a separate API call with fresh context removes the anchoring.",
+      "Wrong. Two reviews in the same session both anchor on the same prior context.",
+      "Wrong. Temperature does not break the reasoning-context anchor."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "57ca2293-8b58-433a-855f-9782c7b1c145"
+  },
+  {
+    "question": "You run a 14-file PR through one big review pass and get the classic dilution symptoms (uneven depth, missed bugs, contradictory findings). Which restructure does the source-of-truth recommend?",
+    "options": [
+      "Split into focused passes: per-file local analysis + a separate integration-focused pass over cross-file data flow.",
+      "Force developers to break the PR into 3–4 file submissions.",
+      "Switch to a model with a larger context window.",
+      "Run three full-PR review passes and only flag findings that appear in at least two."
+    ],
+    "explanations": [
+      "Correct. The official answer is multi-pass split; per-file gives uniform depth and the integration pass catches cross-file issues.",
+      "Wrong. Shifts the burden to developers without fixing the review architecture.",
+      "Wrong. Bigger context doesn't fix attention quality.",
+      "Wrong. Majority-voting suppresses real bugs only one reviewer caught."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "bdd28e9e-38e1-43f6-934d-a0ed43ca926c"
+  },
+  {
+    "question": "A reviewer attaches 'high / medium / low' confidence to each finding and the team wants to auto-block on 'high'. They have not validated calibration. What's the most likely production outcome?",
+    "options": [
+      "The auto-block threshold fires on uncalibrated noise — false positives spam developers, real issues at lower buckets are silently missed.",
+      "The auto-block will be perfectly accurate because LLM self-reported confidence is calibrated by default.",
+      "The auto-block will rarely fire because 'high' is reserved for cases the model never sees.",
+      "The labels become meaningless after about 1,000 findings due to drift, but are accurate before that."
+    ],
+    "explanations": [
+      "Correct. Without calibration, 'high' might be right only 60–70%; routing on it produces both spam and silent misses.",
+      "Wrong. LLM self-reported confidence is not calibrated by default.",
+      "Wrong. Models tend to over-use 'high', not under-use it.",
+      "Wrong. Calibration is a property to be measured, not something that decays from accurate to noisy at a count threshold."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "a2693f2a-f63a-458a-87a6-097bd32665d4"
+  },
+  {
+    "question": "Which input set should the independent reviewer instance receive?",
+    "options": [
+      "The artifact + the entire generator conversation transcript.",
+      "The artifact + the generator's chain-of-thought.",
+      "The artifact + the criteria/spec it must satisfy.",
+      "Only the artifact, with no criteria — to keep the reviewer 'unbiased'."
+    ],
+    "explanations": [
+      "Wrong. The transcript is the worst possible input — it destroys independence entirely.",
+      "Wrong. Including chain-of-thought re-creates the anchor that broke self-review.",
+      "Correct. Artifact plus the contract/spec lets the reviewer evaluate without anchoring on the generator's reasoning.",
+      "Wrong. Without criteria, the reviewer has no target to evaluate against and produces vague feedback."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "e9e5f90e-67a7-47e8-abfd-8c0ebf3e0bd0"
+  },
+  {
+    "question": "Why is 'turn on extended thinking on the verify turn' an insufficient fix for self-review limitations?",
+    "options": [
+      "Extended thinking produces longer answers but lower accuracy on review tasks.",
+      "Extended thinking is incompatible with multi-turn conversations.",
+      "Extended thinking still happens inside the generation context — the prior rationale is still in the conversation, so more thinking does not produce independence.",
+      "Extended thinking caches its reasoning, which leaks back into future generations."
+    ],
+    "explanations": [
+      "Wrong. There is no general 'longer = lower accuracy' rule; the issue is anchoring, not response length.",
+      "Wrong. Extended thinking is compatible with multi-turn conversations.",
+      "Correct. Independence is about removing the prior reasoning context, which extended thinking inside the same session does not do.",
+      "Wrong. The reason it fails is the shared reasoning context, not a 'leak' mechanism."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "f99a9957-7642-4150-a325-99df4c37b78f"
+  },
+  {
+    "question": "Two reviewers are caching most issues. A manager proposes scaling to five independent reviewers and majority-voting. Which response best matches the source-of-truth?",
+    "options": [
+      "Five reviewers must run sequentially on the same instance to be valid, otherwise the votes don't count.",
+      "Five is fine; more reviewers strictly improves recall.",
+      "Five is too few — you need at least seven for statistically meaningful voting.",
+      "Past two, you hit diminishing returns and majority-voting can suppress correct findings raised by only one reviewer; the value is independence, not count."
+    ],
+    "explanations": [
+      "Wrong. Sequential same-instance reviewers aren't independent at all.",
+      "Wrong. Past two there are diminishing returns and voting introduces a suppression risk.",
+      "Wrong. There is no canonical 'seven reviewer' rule.",
+      "Correct. Independence delivers most of the value at two; voting can hide a correct minority finding."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "afd16ea2-446f-4061-8cbb-cdaf8074413c"
+  },
+  {
+    "question": "Your CI bot runs Claude as a code reviewer and self-blocks on 'high confidence' findings. Sampling shows 'high' is empirically right ~62% of the time. What's the immediate fix to the routing?",
+    "options": [
+      "Disable confidence reporting; route all findings to human review.",
+      "Lower the auto-block threshold to 'medium' to catch more issues.",
+      "Raise the auto-block threshold to 'critical' so only the most extreme cases block.",
+      "Re-prompt and re-bucket so 'high' empirically hits ~90%, then route on the calibrated score."
+    ],
+    "explanations": [
+      "Wrong. Throwing away the signal entirely loses the routing benefit; calibration is fixable.",
+      "Wrong. Routing on a less-stringent uncalibrated bucket worsens the noise problem.",
+      "Wrong. Adding higher tiers without measuring calibration just relabels uncalibrated noise.",
+      "Correct. Calibration is restored by re-prompting and re-bucketing until the empirical rate matches the label, then routing on that."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "e4f3e01b-f508-4d9a-8d15-72e66a7626ca"
+  },
+  {
+    "question": "Which class of issue is the cross-file integration pass specifically designed to catch?",
+    "options": [
+      "Single-line style nits like missing semicolons.",
+      "Data flow across files, contract/interface compatibility, and shared invariants between modules.",
+      "Local null-pointer dereferences within one function.",
+      "Off-by-one errors inside a single loop."
+    ],
+    "explanations": [
+      "Wrong. Style nits are line-level, handled by the per-file local pass.",
+      "Correct. Integration passes evaluate cross-file relationships that no single-file pass can see.",
+      "Wrong. Local null-handling is a per-file local concern.",
+      "Wrong. Off-by-one in one loop is local; integration is about between-file behaviour."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "1b145d41-0a0d-4a32-918a-287ac8b5a7b7"
+  },
+  {
+    "question": "Given a diff and a per-file interface summary, the cross-file integration pass flags that `auth.signSession` now returns a `Promise` but the caller in `routes/login.ts` still treats it synchronously. Why is this kind of finding hard to surface in a per-file local pass?",
+    "options": [
+      "Per-file passes are always run with extended thinking off, which prevents async reasoning.",
+      "A per-file pass only sees one file at a time, so it cannot compare a producer's contract against a consumer's usage.",
+      "The local pass refuses to load type information by design.",
+      "The local pass deliberately ignores Promises to reduce false positives."
+    ],
+    "explanations": [
+      "Wrong. There is no rule tying extended thinking to async reasoning capability.",
+      "Correct. Cross-file mismatches require seeing both ends; that is exactly what the integration pass exists to do.",
+      "Wrong. There is no design decision to refuse type information in the local pass.",
+      "Wrong. The local pass doesn't categorically ignore Promises; the issue is scope, not filter."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "f669dbf6-f64e-4928-b7b8-726e7c584201"
+  },
+  {
+    "question": "Which of the following is the strongest single property that makes a review pass 'independent'?",
+    "options": [
+      "It is issued in a separate API call with no prior conversation history with the generator.",
+      "It uses a different temperature than the generator.",
+      "It uses a different system prompt than the generator.",
+      "It uses extended thinking even if the generator did not."
+    ],
+    "explanations": [
+      "Correct. Fresh context with no generator history is the architectural property that breaks the anchoring.",
+      "Wrong. Temperature alone does not remove the prior reasoning context.",
+      "Wrong. A different system prompt in the same session still leaves the prior assistant turns in context.",
+      "Wrong. Extended thinking inside an unchanged context still anchors on the same prior."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "12c33146-1b1a-4cb2-ab2c-0671136219bd"
+  },
+  {
+    "question": "A team reads about multi-pass review and refactors their pipeline so each PR becomes N per-file calls — but they drop the integration pass entirely. What's the most likely failure mode they will see in production?",
+    "options": [
+      "Cross-file contract mismatches and data-flow bugs slip through because no pass examines relationships between files.",
+      "Per-file feedback becomes shallow because there is no integration pass to anchor it.",
+      "Token costs explode because per-file passes always re-read the entire repo.",
+      "The CI pipeline cannot post comments without an integration pass."
+    ],
+    "explanations": [
+      "Correct. The integration pass exists to cover exactly the issues that span files; dropping it leaves a structural gap.",
+      "Wrong. Per-file pass depth is uniform regardless of whether the integration pass runs.",
+      "Wrong. Per-file passes scope themselves to the file; they don't re-read the whole repo.",
+      "Wrong. There is no infrastructural dependency between commenting and the integration pass."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "f453abb0-bb6f-449a-b0aa-2b1e07e5b2ad"
+  },
+  {
+    "question": "An engineer argues: 'A 14-file PR fits comfortably in our model's 200K context, so attention dilution shouldn't apply.' What's the right correction?",
+    "options": [
+      "Attention quality across a long prompt is not the same as raw context capacity; even when the window fits, single-pass review of many files dilutes focus.",
+      "Correct — at 200K context, attention dilution genuinely doesn't apply.",
+      "Attention dilution is an Anthropic-specific limit that disappears above 100K context.",
+      "Attention dilution only happens when the model's response is truncated."
+    ],
+    "explanations": [
+      "Correct. Fitting in the window is necessary but not sufficient; the model's attention still spreads thin across many files in one pass.",
+      "Wrong. Dilution is about attention quality, not capacity.",
+      "Wrong. There is no '100K threshold' rule.",
+      "Wrong. Truncation is a different failure; dilution can occur in untruncated responses."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "dbcc6de9-7912-4983-94dc-d676d3dd6776"
+  },
+  {
+    "question": "Which routing scheme is consistent with calibrated confidence reporting?",
+    "options": [
+      "High → auto-block + comment, medium → comment for human review, low → log only — after validating that each bucket's empirical accuracy matches its label.",
+      "Block on every finding regardless of confidence — humans can untangle the noise later.",
+      "Trust only 'low' confidence findings, on the assumption the model is overconfident on 'high'.",
+      "Ignore the confidence label and route everything to a human."
+    ],
+    "explanations": [
+      "Correct. Calibrated buckets enable graduated routing; validation against labeled data is the prerequisite.",
+      "Wrong. Auto-blocking everything is the opposite of calibrated routing.",
+      "Wrong. Inverting the label without measurement is just guessing.",
+      "Wrong. This throws away the value of the calibration work."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "7c08d24c-3d78-48d0-ba3e-9cf8597e1570"
+  },
+  {
+    "question": "Why does the source-of-truth specifically discourage 'three independent review passes, only flag findings present in ≥2 of the 3'?",
+    "options": [
+      "Three reviewers are too expensive and the API does not support more than two parallel calls.",
+      "It suppresses real bugs that only one reviewer noticed; the value of independent reviewers is catching what others miss, not just confirming consensus.",
+      "Three identical reviewers are mathematically equivalent to one reviewer running three times.",
+      "The Anthropic SDK does not support quorum-based aggregation."
+    ],
+    "explanations": [
+      "Wrong. There is no API limit of two parallel calls; cost is a separate concern.",
+      "Correct. Quorum-style filtering hides correct minority findings, which is the opposite of what independent review is for.",
+      "Wrong. Independent reviewers are not equivalent to repeated runs of one — but the issue here is suppression, not equivalence.",
+      "Wrong. SDK feature support is not the reason the technique is discouraged."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "b193c8bf-40eb-4c8a-a996-c326b67e2afb"
+  },
+  {
+    "question": "A team adds a custom `verify_correctness` tool that the generator can call mid-session and treats its output as 'verification'. The tool internally calls the same Claude session with the prompt 'Is the answer above correct?'. What independent property does this scheme satisfy?",
+    "options": [
+      "Architectural independence, because the verification is invoked through a tool boundary.",
+      "None — it's same-session self-review wearing a tool-shaped costume; the reasoning context is still shared.",
+      "Calibrated confidence, because tool outputs are structured.",
+      "Multi-pass decomposition, because the tool is a separate code path."
+    ],
+    "explanations": [
+      "Wrong. Tool invocation does not produce a fresh context; the same conversation history is still passed to the model.",
+      "Correct. A tool wrapping the same session does not break the reasoning anchor; independence requires a separate API call with no shared history.",
+      "Wrong. Calibration is an empirical property; tool wrapping does not produce it.",
+      "Wrong. Multi-pass decomposition is about splitting scope, not wrapping a verification call in a tool."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "1c93c7ad-2733-4ea0-8edb-2cd5d4f6add4"
+  },
+  {
+    "question": "A team spawns a `Task` subagent within the same SDK session and asks the subagent to 'review the work the parent just produced.' The subagent gets a clean conversation but the parent passes its own draft and rationale into the subagent's prompt. Is the subagent acting as an independent reviewer?",
+    "options": [
+      "Yes — subagents always have fresh context, so independence is automatic.",
+      "No — passing the parent's rationale into the subagent's prompt re-introduces the generator's anchoring; independence requires the reviewer to see only the artifact and the criteria.",
+      "Yes — independence is about session boundaries, not prompt content.",
+      "No, because subagents cannot use tools, which is required for review."
+    ],
+    "explanations": [
+      "Wrong. Subagent context is only fresh if the prompt itself doesn't smuggle the rationale back in.",
+      "Correct. The reviewer is independent only when it does not see the generator's reasoning; passing rationale through the prompt destroys that.",
+      "Wrong. Independence is about the reasoning-anchor content, not just session boundaries.",
+      "Wrong. Subagents can use tools; that's not the relevant constraint."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "cdb305d9-c314-4303-812f-7ae4822ca035"
+  },
+  {
+    "question": "An on-call engineer says: 'We split the review into one per-file pass per file and got rid of the cross-file pass — depth is uniform now, so we're done.' What is the structural gap?",
+    "options": [
+      "Per-file passes can't run in parallel without a cross-file pass coordinating them.",
+      "Per-file passes alone overfit on local style and ignore null-pointer issues.",
+      "No pass examines cross-file relationships, so contract mismatches, shared invariants, and integration bugs are not surfaced.",
+      "Per-file passes always require an integration pass for the comments to render in the PR UI."
+    ],
+    "explanations": [
+      "Wrong. Parallelism doesn't require the integration pass.",
+      "Wrong. Local passes catch null-pointer issues fine; that's a per-file concern.",
+      "Correct. The integration pass exists precisely to cover the cross-file class of bugs; dropping it leaves a structural blind spot.",
+      "Wrong. UI rendering is independent of which passes run."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "feea862a-051f-4970-af90-2b6bdf95163b"
+  },
+  {
+    "question": "Which of these correctly identifies the input the cross-file integration pass should receive (and what it should NOT receive)?",
+    "options": [
+      "Only the diff hunks, with no interface summaries.",
+      "Every file's full body verbatim, plus the entire git history for context.",
+      "Each file's interface summary plus the diff and any cross-file contracts; not a verbatim dump of every file's full body.",
+      "Only a list of filenames; the model will infer the rest."
+    ],
+    "explanations": [
+      "Wrong. Diff hunks alone lack the contract context to evaluate cross-file relationships.",
+      "Wrong. Dumping every file's full body recreates the single-pass attention dilution.",
+      "Correct. Interface summaries plus the diff give the integration pass what it needs without re-introducing the dilution problem.",
+      "Wrong. Filenames alone are insufficient signal."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "c5e9cc0b-d081-4b32-b01b-63d5e3b01302"
+  },
+  {
+    "question": "Why is 'append \"do not just confirm; actively look for errors\" to the self-review prompt' not a real fix to self-review limitations?",
+    "options": [
+      "It works, but only at temperature 0.",
+      "Anthropic system prompts forbid the word 'errors'.",
+      "Adding instructions exceeds the model's instruction budget.",
+      "The same reasoning context is still in the session; instructing the model to 'be critical' inside that context still filters its critique through the generator's own rationale."
+    ],
+    "explanations": [
+      "Wrong. Temperature is unrelated to context anchoring.",
+      "Wrong. There is no such restriction.",
+      "Wrong. There's no fixed 'instruction budget'.",
+      "Correct. Self-review failure is architectural — prompt tweaks inside the same context don't break the anchoring."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "9d2cfc7f-35f0-4a6a-92b8-2e0723ac1a18"
+  },
+  {
+    "question": "A reviewer outputs: 'Finding F1: missing null-check at line 42, confidence: high.' The team logs it but never validates calibration. Two months later they wire auto-block to F1-style 'high' findings. What is the predicted symptom?",
+    "options": [
+      "The model retroactively re-rates old findings to maintain calibration.",
+      "The auto-block is reliable because two months of logged findings has implicitly calibrated the labels.",
+      "The auto-block becomes more accurate over time without intervention.",
+      "The auto-block fires on a mix of correct and incorrect 'high' findings, producing both false positives and silent misses; developer trust in the bot erodes."
+    ],
+    "explanations": [
+      "Wrong. The model has no retroactive re-rating mechanism.",
+      "Wrong. Logging without measurement is not calibration.",
+      "Wrong. Calibration doesn't drift toward correct on its own.",
+      "Correct. Without an explicit calibration step, logging alone doesn't make labels calibrated; routing on uncalibrated 'high' produces noise both directions."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "557aa633-38cd-40df-a2df-556521dc6c85"
+  },
+  {
+    "question": "Two distinct teams insist their review architecture is 'independent.' Team A: same Claude session, asks 'Are you sure?' as a follow-up turn. Team B: separate API call, fresh context, only the diff and the checklist. Which (if either) is genuinely independent, and why?",
+    "options": [
+      "Only B — independence requires removing the generator's reasoning context, which a fresh API call achieves and a follow-up turn does not.",
+      "Both A and B — anything that asks 'is this correct?' qualifies.",
+      "Only A — putting the reviewer in the same session ensures it has full context.",
+      "Neither — independence is impossible without a different model family."
+    ],
+    "explanations": [
+      "Correct. Architectural independence = fresh context. A retains the anchor; B removes it.",
+      "Wrong. The phrasing of the question doesn't determine independence; the context does.",
+      "Wrong. 'Full context' includes the rationale, which is exactly what destroys independence.",
+      "Wrong. Independence does not require a different model family; it requires fresh context."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "642d8989-077e-4d06-8da0-bb5afd7cb6bf"
+  },
+  {
+    "question": "Which combination most closely matches the multi-instance + multi-pass posture the source-of-truth recommends for high-stakes PR review?",
+    "options": [
+      "An independent reviewer instance (fresh context) runs N per-file local passes plus one cross-file integration pass; findings are emitted with calibrated confidence labels routed to block / comment / log.",
+      "The generator self-reviews with extended thinking enabled, returning a numeric confidence score that drives auto-block.",
+      "Five independent instances run identical full-PR reviews; auto-block fires on findings present in ≥3 of the 5.",
+      "Developers are forced to split PRs into 3-file chunks, each reviewed by a single self-review pass."
+    ],
+    "explanations": [
+      "Correct. Independent reviewer + per-file + integration + calibrated routing is the canonical stack.",
+      "Wrong. Self-review and uncalibrated confidence both fail by themselves.",
+      "Wrong. Identical-pass quorum suppresses real bugs and over-spends on independence count.",
+      "Wrong. Splitting PRs shifts burden and self-review remains broken."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "4744d826-6adb-4459-a5b2-f17b1efcad85"
+  },
+  {
+    "question": "Your team measures and finds the reviewer's 'high confidence' findings are right 92% of the time, 'medium' 71%, and 'low' 48%. Which routing rule is reasonable given those calibrated numbers?",
+    "options": [
+      "Treat all three buckets identically because the difference is too small to matter.",
+      "Auto-block on 'high', auto-comment on 'medium', log-only on 'low' — review the thresholds again after the next labeled sample.",
+      "Discard the labels and post all findings to humans because no bucket is at 100%.",
+      "Auto-block on 'low' because the reviewer is probably under-confident there."
+    ],
+    "explanations": [
+      "Wrong. The empirical separation between buckets is meaningful and supports differentiated routing.",
+      "Correct. The calibrated rates support graduated routing; periodic re-validation keeps drift in check.",
+      "Wrong. 100% accuracy isn't required for routing; calibration enables proportional response.",
+      "Wrong. Inverting the labels with no evidence of under-confidence at 'low' is unsupported."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "6d275915-2d57-46ab-8575-8ea4bd186318"
+  },
+  {
+    "question": "A reviewer's 'high confidence' bucket is empirically right only 58%. Which intervention most directly fixes calibration?",
+    "options": [
+      "Switch to a model with more parameters; bigger models are calibrated by default.",
+      "Re-prompt the reviewer to be more conservative in assigning 'high', then re-measure on a labeled sample and iterate until 'high' empirically matches its label.",
+      "Add more findings per review so the bucket averages out.",
+      "Rename 'high' to 'critical' so users adjust their interpretation."
+    ],
+    "explanations": [
+      "Wrong. Larger models are not calibrated by default.",
+      "Correct. Calibration is a measurement-and-prompt iteration: tighten the criteria for the label, re-measure, repeat.",
+      "Wrong. Changing volume doesn't change per-bucket accuracy.",
+      "Wrong. Renaming a label doesn't change its empirical accuracy."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "1f7851ff-b961-42a6-a407-38176656e1c5"
+  },
+  {
+    "question": "Which of the following is NOT a structural property of an independent review pass?",
+    "options": [
+      "The reviewer is in a separate API call with no prior conversation history.",
+      "The reviewer is invoked at a different time of day than the generator.",
+      "The reviewer is given the artifact plus the criteria but not the generator's rationale.",
+      "The reviewer evaluates against an explicit spec rather than free-form 'find anything wrong'."
+    ],
+    "explanations": [
+      "Wrong (this IS a property of independence) — fresh context is the core requirement.",
+      "Correct (this is the wrong-style answer). Time of day is not a property of independence — independence is about context contents, not scheduling.",
+      "Wrong (this IS a property) — withholding rationale is what prevents anchoring.",
+      "Wrong (this IS a good practice for review) — explicit criteria sharpen the reviewer's job."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "6205428b-ecf2-478f-8d11-77cce1482f56"
+  },
+  {
+    "question": "Two architects debate. Architect A: 'Self-review fails because the model is biased toward agreement.' Architect B: 'Self-review fails because the model retains the generation reasoning context and confirms its own prior decisions.' Whose framing is more aligned with the source-of-truth, and why?",
+    "options": [
+      "Neither — both miss the real cause, which is token-budget exhaustion.",
+      "A — agreement bias is a more rigorous explanation that maps directly to RLHF.",
+      "B — the precise mechanism is reasoning-context retention; vague 'agreement bias' under-specifies the architectural fix (fresh context).",
+      "Both are equivalent; the difference is purely terminological."
+    ],
+    "explanations": [
+      "Wrong. Token budget is unrelated to self-review failure.",
+      "Wrong. The source-of-truth talks about reasoning-context retention, not RLHF agreement bias.",
+      "Correct. B names the mechanism, which directly motivates the fix (separate API call, fresh context).",
+      "Wrong. The framings imply different fixes — B points to fresh context, A points nowhere actionable."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "7048ba5f-215d-4580-87d5-261997975500"
+  },
+  {
+    "question": "A pipeline runs an independent reviewer that catches 'wrong column join in the SQL' on a query produced by the generator. The pipeline lead asks: 'Why didn't the same model catch this in self-review?' Which explanation is most consistent with the source-of-truth?",
+    "options": [
+      "The same model has a temperature ceiling on follow-up turns that prevents it from changing its mind.",
+      "Self-review uses a different decoder, which is less accurate on SQL.",
+      "The generator's reasoning included the (incorrect) inference about which column was the foreign key; in self-review, that inference was still in context and was used as justification rather than questioned.",
+      "Self-review only inspects syntax, never semantics."
+    ],
+    "explanations": [
+      "Wrong. There is no documented temperature ceiling on follow-up turns.",
+      "Wrong. There is no separate 'self-review decoder'.",
+      "Correct. The retained inference acts as an anchor; the fresh-context reviewer never saw the inference and read the schema directly.",
+      "Wrong. Self-review covers semantics; that's not why it fails."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "29783eee-aad1-4859-8306-6b2c77a72464"
+  },
+  {
+    "question": "A team has a calibrated reviewer (high≈90%, medium≈70%, low≈50%) but recently added a brand-new MCP tool for 'security findings' whose outputs the reviewer also labels with high/medium/low. They route the new findings on the same calibrated thresholds without re-measuring. What's the subtle risk?",
+    "options": [
+      "The 'security' label always achieves higher accuracy than other labels by virtue of being security-related.",
+      "Calibration generalizes across tasks because the model is fixed, so the existing thresholds are guaranteed to apply.",
+      "Calibration is per-task; the security finding distribution may have a different empirical hit rate at each label, so the existing thresholds are not guaranteed to apply.",
+      "The thresholds become invalid only if the team changes the model version."
+    ],
+    "explanations": [
+      "Wrong. There is no rule that 'security findings' have higher accuracy.",
+      "Wrong. Calibration is task-specific, not model-generic.",
+      "Correct. Calibration is an empirical property of label-vs-rate on a specific distribution; new task distributions need re-validation.",
+      "Wrong. Distribution change is also a recalibration trigger, not just model-version change."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "14abb731-04e5-4fa2-a6c0-2c62bcb3be8f"
+  },
+  {
+    "question": "Which of the following correctly orders the subtle traps from MOST common to LEAST common in real production review pipelines, per the source-of-truth's emphasis?",
+    "options": [
+      "Single-pass review > over-counting reviewers > same-session self-review > uncalibrated confidence.",
+      "Over-counting reviewers > uncalibrated confidence > single-pass review > same-session self-review.",
+      "Uncalibrated confidence > same-session self-review > over-counting reviewers > single-pass review.",
+      "Same-session self-review > single-pass over many files > uncalibrated confidence routing > over-counting reviewers (5+)."
+    ],
+    "explanations": [
+      "Wrong. Single-pass dilution and self-review are the headline pitfalls; over-counting is a niche failure.",
+      "Wrong. Over-counting reviewers is comparatively rare; the most common pitfalls are self-review and single-pass.",
+      "Wrong. The most-cited pitfall is self-review, with single-pass close behind.",
+      "Correct. The source-of-truth treats self-review and single-pass dilution as the most common pitfalls; uncalibrated confidence and over-counting reviewers are real but rarer."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "3c797ab8-3dfa-41b2-9176-07f35cb70a4f"
+  },
+  {
+    "question": "Your reviewer instance returns a list of findings, each with a confidence label. The team wants the labels to mean something operational. What is the minimum work required to claim the labels are 'calibrated'?",
+    "options": [
+      "Run the reviewer with extended thinking enabled, which guarantees calibration.",
+      "Confirm the model is at the latest version; latest models are calibrated by default.",
+      "Ensure the labels are returned as strings rather than enums, which makes them more interpretable.",
+      "Sample past findings, hand-label them as correct/incorrect, and verify that each bucket's empirical accuracy matches the label — re-prompt and re-bucket until it does."
+    ],
+    "explanations": [
+      "Wrong. Extended thinking does not by itself produce calibration.",
+      "Wrong. Model recency does not produce calibration of self-reported labels.",
+      "Wrong. Output format is unrelated to calibration.",
+      "Correct. Calibration is an empirical property — measure on a labeled sample and iterate the prompt/buckets until label and rate match."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.6"
+    ],
+    "phase": "post",
+    "qid": "ff9c3ddc-20f4-4e33-9160-540fc62cf0f9"
+  }
+]

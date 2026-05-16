@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Study & Practice</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand" id="brand" title="Back to all courses">
+          <div class="brand-mark">CA</div>
+          <div class="brand-text">
+            <div class="brand-title">Architect</div>
+            <div class="brand-sub">Foundations</div>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-label">Progress</div>
+          <div id="progressSummary" class="progress-summary">Loading…</div>
+        </div>
+
+        <nav id="topicNav" class="topic-nav">
+          <div class="sidebar-label">Topics</div>
+          <div id="topicTree" class="topic-tree"></div>
+        </nav>
+
+        <div class="sidebar-footer">
+          <button id="starredBtn" class="btn btn-ghost" type="button" title="Practice the questions you've starred across all topics">⭐ Starred practice</button>
+          <button id="resumeBtn" class="btn btn-ghost" type="button">Resume last topic</button>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div class="topbar-crumbs" id="crumbs">Welcome</div>
+          <div class="topbar-actions">
+            <span id="modeBadge" class="badge">Overview</span>
+          </div>
+        </header>
+
+        <section id="view" class="view">
+          <!-- dynamic view: dashboard | topic | study | quiz | result -->
+        </section>
+      </main>
+    </div>
+
+    <template id="tpl-dashboard">
+      <div class="card">
+        <h1 class="card-title">Welcome back</h1>
+        <p class="card-lead" id="dashLead">Pick a topic from the sidebar to begin. Each topic walks you through a pre-check, the study lesson, then a final test.</p>
+        <div class="stats" id="dashStats"></div>
+        <div class="cta-row">
+          <button class="btn btn-primary" id="dashResume" type="button">Resume last topic</button>
+          <button class="btn btn-ghost" id="dashOverview" type="button">View topic overview</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">All chapters</h2>
+        <div class="chapter-grid" id="chapterGrid"></div>
+      </div>
+    </template>
+
+    <template id="tpl-topic">
+      <div class="card">
+        <div class="study-head">
+          <div class="pill" id="topicChapter"></div>
+          <div class="study-meta" id="topicMeta"></div>
+        </div>
+        <h1 class="card-title" id="topicTitle"></h1>
+        <p class="card-lead" id="topicLead">Three steps: a 10-question pre-check to gauge your baseline, then the study lesson, then a 10-question test you must pass to mark this topic mastered.</p>
+
+        <div class="subtopics">
+          <h3 class="subhead">Subtopics covered</h3>
+          <ul id="topicSubtopicList" class="checklist"></ul>
+        </div>
+      </div>
+
+      <div class="card step-card" id="stepPre">
+        <div class="step-head">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h2 class="step-title">Pre-knowledge check</h2>
+            <p class="step-desc">10 questions to gauge what you already know. Score is informational — it doesn't affect mastery.</p>
+            <div class="step-status" id="stepPreStatus"></div>
+          </div>
+          <div class="step-action">
+            <button class="btn btn-primary" id="stepPreBtn" type="button">Take pre-check</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card step-card" id="stepStudy">
+        <div class="step-head">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h2 class="step-title">Study the lesson</h2>
+            <p class="step-desc">A detailed lesson with one section per subtopic, worked examples, and quick-recall cards.</p>
+            <div class="step-status" id="stepStudyStatus"></div>
+          </div>
+          <div class="step-action">
+            <button class="btn btn-primary" id="stepStudyBtn" type="button">Open lesson</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card step-card" id="stepTest">
+        <div class="step-head">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h2 class="step-title">Test <span id="stepTestCutoff" class="step-cutoff"></span></h2>
+            <p class="step-desc">10 fresh questions per attempt<span id="stepTestPool"></span>.</p>
+            <div class="step-status" id="stepTestStatus"></div>
+          </div>
+          <div class="step-action">
+            <button class="btn btn-primary" id="stepTestBtn" type="button">Take test</button>
+            <button class="btn btn-ghost" id="stepTestFullBtn" type="button">Take full test</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="topic-nav-row">
+        <button class="btn btn-ghost" id="topicPrevBtn" type="button">← Previous topic</button>
+        <button class="btn btn-ghost" id="topicNextBtn" type="button">Next topic →</button>
+      </div>
+    </template>
+
+    <template id="tpl-study">
+      <div class="card">
+        <div class="study-head">
+          <div class="pill" id="studyChapter"></div>
+          <div class="study-meta" id="studyMeta"></div>
+        </div>
+        <h1 class="card-title" id="studyTitle"></h1>
+
+        <div class="notes">
+          <div id="notesContent" class="notes-body"></div>
+          <p class="hint" id="notesHint"></p>
+        </div>
+
+        <div class="study-footer">
+          <label class="check">
+            <input type="checkbox" id="confirmRead" />
+            <span>I've read the lesson and understand all the subtopics.</span>
+          </label>
+          <div class="cta-row">
+            <button class="btn btn-ghost" id="backBtn" type="button">Back to topic</button>
+            <button class="btn btn-primary" id="proceedBtn" type="button" disabled>Mark as read</button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <template id="tpl-quiz">
+      <div class="card">
+        <div class="quiz-head">
+          <div class="pill" id="quizTopicPill"></div>
+          <div class="quiz-meta">
+            <span id="quizPhasePill" class="badge">Test</span>
+            <span class="dot">•</span>
+            <span id="quizCounter">Question 1 of 1</span>
+            <span class="dot">•</span>
+            <span id="quizTimer">00:00</span>
+          </div>
+        </div>
+        <div class="progress-bar"><div class="progress-bar-fill" id="quizProgress"></div></div>
+
+        <div class="quiz-question-row">
+          <h2 class="quiz-question" id="quizQuestion"></h2>
+          <div class="quiz-question-actions">
+            <button class="btn-icon" id="quizStarBtn" type="button" title="Star this question to practice it later" aria-label="Star question" aria-pressed="false">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 1.8 9.95 5.75l4.35.63-3.15 3.07.74 4.33L8 11.73 4.11 13.78l.74-4.33L1.7 6.38l4.35-.63L8 1.8Z" fill="none"/>
+              </svg>
+              <span class="btn-icon-label">Star</span>
+            </button>
+            <button class="btn-icon" id="quizFlagBtn" type="button" title="Flag this question for AI revision" aria-label="Flag question" aria-pressed="false">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3.25 1.5v13M3.25 2.25h7.5l-1.25 2.5 1.25 2.5h-7.5"/>
+              </svg>
+              <span class="btn-icon-label">Flag</span>
+            </button>
+            <button class="btn-icon" id="quizCopyBtn" type="button" title="Copy as a prompt — paste into ChatGPT/Claude/etc. for a deeper explanation" aria-label="Copy as prompt" hidden>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="5" y="5" width="9" height="9" rx="1.5"/>
+                <path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/>
+              </svg>
+              <span class="btn-icon-label">Copy</span>
+            </button>
+          </div>
+        </div>
+        <div class="options" id="quizOptions"></div>
+
+        <div class="feedback" id="quizFeedback"></div>
+        <div class="explanations" id="quizExplanations" hidden></div>
+
+        <div class="quiz-footer">
+          <button class="btn btn-ghost" id="quizExit" type="button">Exit quiz</button>
+          <div class="cta-row">
+            <button class="btn btn-secondary" id="quizSubmit" type="button">Submit answer</button>
+            <button class="btn btn-primary" id="quizNext" type="button" disabled>Next</button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <template id="tpl-result">
+      <div class="card">
+        <div class="result-head">
+          <div class="result-score" id="resultScore">0%</div>
+          <div class="result-text">
+            <h1 class="card-title" id="resultTitle">Quiz complete</h1>
+            <p class="card-lead" id="resultLead"></p>
+          </div>
+        </div>
+
+        <div class="result-breakdown" id="resultBreakdown"></div>
+
+        <div class="cta-row">
+          <button class="btn btn-secondary" id="resultRetake" type="button">Retake</button>
+          <button class="btn btn-ghost" id="resultRestudy" type="button">Re-study lesson</button>
+          <button class="btn btn-primary" id="resultBack" type="button">Back to topic</button>
+        </div>
+      </div>
+    </template>
+
+    <template id="tpl-courses">
+      <div class="card">
+        <h1 class="card-title">Courses</h1>
+        <p class="card-lead">Pick a course to study, or add a new one below.</p>
+        <div class="course-grid" id="courseGrid"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Add a new course</h2>
+        <form id="newCourseForm" class="new-course-form">
+          <label class="field">
+            <span class="field-label">Name</span>
+            <input type="text" id="newCourseName" required placeholder="e.g. AWS Solutions Architect — Associate" />
+          </label>
+          <label class="field">
+            <span class="field-label">ID (slug)</span>
+            <input type="text" id="newCourseId" required pattern="[a-z0-9][a-z0-9-]*" placeholder="auto-derived from name" />
+            <span class="field-hint">Lowercase letters, digits, hyphens. Used in the URL: /course/&lt;id&gt;</span>
+          </label>
+          <label class="field">
+            <span class="field-label">Description</span>
+            <textarea id="newCourseDesc" rows="2" placeholder="optional"></textarea>
+          </label>
+          <div class="cta-row">
+            <button class="btn btn-primary" type="submit">Create course</button>
+          </div>
+          <div id="newCourseError" class="form-error" hidden></div>
+        </form>
+      </div>
+    </template>
+
+    <div id="flagModal" class="modal" hidden>
+      <div class="modal-backdrop" data-modal-close></div>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="flagModalTitle">
+        <h2 id="flagModalTitle" class="modal-title">Flag this question</h2>
+        <p class="modal-lead">Tell the AI what's wrong or how to improve it. The next time you run <code>/revise-questions</code>, the AI will rewrite this question using your guidance.</p>
+        <div class="modal-context" id="flagModalQuestion"></div>
+        <label class="field">
+          <span class="field-label">Reason / guidance</span>
+          <textarea id="flagReason" rows="5" placeholder="e.g. Two options say the same thing. Distractor C is too obviously wrong. The scenario is unrealistic — switch it to a streaming use case."></textarea>
+        </label>
+        <div class="cta-row modal-actions">
+          <button class="btn btn-ghost" type="button" data-modal-close>Cancel</button>
+          <button class="btn btn-secondary" type="button" id="flagRemoveBtn" hidden>Remove flag</button>
+          <button class="btn btn-primary" type="button" id="flagSubmitBtn">Save flag</button>
+        </div>
+        <div class="form-error" id="flagModalError" hidden></div>
+      </div>
+    </div>
+
+    <div id="todoWidget" class="todo-widget" hidden>
+      <button type="button" class="todo-head" id="todoHead" aria-expanded="false">
+        <span class="todo-head-title">📝 Revise later <span class="todo-count" id="todoCount" hidden></span></span>
+        <span class="todo-chev" id="todoChev" aria-hidden="true">▾</span>
+      </button>
+      <div class="todo-body" id="todoBody" hidden>
+        <ul class="todo-list" id="todoList"></ul>
+        <form class="todo-form" id="todoForm">
+          <input type="text" id="todoInput" placeholder="Add a reminder…" autocomplete="off" />
+        </form>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

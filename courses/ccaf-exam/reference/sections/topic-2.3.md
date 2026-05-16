@@ -1,0 +1,16 @@
+# Task 2.3 — Distribute tools appropriately across agents and configure tool choice
+
+> Domain 2: Tool Design & MCP Integration. Excerpted from the official guide.
+
+## Knowledge of
+- The principle that giving an agent access to **too many tools** (e.g., 18 instead of 4-5) **degrades tool selection reliability** by increasing decision complexity.
+- Why agents with tools outside their specialization tend to misuse them (e.g., a synthesis agent attempting web searches).
+- **Scoped tool access**: giving agents only the tools needed for their role, with limited cross-role tools for specific high-frequency needs.
+- `tool_choice` configuration options: `"auto"`, `"any"`, and forced tool selection (`{"type": "tool", "name": "..."}`).
+
+## Skills in
+- Restricting each subagent's tool set to those relevant to its role, preventing cross-specialization misuse.
+- Replacing generic tools with constrained alternatives (e.g., replacing `fetch_url` with `load_document` that validates document URLs).
+- Providing scoped cross-role tools for high-frequency needs (e.g., a `verify_fact` tool for the synthesis agent) while routing complex cases through the coordinator.
+- Using **`tool_choice` forced selection** to ensure a specific tool is called first (e.g., forcing `extract_metadata` before enrichment tools), then processing subsequent steps in follow-up turns.
+- Setting `tool_choice: "any"` to **guarantee the model calls a tool** rather than returning conversational text.

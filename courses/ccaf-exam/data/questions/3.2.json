@@ -1,0 +1,882 @@
+[
+  {
+    "question": "Where does a custom /review slash command belong if every developer who clones the repo must have it automatically?",
+    "options": [
+      ".claude/commands/review.md inside the repo, committed to version control",
+      "~/.claude/commands/review.md in each developer's home directory",
+      "A 'commands' array inside the project's CLAUDE.md file",
+      ".claude/config.json under a 'slashCommands' key"
+    ],
+    "explanations": [
+      "Project-scoped slash commands live in .claude/commands/ within the repo and are shared via VCS, so every clone gets them automatically.",
+      "~/.claude/commands/ is for personal commands that exist only on the current machine and are invisible to teammates.",
+      "CLAUDE.md is project context loaded on every turn; it is not where slash commands are defined.",
+      "There is no .claude/config.json/slashCommands mechanism in Claude Code; commands are markdown files under .claude/commands/."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "pre",
+    "qid": "3fe66762-80c1-4cde-9e51-37b9222a350d"
+  },
+  {
+    "question": "Which directory holds personal slash commands that should not appear for teammates?",
+    "options": [
+      ".claude/commands/ in the project repo",
+      "~/.claude/commands/ in the user's home directory",
+      ".claude/personal/ in the project repo",
+      "A 'personal' subfolder inside .claude/skills/"
+    ],
+    "explanations": [
+      ".claude/commands/ inside the repo is project-scoped and shared via VCS, so anything placed there will appear for every teammate.",
+      "~/.claude/commands/ is the personal scope — files there exist only on that user's machine and never reach teammates.",
+      "There is no convention for a .claude/personal/ directory; project-scoped paths are still shared via VCS regardless of subfolder name.",
+      ".claude/skills/ is for skills, not slash commands, and is still inside the repo so teammates would see anything placed there."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "pre",
+    "qid": "99e16c53-c376-40fa-a22a-92c1c8585633"
+  },
+  {
+    "question": "What is the canonical layout for a project skill called 'review'?",
+    "options": [
+      "CLAUDE.md with a '## review' section so it always loads",
+      ".claude/commands/review/skill.json keyed by command name",
+      ".claude/skills/review/SKILL.md — a directory under .claude/skills/ with a SKILL.md inside",
+      ".claude/skills/review.md — a flat single markdown file"
+    ],
+    "explanations": [
+      "CLAUDE.md is always-loaded context, not a place to define skills.",
+      ".claude/commands/ is for slash commands; skills are not configured via skill.json — SKILL.md is the canonical file.",
+      "A skill is a directory under .claude/skills/<name>/ containing a SKILL.md file with frontmatter plus a markdown body.",
+      "Skills are directories, not single markdown files; a flat .claude/skills/review.md is not the documented layout."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "pre",
+    "qid": "1123015b-0c95-450e-8ec6-73b99bdde06d"
+  },
+  {
+    "question": "What does the 'context: fork' frontmatter option do when a skill runs?",
+    "options": [
+      "It opens a new terminal window for the skill's tool calls",
+      "It permanently branches the conversation history into two timelines the user can switch between",
+      "It mirrors every tool call so two parallel instances of the skill run for redundancy",
+      "It runs the skill in an isolated sub-agent so intermediate output stays out of the main session and only the final result returns"
+    ],
+    "explanations": [
+      "context: fork is not a terminal/UI feature; it is a context-management directive for the harness.",
+      "There is no 'two timelines' UI; the fork is internal to the harness and the parent session continues as before.",
+      "There is no parallel-redundancy semantics; only one execution happens, in an isolated context.",
+      "context: fork executes the skill in a sub-agent with its own message history; verbose intermediate content is discarded after the skill returns its summary, keeping the parent session clean."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "pre",
+    "qid": "c2c53b1a-acc8-4252-94d7-77ec72d42a94"
+  },
+  {
+    "question": "How should you read the 'allowed-tools' frontmatter key in a SKILL.md?",
+    "options": [
+      "Blacklist of tools the skill must avoid; anything not listed is allowed",
+      "Whitelist of tools the skill is permitted to use; anything not listed is denied",
+      "Suggested tools the skill 'prefers' but may override at runtime",
+      "Documentation only — the harness does not enforce it"
+    ],
+    "explanations": [
+      "allowed-tools is not a deny-list; treating it as one would mean omitting it grants nothing, the opposite of how it works.",
+      "allowed-tools is a least-privilege whitelist: only the listed tools can be called during the skill, every other tool is denied.",
+      "It is enforced, not advisory — the skill cannot override what the harness allows at runtime.",
+      "The harness enforces allowed-tools; treating it as documentation defeats the security boundary."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "pre",
+    "qid": "8235e387-9acb-4b80-867d-eb7a4b048c95"
+  },
+  {
+    "question": "What is the purpose of the 'argument-hint' frontmatter in a SKILL.md?",
+    "options": [
+      "Validates that the supplied argument matches a regex pattern",
+      "Forces the harness to reject the invocation if the argument is missing",
+      "Provides a UX hint string used to prompt the user when they invoke the skill without supplying the argument",
+      "Specifies the JSON schema for the skill's required parameters"
+    ],
+    "explanations": [
+      "argument-hint does not validate input; it only displays a placeholder hint to the user.",
+      "The harness does not auto-reject missing arguments based on argument-hint; the skill body must handle missing input.",
+      "argument-hint is a UX prompt — the harness shows it to ask the user for the missing argument; it is not validation.",
+      "argument-hint is a single hint string, not a JSON schema; there is no schema-based validation behind it."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "pre",
+    "qid": "ae851dc9-7b01-4baf-baf9-c782cf287701"
+  },
+  {
+    "question": "Where should a personal customised variant of the team's 'review' skill live so it does not affect teammates?",
+    "options": [
+      "Edit .claude/skills/review/SKILL.md directly in the project",
+      "A fork of the repository on a separate branch the user keeps locally",
+      ".claude/skills/review-personal/SKILL.md in the project repo",
+      "~/.claude/skills/review-<you>/SKILL.md under a different name in the user's home directory"
+    ],
+    "explanations": [
+      "Editing the project skill commits your preferences for the whole team — the opposite of 'do not affect teammates'.",
+      "Maintaining a long-lived divergent branch is a heavy workaround for a problem the per-user skill directory already solves.",
+      "Anything inside the project repo is shared via VCS, so 'review-personal' would still appear for teammates.",
+      "A personal variant lives in ~/.claude/skills/ under a different name so it does not shadow the project skill and never reaches teammates."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "pre",
+    "qid": "727b6cfc-0108-4e35-bb57-46e724b36ee5"
+  },
+  {
+    "question": "A team has a 1,800-token PR-review checklist used roughly twice a week. Where should the checklist live to avoid burning tokens on every unrelated session?",
+    "options": [
+      "Append it to CLAUDE.md so it is always loaded and can never be forgotten",
+      "Paste it into a system prompt template the whole team sources from a shared script",
+      "Package it as a skill under .claude/skills/review/ so it loads on demand only",
+      "Store it in a Confluence page and link to it from CLAUDE.md"
+    ],
+    "explanations": [
+      "CLAUDE.md is always-loaded; a 1,800-token checklist would consume those tokens on every session, including the many sessions where review is irrelevant.",
+      "Bypassing the harness with a custom system prompt fragment loses skill semantics (allowed-tools, context: fork) and is harder to keep consistent across the team.",
+      "Skills load on demand, so the tokens are paid only when /review is invoked — exactly the right trade-off for a task-specific, infrequent workflow.",
+      "Linking to Confluence does not put the checklist into Claude's context — Claude cannot read external pages without a fetch tool, and even then this is an awkward indirection."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "pre",
+    "qid": "00624e0c-0272-427b-b7bc-e9dc3ededd6b"
+  },
+  {
+    "question": "A skill performs a verbose codebase audit that produces several thousand tokens of intermediate file analysis. Which frontmatter setting most directly keeps that intermediate output out of the main session?",
+    "options": [
+      "argument-hint: <repo-path>",
+      "allowed-tools: [Read, Grep]",
+      "context: fork",
+      "description: Audits the codebase"
+    ],
+    "explanations": [
+      "argument-hint only prompts the user for a missing argument; it does not isolate output.",
+      "allowed-tools restricts which tools the skill can call but does nothing to keep their output out of the parent session.",
+      "context: fork runs the skill in a sub-agent with its own context; the verbose intermediate output is discarded after the skill returns its summary.",
+      "description matches the skill against user requests; it has no effect on context isolation."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "pre",
+    "qid": "6f281d76-c1d9-49a8-9fa5-cade455aa0e1"
+  },
+  {
+    "question": "A teammate adds 'always run npm test after every edit' to a skill's SKILL.md and removes it from CLAUDE.md to 'save tokens'. Why is this likely the wrong choice?",
+    "options": [
+      "Skills cannot reference shell commands like npm test",
+      "Skills cannot live in the project repo, so this would not be available to teammates",
+      "CLAUDE.md does not support imperative rules and the move was inevitable",
+      "The rule should apply on every turn regardless of task; moving it to a skill makes it on-demand, so it stops applying when the skill is not invoked"
+    ],
+    "explanations": [
+      "Skills can absolutely instruct Claude to run shell commands when allowed-tools includes Bash; this is not the issue.",
+      "Project-scoped skills live in .claude/skills/ inside the repo and are shared via VCS just like commands; the directory choice is not the issue.",
+      "CLAUDE.md does support imperative rules — that is one of its primary uses.",
+      "Universal, every-turn rules belong in CLAUDE.md (always-loaded). Moving them to a skill makes them conditional on skill activation, so the rule silently stops applying outside the skill — exactly the failure mode being described."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "pre",
+    "qid": "e96d7756-e060-4f90-a45b-2afc8ccd2f0a"
+  },
+  {
+    "question": "A new hire clones the repo and reports that the /review slash command the team showed them in the demo isn't available. The lead created /review on her own machine yesterday. What's the likely cause?",
+    "options": [
+      "The lead created the command in ~/.claude/commands/, which is personal scope and never reached the repo",
+      "Slash commands need to be registered in CLAUDE.md before they appear in autocomplete",
+      "The new hire has not run 'claude commands sync' to fetch project commands from the registry",
+      "Project commands require the harness to be restarted on the new hire's machine before they appear"
+    ],
+    "explanations": [
+      "~/.claude/commands/ is personal scope: the file lives only on the lead's machine and is never committed, so a fresh clone has no record of it. Moving it to .claude/commands/ in the repo and committing it fixes the issue.",
+      "There is no CLAUDE.md registration step; project commands are picked up directly from .claude/commands/.",
+      "There is no 'claude commands sync' or central registry; commands are repo files.",
+      "A restart is not required for repo commands; they are read from .claude/commands/ when present."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "57bdbe6e-7fad-41a0-a2cf-27a73ae3e0b4"
+  },
+  {
+    "question": "A skill is intended to read code and run a static analyser, but never modify files. Which 'allowed-tools' value reflects least-privilege?",
+    "options": [
+      "Omit allowed-tools entirely so the skill inherits the harness defaults",
+      "[Read, Grep, Glob, Bash]",
+      "[Read, Write, Edit, Bash]",
+      "[*]"
+    ],
+    "explanations": [
+      "Omitting allowed-tools defeats least-privilege: the skill inherits everything available, including Edit and Write.",
+      "Read + Grep + Glob cover code reading and searching; Bash is required to run the static analyser. Anything not in this list — Edit, Write, MCP write tools — is denied. This is the minimum the skill genuinely needs.",
+      "Including Write and Edit grants the skill the ability to mutate files, which directly contradicts the 'never modify files' requirement.",
+      "Wildcards defeat the whitelist; this is functionally the same as omitting the key."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "9c9af04b-8039-47d1-853e-969ef7362f35"
+  },
+  {
+    "question": "A skill with 'argument-hint: <pr-number>' is invoked without an argument. The skill body assumes a number is supplied and immediately calls a tool with it. What happens?",
+    "options": [
+      "The harness blocks the invocation because the argument was not supplied",
+      "The harness silently prompts the user, retries the skill, and only then runs it",
+      "argument-hint is UX only; the harness still passes control to the skill body, which then misbehaves on the missing input",
+      "The harness substitutes a default empty string and skips the skill body's logic"
+    ],
+    "explanations": [
+      "argument-hint does not enforce required arguments; the harness does not block the invocation on its absence.",
+      "There is no automatic prompt-and-retry behaviour driven by argument-hint; you cannot rely on the harness to fill in the gap.",
+      "argument-hint is purely a UX hint. The harness may show the hint to the user, but the skill body must defensively validate input — otherwise it runs with missing/empty input and breaks.",
+      "There is no automatic default-substitution behaviour; the skill body still runs with whatever (possibly empty) argument the user provided."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "2f4fa056-55b0-4dbb-989e-8d1d10fd96f9"
+  },
+  {
+    "question": "A developer wants a personal /threat-model command that follows them across every project but never appears for teammates. Where should they put it?",
+    "options": [
+      ".claude/commands/threat-model.md committed in their main project",
+      "A gist they paste into Claude Code at the start of every session",
+      ".claude/commands/personal/threat-model.md in each project they touch",
+      "~/.claude/commands/threat-model.md in their home directory"
+    ],
+    "explanations": [
+      "Anything in .claude/commands/ inside a repo is shared with teammates via VCS — the opposite of the requirement.",
+      "Pasting a prompt manually each session bypasses the slash-command system entirely and loses every benefit of having a named command.",
+      "A 'personal' subfolder under .claude/commands/ is still inside the repo and still shared via VCS; a name change does not change the scope.",
+      "~/.claude/commands/ is the personal slash-command location: the command follows the user across every project and is invisible to teammates."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "17241669-3bc6-4577-a65d-354b242a5da9"
+  },
+  {
+    "question": "A 'brainstorm-architectures' skill imagines and weighs three different designs, producing many turns of exploratory reasoning. Without the right frontmatter, the developer's main session loses most of its remaining context budget. Which fix most directly addresses this?",
+    "options": [
+      "Set 'context: fork' on the skill so the exploration runs in a sub-agent and only the final summary returns",
+      "Set 'allowed-tools' to an empty list so the skill cannot generate output",
+      "Move the skill from .claude/skills/ to ~/.claude/skills/ to reduce its activation cost",
+      "Inline the skill's body into CLAUDE.md so the harness deduplicates it"
+    ],
+    "explanations": [
+      "context: fork isolates the verbose, exploratory intermediate output in a sub-agent; the parent session inherits only the final result, preserving the budget.",
+      "An empty allowed-tools list does not silence the skill — the verbose output is the model's text content, not tool calls.",
+      "Scope (project vs personal) does not change activation cost or how output flows; it only changes who else sees the skill.",
+      "Inlining the skill in CLAUDE.md makes it always-loaded, multiplying the cost rather than isolating it; CLAUDE.md does not deduplicate output."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "f452b7d4-429d-4ad0-8e7f-a243d7c166dc"
+  },
+  {
+    "question": "The team has decided 'always run the linter after edits' is a non-negotiable rule for every Claude session in this repo. What's the right placement?",
+    "options": [
+      "In a skill at .claude/skills/lint-after-edit/SKILL.md so it loads on demand",
+      "In ~/.claude/skills/ so each developer can opt in personally",
+      "In CLAUDE.md so the rule is always loaded and applies on every turn",
+      "As an argument-hint on the existing /lint slash command"
+    ],
+    "explanations": [
+      "A skill is on-demand; if developers don't invoke it, the rule silently stops applying — wrong fit for a non-negotiable universal rule.",
+      "Personal scope means each developer must opt in; a non-negotiable team rule cannot be left to per-developer activation.",
+      "Universal, every-turn rules belong in CLAUDE.md: the always-loaded behaviour is exactly what 'applies on every turn' requires.",
+      "argument-hint is a UX prompt for an argument; it does not encode a rule and does not run on every turn."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "b6b5d2bf-da03-4382-b45f-44293c580db8"
+  },
+  {
+    "question": "A skill is configured with allowed-tools: [Read, Grep] and context: fork. During a run, the model emits a tool_use call to Edit. What does the harness do?",
+    "options": [
+      "Allows the Edit because context: fork already isolates the call",
+      "Falls back to running Edit through Bash to satisfy least-privilege",
+      "Silently rewrites the call as a Read so the skill can still make progress",
+      "Denies the Edit because Edit is not in the allowed-tools whitelist"
+    ],
+    "explanations": [
+      "context: fork isolates context, not permissions; it does not relax the allowed-tools whitelist.",
+      "There is no fallback path that routes Edit through Bash; the harness denies the call and surfaces that to the model.",
+      "Silently substituting tools is exactly the anti-pattern that breaks model-driven decision-making; the harness denies and reports.",
+      "allowed-tools is a strict whitelist enforced by the harness: Edit is not listed, so the call is denied. The model can then choose a different action."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "45dd4571-cee5-455a-8053-9df70f987ae0"
+  },
+  {
+    "question": "Two developers want different output formatting for the team's /review skill: one prefers paragraphs, the other prefers bullet points. They both edit .claude/skills/review/SKILL.md on their own branches and merge their preferred copy. What is the predictable team-level failure?",
+    "options": [
+      "The skill becomes too long and exceeds the harness's frontmatter parser limit",
+      "Each merge overwrites the other's formatting, and whichever lands last becomes everyone's /review — the team skill thrashes between styles",
+      "The skill's allowed-tools field is recomputed on each merge, eventually granting full tool access",
+      "context: fork stops working once two contributors have edited the file"
+    ],
+    "explanations": [
+      "There is no documented frontmatter length limit being hit here; the skill body is markdown with no special size cap relevant to formatting.",
+      "Project skills are single shared files in VCS; competing personal preferences merged into the same file mean every team member's /review changes whenever someone else's preference lands. Personal variants in ~/.claude/skills/<different-name>/ are the right fix.",
+      "Merging does not 'recompute' allowed-tools; that field stays whatever the latest committed text says.",
+      "context: fork is a frontmatter directive that has nothing to do with how many people have edited the file."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "03b43d1b-a09e-4544-af05-a880a19ba903"
+  },
+  {
+    "question": "The infra team owns a /deploy skill that calls dangerous tools (Bash, MCP write APIs). Application devs want their /review skill to coexist but never gain access to those tools. What is the correct mechanism?",
+    "options": [
+      "Run /review inside a separate clone of the repo with /deploy deleted",
+      "Add /review to a 'safe-skills' allow-list inside CLAUDE.md so the harness blocks others",
+      "Each skill declares its own allowed-tools whitelist; the harness scopes tool access per-skill at invocation time",
+      "Set a global allowed-tools list at the repo root that overrides per-skill settings"
+    ],
+    "explanations": [
+      "Maintaining a separate clone is a heavy workaround when allowed-tools already gives per-skill scoping.",
+      "There is no 'safe-skills' CLAUDE.md mechanism; this is a fabricated control surface.",
+      "allowed-tools is per-skill: each skill's frontmatter declares the minimum tools it needs. /deploy's broad allow-list does not affect /review's narrow one. This is the textbook least-privilege pattern.",
+      "There is no documented global allowed-tools that overrides per-skill frontmatter; each skill is self-contained."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "d8bc4b60-b325-481b-91b1-e56fed99f67b"
+  },
+  {
+    "question": "After running a skill with context: fork, the developer asks the agent in the main session to use one of the intermediate files the skill read. The agent claims it has no record of those files. Why?",
+    "options": [
+      "context: fork was applied incorrectly because the skill name contained a hyphen",
+      "Forked sub-agents discard their intermediate context after returning; only the skill's final result reaches the parent session, so intermediate file reads are not visible there",
+      "The harness garbage-collects intermediate tool results after 60 seconds regardless of fork",
+      "The agent is wrong; the files are visible but the agent has not been prompted to use them"
+    ],
+    "explanations": [
+      "Hyphens in skill names are fine and have no effect on fork semantics.",
+      "That is the entire point of context: fork — the sub-agent's intermediate context (including which files it read) does not flow back to the parent. Only the structured return value does, by design.",
+      "There is no time-based garbage collection of tool results being described; the loss is structural to fork, not temporal.",
+      "Telling the agent again does not retrieve discarded context; the intermediate reads simply were never copied to the parent session."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "a22e864e-582c-45e3-a4df-4745fbec7f61"
+  },
+  {
+    "question": "An engineer is debugging why their personal SKILL.md is being ignored. They placed it at ~/.claude/skills/review/SKILL.md, identical name to the project's .claude/skills/review/SKILL.md. The harness runs the project version. What is the cleanest remedy?",
+    "options": [
+      "Delete the project's review skill so the personal one wins by default",
+      "Move the personal skill into .claude/skills/ inside the repo so it takes precedence",
+      "Symlink the personal skill into the project so the harness reads both",
+      "Rename the personal skill to a different name (e.g., review-aria) so it doesn't collide and can be invoked as a distinct skill"
+    ],
+    "explanations": [
+      "Deleting the team's project skill removes it for every teammate too — a destructive fix to a personal-tooling problem.",
+      "Putting the personal customisation in the project repo commits it for everyone — exactly what 'personal variant' is meant to avoid.",
+      "Symlinking creates exactly the shadowing/precedence trap that a different name avoids.",
+      "Personal variants live in ~/.claude/skills/ under a different name (review-aria, review-mukul, etc.). A distinct name avoids precedence ambiguity entirely and lets both skills coexist."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "bd0e9873-057a-4628-b971-7b34a34b7329"
+  },
+  {
+    "question": "A skill's frontmatter has 'description: Reviews PRs.' and the user's message says 'can you check this pull request for me?' but the harness never selects the skill. Most likely cause?",
+    "options": [
+      "The description is too thin for the harness to confidently match it against natural-language user intent; richer descriptions improve trigger reliability",
+      "The harness only triggers skills when the user types the exact slash form",
+      "Skills cannot be triggered by description; argument-hint is the trigger",
+      "context: fork must be set for description-based triggering to work"
+    ],
+    "explanations": [
+      "Description is the primary signal the harness uses to match a user request to a skill. A two-word description gives the matcher little to work with; expanding it (purpose, when to use, key inputs) is the standard fix.",
+      "Slash invocation is one path, but skills can also be triggered when the description matches the user's intent; it is not the only path.",
+      "argument-hint is a UX hint, not a trigger; description carries the matching signal.",
+      "context: fork is about output isolation; it has no effect on whether the skill is selected."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "95d45065-c751-4f90-89cc-62576829256d"
+  },
+  {
+    "question": "A team-shared skill is currently configured with allowed-tools: [Read, Grep, Glob, Bash, Edit, Write]. A reviewer flags it as too permissive. What is the principled fix?",
+    "options": [
+      "Replace the explicit list with an empty list to deny everything",
+      "Move the skill to ~/.claude/skills/ to confine the broad permissions to one user",
+      "Replace the list with the minimum the skill actually exercises during its happy path",
+      "Remove allowed-tools entirely; the harness will infer the minimum from the skill body"
+    ],
+    "explanations": [
+      "Empty list breaks the skill — it has no tools to do its job. Least-privilege means minimum required, not zero.",
+      "Scope and permissions are independent; moving to personal scope leaves the broad permissions in place for that user and does not help the team-shared use case.",
+      "Least-privilege whitelisting: list exactly what the skill needs, no more. If the skill never writes, drop Edit and Write; if it never shells out, drop Bash. This is the principled fix.",
+      "There is no inference: omitting allowed-tools widens, not narrows, the permission set."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "2747c7e2-617f-4b34-b8a0-02dc293493f7"
+  },
+  {
+    "question": "A developer adds a 200-line, deeply technical migration-writing checklist to CLAUDE.md so 'it never gets forgotten'. After two weeks, the team complains that unrelated sessions feel slower and run out of context faster. Best remediation?",
+    "options": [
+      "Lengthen CLAUDE.md so the checklist's relative weight drops",
+      "Convert the checklist into a skill at .claude/skills/migration/ so it loads on demand instead of every turn",
+      "Compress the checklist into a single paragraph in CLAUDE.md by removing examples",
+      "Move the checklist into a slash command at .claude/commands/migration.md and CLAUDE.md keeps a one-line pointer"
+    ],
+    "explanations": [
+      "Adding more content does not help; the checklist still consumes its tokens on every session, plus you have added more.",
+      "Skills are on-demand: tokens are paid only when /migration is invoked, not every session. This is exactly the fit for a long, task-specific workflow.",
+      "Stripping examples reduces fidelity (the original reason for the checklist) without addressing the always-loaded cost.",
+      "Slash commands also work, but the underlying decision is still 'on-demand vs always-loaded'; a skill is the more idiomatic packaging here. CLAUDE.md retaining a pointer doesn't fix the underlying always-loaded waste if the checklist itself were still inlined."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "3d852756-25be-4e42-a4f7-f47543889edf"
+  },
+  {
+    "question": "A skill needs to call an MCP write tool to file Jira tickets. The team wants assurance that the same skill cannot also delete tickets. What is the load-bearing mechanism?",
+    "options": [
+      "argument-hint that asks the user to confirm 'create only'",
+      "context: fork so that any deletion is contained within the fork",
+      "allowed-tools whitelisting only the create-ticket MCP tool; delete-ticket is omitted and therefore denied",
+      "A note in the skill body saying 'never delete tickets'"
+    ],
+    "explanations": [
+      "argument-hint is a UX prompt for the user; it does not enforce any tool boundary.",
+      "Forking the context still permits any tool the skill is allowed to call; deleting in a fork still deletes the real ticket. Fork is about context, not permissions.",
+      "allowed-tools whitelisting at the MCP-tool granularity is the enforcement boundary: list create-ticket, omit delete-ticket, and the harness denies any delete-ticket call regardless of what the model asks.",
+      "Prompt-text instructions are probabilistic — the model may ignore them, especially in adversarial conditions; allowed-tools is the deterministic guard."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "be81f235-6f68-4d29-ae04-2dc60ae02713"
+  },
+  {
+    "question": "A developer wants to share a personal /journal command with one specific teammate but not the rest of the team. Best approach?",
+    "options": [
+      "Commit it to .claude/commands/journal.md; the rest of the team can ignore commands they don't use",
+      "Each developer keeps their own copy in ~/.claude/commands/journal.md, sharing the file out-of-band (e.g., via a snippet or repo of dotfiles)",
+      "Place it in a shared directory the harness scans, like .claude/team/journal.md",
+      "Use argument-hint on the command to gate access by user identity"
+    ],
+    "explanations": [
+      "Committing to .claude/commands/ ships the command to everyone, not 'one specific teammate'. Wrong granularity.",
+      "Personal commands live in ~/.claude/commands/. Sharing one out-of-band (dotfiles repo, copy-paste) keeps it personal at the harness level while still letting one teammate adopt it.",
+      "There is no .claude/team/ directory the harness recognises; project-scoped paths are repo paths and are visible to everyone with access.",
+      "argument-hint is a UX prompt; it has no concept of user identity or access control."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "00557404-465c-44f8-aa5e-acb92d0b8c77"
+  },
+  {
+    "question": "A skill produces a long initial trace and then a short summary. The developer wants the trace visible during the run for debugging but not retained in the parent context afterwards. Which configuration matches?",
+    "options": [
+      "context: fork — the sub-agent shows its trace during execution but only the summary returns to the parent",
+      "Setting allowed-tools to an empty list to suppress the trace",
+      "Putting the skill in ~/.claude/skills/ so the trace stays local",
+      "Adding a debug: true frontmatter flag the harness inspects"
+    ],
+    "explanations": [
+      "Exactly the use case context: fork is designed for: the trace lives in the sub-agent's context during the run (and the harness can surface it for visibility) but is discarded when the sub-agent returns its summary, so the parent session only inherits the summary.",
+      "An empty allowed-tools list breaks the skill rather than scoping its trace; tool restrictions are not output filters.",
+      "Personal vs project scope has no effect on whether intermediate output reaches the parent context.",
+      "There is no 'debug: true' frontmatter flag with this semantics."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "9b84a345-c473-458b-b526-0b5764c97fa5"
+  },
+  {
+    "question": "An engineer reports that their /lint command works locally but their teammate gets 'unknown command'. Both have pulled the same commit. What's the most likely cause and fix?",
+    "options": [
+      "The teammate needs to restart Claude Code; commands cache for one session",
+      "The teammate's Claude Code version is out of date; upgrading registers project commands",
+      "The /lint file lives in ~/.claude/commands/ on the engineer's machine and was never committed; move it to .claude/commands/lint.md and commit",
+      "Project commands need to be listed in CLAUDE.md before they appear in autocomplete"
+    ],
+    "explanations": [
+      "Restarting does not pull commands from another machine; if the file is not in the repo, the teammate cannot have it.",
+      "There is no version-gated 'register project commands' step; .claude/commands/ is read directly.",
+      "If both have pulled the same commit and only one has the command, the file is in a per-user location, not the repo. Moving it to .claude/commands/ inside the repo and committing makes it project-scoped and shared.",
+      "CLAUDE.md does not register or list slash commands; commands come from .claude/commands/."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "0f8f881b-f3a4-4af4-ab73-684323ae85b6"
+  },
+  {
+    "question": "A team wants a skill to brainstorm three architectural alternatives, weigh them, and return a short recommendation, while keeping the rejected alternatives out of subsequent context. Which combination of frontmatter is most appropriate?",
+    "options": [
+      "context: fork plus allowed-tools whitelisting only the tools the brainstorm needs (e.g., Read, Grep)",
+      "argument-hint on every parameter so the user shapes the brainstorm in advance",
+      "Set the skill at the project root and rely on CLAUDE.md to suppress unwanted output",
+      "Use a slash command instead; skills cannot brainstorm"
+    ],
+    "explanations": [
+      "context: fork isolates the rejected alternatives' reasoning in the sub-agent so only the recommendation returns; allowed-tools enforces least-privilege so the skill cannot mutate code while exploring. This is the textbook combination.",
+      "argument-hint is a UX prompt; it does not isolate output and does not control which alternatives appear.",
+      "CLAUDE.md cannot suppress output that has already entered the conversation; isolation must happen at skill-invocation time via fork.",
+      "Skills can absolutely brainstorm; this answer rejects the right tool for no reason."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "2318cb44-5c15-4d39-8db5-1f8a58585764"
+  },
+  {
+    "question": "An exam scenario describes: 'Team /review skill exists, but Alice wants to run additional accessibility checks only she cares about.' Best practice?",
+    "options": [
+      "Alice opens a PR adding accessibility checks to the team's review skill so the team gets the upgrade for free",
+      "Alice forks the repository and runs Claude Code against her fork to get her own /review",
+      "Alice creates ~/.claude/skills/review-a11y/SKILL.md as her personal variant under a different name; the team /review is untouched",
+      "Alice edits CLAUDE.md to add accessibility expectations as a permanent project rule"
+    ],
+    "explanations": [
+      "Pushing personal preferences as a team change is exactly the anti-pattern: every teammate's /review now does Alice's a11y checks whether they want them or not.",
+      "Maintaining a divergent fork is heavy and fragile compared with a per-user skill directory.",
+      "Personal scope (~/.claude/skills/) plus a different name is the textbook isolation: Alice's variant is invocable only on her machine and never affects teammates or the project skill.",
+      "Adding accessibility to CLAUDE.md makes it a team-wide always-loaded rule — even more invasive than editing the team skill, and burns tokens every session for everyone."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "71ed82b4-eaac-4ac7-ad21-3b574c295727"
+  },
+  {
+    "question": "Two skills, /audit-deps and /quick-grep, are both project-scoped. /audit-deps reads twelve package.json files and produces a 4,000-token report; /quick-grep returns one or two matching lines. Only one of them needs context: fork. Which, and why?",
+    "options": [
+      "/quick-grep — small skills always benefit from isolation",
+      "/audit-deps — its verbose intermediate output would otherwise pollute the parent session and exhaust the context window",
+      "Both — context: fork is mandatory on every skill",
+      "Neither — context: fork is a development-time flag, not a runtime feature"
+    ],
+    "explanations": [
+      "/quick-grep produces small output; isolating it costs more in coordination than it saves. Fork is for verbose/exploratory skills.",
+      "context: fork is the right answer for verbose or exploratory skills: /audit-deps' 4,000-token intermediate trace is precisely what needs to stay out of the parent context; /quick-grep's tiny output does not.",
+      "context: fork is opt-in, not mandatory; many skills correctly run in the parent context.",
+      "context: fork is a runtime context-isolation directive, not a dev-time flag."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "373e1f8c-9f50-4f60-bfb4-9d8eeda0f3a8"
+  },
+  {
+    "question": "A reviewer points out that .claude/skills/migrate/SKILL.md sets allowed-tools: [Read, Edit, Write, Bash] and warns this is too permissive. The skill author counters: 'Migrations need to write files and run shell commands — those tools are necessary.' Which response is most accurate?",
+    "options": [
+      "The reviewer is wrong: if a tool is needed at all, it must be in allowed-tools",
+      "The author is wrong: allowed-tools should always be empty for safety",
+      "Both can be right: the skill genuinely needs those tools for some operations, but allowed-tools should reflect the minimum the *happy path* needs and any extras should be justified per-tool",
+      "The reviewer is wrong: allowed-tools is a blacklist, so listing more tools restricts more"
+    ],
+    "explanations": [
+      "Necessity is a starting point, not a blanket justification. Each tool admitted is one more capability the skill could misuse; review still applies to the list.",
+      "Empty allowed-tools breaks the skill; safety does not require zero capability, it requires minimum capability.",
+      "Least-privilege is not 'remove necessary tools'; it is 'admit only what is genuinely needed and justify each one.' The reviewer's concern (too permissive) and the author's point (these are needed) are compatible — the resolution is per-tool justification, not a global yes/no.",
+      "allowed-tools is a whitelist; this answer inverts the semantics."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "1366e067-d126-40b9-8d36-4bebebec17d9"
+  },
+  {
+    "question": "Mid-task, a developer notices a /review run has consumed 30,000 tokens of intermediate file analysis that they don't need afterward. The skill's frontmatter declares allowed-tools but no context directive. What is the closest root-cause description?",
+    "options": [
+      "allowed-tools is set incorrectly so the skill is reading too many files",
+      "The skill should be in ~/.claude/skills/ so the cost is borne only by the developer",
+      "The skill should be promoted into CLAUDE.md so the analysis is amortised across sessions",
+      "The skill is missing context: fork; without it, all intermediate output flows into the parent session, exactly what the developer is observing"
+    ],
+    "explanations": [
+      "allowed-tools controls which tools can run; it does not control whether their output is retained in the parent context.",
+      "Personal scope does not change context flow; the same 30,000 tokens would still flood the developer's main session.",
+      "Promoting to CLAUDE.md makes the cost permanent and global — the opposite of the fix.",
+      "Verbose intermediate output staying in the parent session is the canonical symptom of a missing context: fork. Adding fork moves the bulk of that 30,000 tokens into a sub-agent that returns only the summary."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "e1d8072e-5001-4824-91dd-dbeaef9844c8"
+  },
+  {
+    "question": "A developer creates ~/.claude/commands/deploy.md that runs production deploys. A teammate, pair-programming over a screen-share, types /deploy in their own session and gets 'unknown command'. Which statement is most accurate?",
+    "options": [
+      "This is expected: ~/.claude/commands/ is per-user, so the teammate's session has no record of /deploy. To share it, move it to .claude/commands/deploy.md in a repo both have",
+      "This is a bug; /deploy should follow the screen-share session",
+      "The teammate must restart Claude Code to pick up commands defined on the host machine",
+      "The harness should have synced the personal command via the screen-share session"
+    ],
+    "explanations": [
+      "Personal scope means the file lives only on the original developer's machine. The teammate's local harness has no /deploy because nothing was committed to a repo they have.",
+      "A screen-share session shows pixels, not files; commands are local to each user's harness.",
+      "Restarting on the teammate's machine cannot summon a file that exists only on the host's machine; nothing was shipped.",
+      "The harness has no documented sync-via-screen-share semantics; commands come from on-disk files."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "3783652c-2d1e-447d-aa4a-5c704f9fd596"
+  },
+  {
+    "question": "A team rule says 'if a skill produces verbose output it must use context: fork'. A new skill produces five lines of structured output but reads thirty files in the process. Should it use context: fork?",
+    "options": [
+      "No — five lines of output is small, and the rule only counts final-output verbosity",
+      "Only if allowed-tools includes Read; otherwise fork is a no-op",
+      "Yes — verbose output here means intermediate context (the thirty file reads), which is exactly what fork is designed to isolate from the parent session",
+      "Only if the skill is in ~/.claude/skills/; project-scoped skills inherit fork by default"
+    ],
+    "explanations": [
+      "Final-output size is not the metric. The cost being avoided is intermediate context — and thirty file reads is precisely the kind of verbose intermediate context fork was designed for.",
+      "fork is independent of allowed-tools; both can be set, but fork's isolation behaviour does not require Read to be present.",
+      "Verbose output for the purpose of the fork rule includes intermediate tool results (the file reads), not just the final summary. Thirty file reads dwarf the five-line summary; fork keeps them out of the parent session.",
+      "There is no 'fork by default for project-scoped' rule; fork is opt-in via frontmatter regardless of scope."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "291d2437-ef15-4bdc-b329-ea83e02ccb7d"
+  },
+  {
+    "question": "A developer wants 'always lint after edits' to apply on every turn AND wants a long, task-specific 'generate-migration' workflow. Which split is correct?",
+    "options": [
+      "Both in CLAUDE.md so they are always loaded and always available",
+      "Both as skills so the team can choose when to load them",
+      "'Always lint' as a skill; 'generate-migration' in CLAUDE.md so it never gets forgotten",
+      "'Always lint' in CLAUDE.md (universal, every-turn); 'generate-migration' as a skill at .claude/skills/generate-migration/ (task-specific, on-demand)"
+    ],
+    "explanations": [
+      "Putting both in CLAUDE.md burns the migration tokens on every session, even ones where no migration is being written.",
+      "Making 'always lint' a skill makes it conditional on user invocation, breaking the 'every turn' requirement.",
+      "Inverts the rule entirely: long task-specific content in CLAUDE.md is the canonical waste; universal short rules in skills miss the always-on requirement.",
+      "Universal rules belong in CLAUDE.md; task-specific workflows belong in skills. This is the activation-cost trade-off the topic centres on."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "61affd58-9397-4c76-8e32-ad2aa6014bca"
+  },
+  {
+    "question": "A tester deliberately invokes a /review skill (allowed-tools: [Read, Grep]; context: fork) and the model attempts an Edit. The Edit is denied. The tester then asks the agent in the parent session to 'use what you learned during /review to apply the fix yourself.' The parent agent cannot — it has no idea what was learned. Which principle most directly explains BOTH outcomes together?",
+    "options": [
+      "allowed-tools is a runtime blacklist, and context: fork is a UI hint — both are advisory",
+      "allowed-tools is a hard whitelist enforced at the harness level (so Edit was denied), and context: fork isolates the sub-agent's intermediate context (so the parent did not inherit what the skill learned). The two principles compose to give exactly this behaviour",
+      "Both denials happen because the skill is project-scoped; personal scope would allow tools and propagate context",
+      "The skill should have set argument-hint to grant the parent agent context propagation"
+    ],
+    "explanations": [
+      "allowed-tools is a whitelist, not a blacklist, and is enforced; context: fork is a runtime context-isolation directive, not a UI hint. This answer reverses both.",
+      "Two distinct principles, both load-bearing: allowed-tools strictly whitelists tools (Edit not listed → denied), and context: fork keeps the sub-agent's intermediate work out of the parent (what the skill 'learned' did not flow back). The combined behaviour is exactly what the question describes.",
+      "Scope (project vs personal) does not change tool enforcement or context isolation; the principles are independent of where the skill file lives.",
+      "argument-hint is a UX prompt with no role in tool enforcement or context propagation."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "0e0e64b0-0ea7-4ab4-a170-753221a7c2b4"
+  },
+  {
+    "question": "A candidate confidently picks 'put the workflow in CLAUDE.md so it always runs.' The workflow is a 1,200-token migration generator used twice a month. Why is this answer wrong even though it 'always works'?",
+    "options": [
+      "CLAUDE.md cannot store workflows of that length; it has a hard 500-token cap",
+      "CLAUDE.md cannot reference tools, so the workflow would silently no-op",
+      "Always-loaded does not mean free: the 1,200 tokens are paid on every session including the ~99% that don't need it; the right home is a skill so the cost is paid only when invoked",
+      "CLAUDE.md is loaded after the first user turn, so it cannot 'always run'"
+    ],
+    "explanations": [
+      "There is no documented 500-token CLAUDE.md cap; this is invented.",
+      "CLAUDE.md content can absolutely instruct Claude to use tools; this is not the issue.",
+      "The trap: 'always works' obscures activation cost. CLAUDE.md is always-loaded, so it taxes every session regardless of relevance. A skill makes activation conditional, so the 1,200 tokens cost nothing on the 99% of sessions that don't generate a migration. This is the principle the topic exists to teach.",
+      "CLAUDE.md is part of the system context loaded at the start; the 'after first turn' framing is wrong."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "45d1eb92-cb4e-4f3d-9d8e-eaf566dbe1ae"
+  },
+  {
+    "question": "A senior engineer argues that putting a long workflow in CLAUDE.md is *equivalent* to a skill because 'in both cases Claude eventually sees the instructions; the only difference is timing.' Why is this superficially-plausible claim wrong on a precise principle?",
+    "options": [
+      "Equivalent to in CLAUDE.md vs skill is correct only if context: fork is set on the skill; without fork the engineer is right",
+      "CLAUDE.md and skills are mutually exclusive — choosing one blocks the other technically, so equivalence is moot",
+      "Skills and slash commands are the same mechanism with different filenames; CLAUDE.md is genuinely different but only for triggering",
+      "Activation cost is the load-bearing difference: CLAUDE.md instructions are loaded on every session whether relevant or not, while skill instructions are loaded only when the skill is triggered. 'Eventually sees' obscures that 'every session' vs 'on demand' has very different token economics"
+    ],
+    "explanations": [
+      "context: fork is about output isolation, not about activation timing; it does not make CLAUDE.md and skills equivalent.",
+      "CLAUDE.md and skills coexist freely; there is no mutual exclusion. The premise is invented.",
+      "Skills and slash commands are not the same mechanism — skills carry frontmatter (allowed-tools, context: fork, argument-hint) that slash commands do not.",
+      "The trap is the word 'eventually'. CLAUDE.md is paid every session regardless of relevance; a skill is paid only when triggered. Across a team and a year that is the difference between thousands of tokens per session and zero. The activation-cost trade-off is the principle the topic exists to teach."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "de46976f-607f-48f5-bad7-b9317c17bda2"
+  },
+  {
+    "question": "A team-shared skill currently has 'allowed-tools: [Read, Grep, Glob, Bash, Edit, Write]', 'context: fork', and 'argument-hint: <task>'. A reviewer says only one of these three is the most important guard against accidental destructive behaviour. Which one and why?",
+    "options": [
+      "context: fork — because forking isolates side effects from the parent session",
+      "argument-hint — because it forces the user to confirm intent before destructive work",
+      "allowed-tools — because it is the only one of the three that is a hard, harness-enforced gate on which tools can run; fork only isolates context, and argument-hint is just a UX prompt",
+      "All three are equally important and the reviewer is wrong to single one out"
+    ],
+    "explanations": [
+      "Fork isolates context but does not constrain capability: a forked skill with Edit and Write still mutates the real filesystem. Side-effect 'isolation' here is a misconception.",
+      "argument-hint is purely a UX hint with no enforcement; the user is not 'forced' to do anything.",
+      "Of the three, only allowed-tools is a deterministic capability boundary enforced by the harness. Fork moves output, not permissions; argument-hint is UX. So the strongest guard against accidental destruction is the whitelist that decides whether destructive tools can run at all.",
+      "Equality is the comfortable answer but wrong: capability gates and UX hints are not equally strong. The exam wants the precise principle, not the diplomatic one."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 3",
+      "3.2"
+    ],
+    "phase": "post",
+    "qid": "08ef7fab-20b2-43f2-9f0e-28125f88c5e6"
+  }
+]

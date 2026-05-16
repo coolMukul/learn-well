@@ -1,0 +1,882 @@
+[
+  {
+    "question": "Your team is standing up Claude Code on a shared backend repo and wants every teammate to have the same Jira and internal-API MCP servers attached automatically when they open the project. Which file holds that configuration?",
+    "options": [
+      "A project-scoped .mcp.json checked into the repo",
+      "A user-scoped ~/.claude.json on each developer's machine",
+      "A .claude/settings.json under the project's hooks directory",
+      "A package.json mcpServers field installed via npm"
+    ],
+    "explanations": [
+      "Project-scoped .mcp.json at the repo root is the canonical home for shared team MCP servers — it's checked into VCS so every clone gets the same configuration.",
+      "~/.claude.json is user-scoped and not shared; each teammate would have to maintain their own copy, defeating the goal of a shared default.",
+      ".claude/settings.json is for harness settings like hooks and permissions, not MCP server registration.",
+      "There is no MCP-server-registration convention via package.json; MCP attaches through .mcp.json or ~/.claude.json."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "pre",
+    "qid": "d530443d-ec4e-4b57-a2e5-642121deaf84"
+  },
+  {
+    "question": "A developer is prototyping a brand-new MCP server that only they want to use, and they don't want it foisted on teammates yet. Where should the configuration live?",
+    "options": [
+      "Project-scoped .mcp.json with an `enabled: false` flag",
+      "User-scoped ~/.claude.json on the developer's machine",
+      "An .env file alongside the MCP server source",
+      "A new branch of the project's .mcp.json that's never merged"
+    ],
+    "explanations": [
+      "There is no `enabled: false` convention; putting it in .mcp.json would still expose it to any teammate who pulls.",
+      "User-scoped ~/.claude.json is the right home for personal or experimental MCP servers — it lives on one developer's machine and is not shared.",
+      ".env files hold environment variables, not MCP server registrations.",
+      "Maintaining an unmerged branch is brittle and creates merge conflicts; user scoping is the supported mechanism."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "pre",
+    "qid": "41ed6573-d1c0-4468-b60b-943666e511cc"
+  },
+  {
+    "question": "A team's .mcp.json is committed to git and contains a hard-coded GitHub personal access token in the `env` block. Why is this a bad pattern, and what is the recommended fix?",
+    "options": [
+      "It's fine as long as the repo is private; no fix needed",
+      "Move the token to a separate JSON file that's gitignored and load it at runtime",
+      "Use environment-variable expansion with ${GITHUB_TOKEN} so each developer (and CI) supplies the value via their shell environment",
+      "Encrypt the token in place using GPG-armored ASCII inside the JSON value"
+    ],
+    "explanations": [
+      "Even private repos leak history to anyone with read access and to forks; secrets in git history are effectively permanent.",
+      "Side-loading another JSON file works but isn't the supported pattern and still risks accidental commits; ${VAR} expansion is the documented approach.",
+      "Environment-variable expansion with ${VAR} is the documented MCP pattern: the committed config carries no secrets and each developer (or CI) populates the value via their environment.",
+      "Encrypting in-place still requires the decryption key in the repo or a custom loader; it's not the supported MCP convention and adds operational complexity."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "pre",
+    "qid": "59b032d5-6fa4-4b18-a78b-44d3c7690a08"
+  },
+  {
+    "question": "When does Claude Code discover the tools exposed by configured MCP servers?",
+    "options": [
+      "Lazily, the first time the model requests a tool from that server in a turn",
+      "On every model request, by re-querying each server's tool list to pick up changes",
+      "Only when the user explicitly invokes a /mcp reload command in Claude Code",
+      "Once at session connection time, across all configured servers, with the union available simultaneously thereafter"
+    ],
+    "explanations": [
+      "There is no lazy per-call attach; servers are connected up-front, not on demand.",
+      "Re-querying every request would be wasteful and isn't how Claude Code works; discovery is one-shot at startup.",
+      "There's no requirement to manually reload; the initial connection enumerates the tools.",
+      "All MCP servers are connected and their tools enumerated once at connection time; from then on, the union is simultaneously available to the agent."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "pre",
+    "qid": "c3c0b6ad-a199-4742-8b1f-bfeddc37c9b6"
+  },
+  {
+    "question": "A research agent has a docs MCP server with tools `list_docs(prefix)` and `read_doc(id)`. The agent burns 2-3 turns probing what's available before reading the right document. Which MCP feature most directly removes those exploratory turns?",
+    "options": [
+      "Switching `list_docs` to use a forced tool_choice so it always fires first",
+      "Adding a `cache: true` flag to the tool definition so prior list results are reused",
+      "Exposing the documentation catalogue as MCP resources, advertised at connection time",
+      "Registering the docs server twice — once for list, once for read — to load-balance calls"
+    ],
+    "explanations": [
+      "Forcing list_docs first still costs a turn and assumes the right prefix; resources eliminate the discovery step entirely.",
+      "MCP doesn't define a `cache: true` tool flag; the issue is exploratory turns, not redundant ones.",
+      "MCP resources expose a content catalogue at connection time, so the agent sees what's available without exploratory tool calls and can target the right item directly.",
+      "Registering the same server twice doesn't add visibility into the catalogue and creates duplicate-tool problems."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "pre",
+    "qid": "78d2a65a-307b-44e7-b539-8967be74af3a"
+  },
+  {
+    "question": "After shipping an MCP `search_code` tool, telemetry shows the agent still uses built-in `Grep` for almost every code search and rarely calls `search_code`. The tool's description reads: \"search_code: Search code.\" What's the most direct fix?",
+    "options": [
+      "Remove the built-in Grep tool from the agent's allowedTools so search_code is the only option",
+      "Set tool_choice: 'any' so the model is required to use any tool other than Grep",
+      "Lower the priority of Grep in the system prompt so the model deprioritizes it",
+      "Rewrite the search_code description to call out its capability beyond Grep, the output shape, and when to prefer it"
+    ],
+    "explanations": [
+      "Removing built-ins is heavy-handed and loses general capability; the right fix is making search_code's description compete on merit.",
+      "tool_choice: 'any' forces some tool but doesn't steer the model away from Grep, which is also a tool.",
+      "Tool selection is driven by descriptions, not by ad-hoc 'priority' language in a system prompt; the documented lever is description quality.",
+      "MCP tools must affirmatively explain why and when to prefer them over always-present built-ins like Grep — capability beyond the built-in, output shape, and concrete invocation hints."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "pre",
+    "qid": "8691718c-c0ce-4d35-aab3-7b3fd9256cad"
+  },
+  {
+    "question": "The team needs a Jira integration. A community-maintained MCP Jira server already exists and covers their use cases. Which is the recommended default?",
+    "options": [
+      "Adopt the community MCP Jira server",
+      "Build a custom Jira MCP server in-house for full control",
+      "Skip MCP entirely and have the agent call the Jira REST API via Bash + curl",
+      "Wait until the team needs a deeply custom Jira workflow before adopting any server"
+    ],
+    "explanations": [
+      "Community MCP servers for standard integrations like Jira are the default — they cover surface area, ship vetted descriptions, and absorb upgrade work.",
+      "Custom servers belong to genuinely team-specific workflows; building one when a covering community option exists creates permanent unnecessary maintenance.",
+      "Bypassing MCP loses tool-selection discoverability, structured descriptions, and resource catalogues; raw curl is strictly worse for agent ergonomics.",
+      "Waiting for a custom need delays ROI on a solved integration; adopt now and switch to custom only when a real gap appears."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "pre",
+    "qid": "5c54ffd0-bb6b-4577-8a75-e5f241db1ef2"
+  },
+  {
+    "question": "An MCP server appears in `.mcp.json` but its `env` block uses `${SERVICE_TOKEN}`. A teammate clones the repo and the server fails to start. What's the most likely cause?",
+    "options": [
+      "The teammate hasn't set the SERVICE_TOKEN environment variable in their shell",
+      "The .mcp.json is corrupt and must be regenerated",
+      "Environment-variable expansion isn't supported in .mcp.json; the literal value is being passed",
+      "The MCP server itself doesn't read environment variables"
+    ],
+    "explanations": [
+      "${VAR} expansion only works if the variable is set in the developer's shell environment; an unset SERVICE_TOKEN expands to nothing and the server fails to authenticate.",
+      "A missing env var is the obvious explanation; assuming corruption skips the simpler diagnosis.",
+      "Env-variable expansion is exactly the documented MCP pattern in .mcp.json; this is not a bug in MCP.",
+      "MCP server processes inherit env vars normally; the issue is that the variable wasn't set on this developer's machine."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "pre",
+    "qid": "2b45cd65-6218-4ff0-b197-5c67906e0437"
+  },
+  {
+    "question": "Which of the following is an anti-pattern when integrating MCP servers?",
+    "options": [
+      "Using ${VAR} env expansion to keep API tokens out of the committed .mcp.json",
+      "Choosing a community-maintained MCP server for a standard integration like GitHub",
+      "Exposing a documentation hierarchy as MCP resources to reduce exploratory tool calls",
+      "Putting personal experimental MCP servers in the committed .mcp.json so teammates can also try them"
+    ],
+    "explanations": [
+      "This is the recommended pattern: it keeps secrets out of VCS while letting the committed config describe the server.",
+      "Adopting a mature community server for a standard integration is the recommended default.",
+      "Exposing catalogues as resources is the documented way to give agents visibility without exploratory tool calls.",
+      "Personal experimental servers in committed .mcp.json force teammates to spawn binaries they don't have installed, breaking their Claude Code on pull. Personal servers belong in user-scoped ~/.claude.json."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "pre",
+    "qid": "8c8c027a-fa6e-4045-97db-01af2b101518"
+  },
+  {
+    "question": "A team's .mcp.json declares 6 MCP servers exposing 22 tools combined, plus the standard built-ins. The agent's tool selection has gotten worse since the latest two servers were added. Which Task 2.4-related cause is most plausible?",
+    "options": [
+      "Adding too many MCP servers ran the configured-server limit and Claude Code is silently dropping some",
+      "All MCP server tools enter the same selection space, so the increased tool count plus likely weak descriptions on the new tools degraded selection",
+      "MCP servers are being re-discovered every turn, causing context bloat",
+      "The two new servers are project-scoped instead of user-scoped"
+    ],
+    "explanations": [
+      "There isn't a documented hard cap on configured servers driving silent drops; the realistic failure mode is selection degradation, not silent omission.",
+      "All MCP tools join the same simultaneous selection space as built-ins; pushing the count up (the >18-tool degradation territory from Task 2.3) and adding weakly-described tools predictably hurts selection — Tasks 2.1 and 2.3 are the right levers.",
+      "Discovery happens once at connection time, not per turn.",
+      "Project vs user scoping doesn't itself affect selection quality; both surface the same union of tools to the agent."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "pre",
+    "qid": "d4a4e95c-75fa-4cea-819b-3e8d800dc4da"
+  },
+  {
+    "question": "A Customer Support Resolution Agent (Scenario 1) needs three integrations: an internal Customer DB (proprietary REST API), Jira Service Management for escalations, and GitHub for related issues. Which split best follows Task 2.4 guidance?",
+    "options": [
+      "Adopt community MCP servers for Jira and GitHub; build a custom server only for the proprietary Customer DB",
+      "Build all three as custom MCP servers in `./tools/` to maintain consistency",
+      "Avoid MCP for Jira and GitHub by calling their REST APIs from a Bash tool, and build a custom MCP server only for Customer DB",
+      "Adopt community MCP servers for all three, including the proprietary Customer DB, by writing a thin OpenAPI shim"
+    ],
+    "explanations": [
+      "Community servers handle the standard, well-covered systems (Jira, GitHub); custom is reserved for the genuinely team-specific Customer DB. This is the recommended split.",
+      "Custom-everywhere ignores the principle that mature community servers should be the default for standard third-party systems.",
+      "Bypassing MCP for standard systems loses structured descriptions and resource catalogues that mature community servers provide.",
+      "There is no community MCP server for a proprietary internal API; the team-specific surface is exactly when custom servers are warranted."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "b81d9b37-016a-48b0-80a2-f1b23fdf8afd"
+  },
+  {
+    "question": "A research subagent (Scenario 3) has a docs MCP server. Logs show repeated calls to `list_docs(prefix='')` followed by `read_doc(id)`, costing two turns per question. The team wants to cut this to one turn without changing the agent's prompt. What change to the MCP server best achieves this?",
+    "options": [
+      "Add a third tool `list_and_read(prefix)` that combines both calls",
+      "Increase the agent's `max_tokens` so it can include more list output and read in one turn",
+      "Force tool_choice on list_docs so the model always calls it first",
+      "Expose the documentation hierarchy as MCP resources advertised at connection time, so the agent already sees the catalogue without calling list_docs"
+    ],
+    "explanations": [
+      "A combined tool still costs a turn and assumes the prefix; the deeper fix is removing the discovery step entirely via resources.",
+      "max_tokens doesn't change tool-call topology; the agent still has to round-trip list before read.",
+      "Forcing list_docs guarantees the wasted turn, not removes it.",
+      "Resources advertise the catalogue at connection time, so the agent has visibility into doc IDs up-front and can call read_doc directly — eliminating the list step."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "daf11b17-81da-4780-a5ee-9a3244767964"
+  },
+  {
+    "question": "An auditor reviews the team's `.mcp.json` and finds a literal `\"GITHUB_TOKEN\": \"ghp_xxx...\"` value committed two months ago, since rewritten to `${GITHUB_TOKEN}`. What is the correct remediation?",
+    "options": [
+      "No further action needed; the latest commit already uses ${VAR} expansion",
+      "Treat the committed token as compromised: revoke it on GitHub immediately and issue a new one for everyone using the env-var pattern",
+      "Squash all prior commits into one to remove the token from history",
+      "Force-push a rewrite of main with the token redacted"
+    ],
+    "explanations": [
+      "The token already entered git history; a later commit doesn't undo the leak. Anyone with prior repo access still has the token.",
+      "Once a secret has been committed it is effectively permanent in history; the only safe response is to rotate the credential and rely on ${VAR} expansion going forward.",
+      "Squashing won't remove the token from forks, mirrors, or anyone's local clones; rotation is the only safe step.",
+      "Force-push doesn't reach forks, mirrors, CI caches, or developers' local clones; the token must be rotated regardless."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "f5c3292b-569f-4be4-a887-eb1e9a4af0af"
+  },
+  {
+    "question": "In a Developer Productivity setup (Scenario 4), an MCP server exposes `query_logs(service, query, time_range)` that searches centralized logs across 14 microservices. Despite this, the agent often falls back to `Grep` over local log files. The current description is: \"query_logs: Query logs.\" Which rewrite best follows Task 2.4 guidance?",
+    "options": [
+      "\"query_logs: Searches centralized production logs across all 14 microservices (not just the local checkout). Returns timestamped entries with service, severity, and trace_id. Use this — not built-in Grep — for any cross-service log question or when local files are insufficient.\"",
+      "\"query_logs: Searches logs. Use whenever the user mentions 'logs'.\"",
+      "\"query_logs: Powerful log search tool. Highly recommended.\"",
+      "\"query_logs: Internal log search. Args: service (string), query (string), time_range (string).\""
+    ],
+    "explanations": [
+      "Explicitly states the capability beyond Grep (cross-service production reach), the output shape (timestamps, severity, trace_id), and the when-to-use (cross-service or insufficient local data) — exactly the three ingredients an MCP description needs to win against built-ins.",
+      "Vague guidance with no positive reason to deviate from Grep; the model still defaults to the built-in.",
+      "Empty self-praise gives no concrete reason to choose this tool over Grep.",
+      "Lists arguments but doesn't explain capability beyond Grep, output shape, or when to prefer; the model has no positive reason to switch."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "97bcfe7d-71e0-4799-a73a-6672a34ca476"
+  },
+  {
+    "question": "Mid-session, a user asks the agent to query Jira but the team's `.mcp.json` doesn't include a Jira MCP server. The agent attempts a workaround. What's the truthful Task 2.4 fact about MCP server attachment?",
+    "options": [
+      "Claude Code can lazily spawn an MCP server mid-session if the agent requests one by name",
+      "MCP servers are connected once at session start; you cannot add a new one mid-session — the user must reconfigure and restart the session",
+      "The agent can call `register_mcp_server(name)` as a built-in tool to attach servers on demand",
+      "Claude Code automatically searches a registry of community servers and attaches matching ones when a tool is requested"
+    ],
+    "explanations": [
+      "There is no documented lazy mid-session spawn; configuration is decided at session start.",
+      "MCP discovery is one-shot at connection time. To add a server, update .mcp.json (or ~/.claude.json) and start a new session; you cannot toggle servers on within an active session.",
+      "There is no register_mcp_server built-in; tool sets are fixed for the session.",
+      "Claude Code does not auto-discover or auto-attach community MCP servers; configuration is explicit."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "79095440-84b5-4a71-9985-149826a05495"
+  },
+  {
+    "question": "A team is debating whether to put a CI-only MCP server (used only by the CI runner, never by humans) in project `.mcp.json` or in CI's environment-specific config. What's the best pattern?",
+    "options": [
+      "Put it in `.mcp.json` so CI and humans both load it; harmless if humans never invoke it",
+      "Put it in `.mcp.json` but mark it `humansIgnore: true` so local Claude Code skips it",
+      "Keep it out of project `.mcp.json`; configure it via the CI runner's user-scoped ~/.claude.json (or equivalent) so only CI sessions attach it",
+      "Wrap it in a Bash tool so MCP isn't involved at all in CI"
+    ],
+    "explanations": [
+      "Loading a CI-only server in every developer's session adds tools to the selection space and may fail to spawn locally — both bad outcomes for local productivity.",
+      "There is no `humansIgnore` flag; the scoping decision is project vs user.",
+      "Project .mcp.json is for tools every teammate needs; the CI runner is effectively a 'user' with its own ~/.claude.json — keeping the CI-only server there avoids polluting the team toolset and avoids selection-space bloat for humans.",
+      "Wrapping in Bash bypasses MCP's discoverability and description benefits; the right answer is correct scoping, not abandoning MCP."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "66360a9d-5c08-4bfd-9836-a027f3bbbf56"
+  },
+  {
+    "question": "When should you prefer building a custom MCP server over adopting a community one?",
+    "options": [
+      "Whenever the community server's source code isn't audited by your security team",
+      "Whenever you want to avoid an `npm install` step in the developer onboarding flow",
+      "Always — custom servers give finer control over descriptions and tool boundaries than any community implementation",
+      "When the integration is for a team-specific workflow no community server covers, or when an existing community server has a critical gap (missing endpoint, wrong auth model) you need now"
+    ],
+    "explanations": [
+      "Audit concerns are real but typically resolved by reviewing the community server, not by rebuilding it; rebuild-everything-for-audit doesn't scale.",
+      "Avoiding an install step is not a strong reason to take on permanent maintenance; the trade-off is heavily one-sided.",
+      "Always-custom inherits permanent maintenance for solved problems and your descriptions probably won't beat mature community ones.",
+      "Custom is reserved for team-specific workflows or for filling a critical gap in an otherwise-good community server. Both are real exam-tested triggers."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "b8a906c0-b267-4c71-8a8e-383dfa98ac72"
+  },
+  {
+    "question": "A Multi-Agent Research System (Scenario 3) attaches `web-search`, `docs`, `db`, and `notes` MCP servers — 19 MCP tools combined plus built-ins. The synthesis subagent is choosing the wrong tool ~25% of the time. Which Task 2.1/2.3/2.4 lever is the FIRST to apply?",
+    "options": [
+      "Increase the model's max_tokens so it can reason longer about which tool to pick",
+      "Audit each MCP tool's description for capability claims, output shape, and when-to-use language; trim or scope tools the synthesis role doesn't need (Tasks 2.1 and 2.3 levers, surfaced because 2.4 puts them all in one selection space)",
+      "Force tool_choice to a single tool to remove ambiguity",
+      "Split the .mcp.json into 4 files, one per server, so each loads independently"
+    ],
+    "explanations": [
+      "max_tokens doesn't fix selection; the underlying issue is description quality and tool-set size in a single selection space.",
+      "Task 2.4's discovery model puts every MCP tool into one simultaneous selection space, which makes Task 2.1 (descriptions) and Task 2.3 (overload, scoped tool-distribution per role) the correct levers. Audit descriptions and trim tools the role doesn't need.",
+      "Forcing one tool removes ambiguity by removing capability — wrong fix for a research synthesis agent that genuinely needs different tools per question.",
+      "There is no per-file independence in .mcp.json loading; the union is what the agent sees regardless of file layout."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "3d222bb9-f23f-4383-837a-7a247f1bb452"
+  },
+  {
+    "question": "A team has both a project-scoped `.mcp.json` (with `jira`, `internal-api`) and a user-scoped `~/.claude.json` (with `experimental-todo`). When the developer opens Claude Code in the project, which MCP servers are attached?",
+    "options": [
+      "Only the project-scoped servers; user-scoped configs are ignored inside a project",
+      "Only the user-scoped servers; project-scoped configs are merged in only on explicit `/mcp enable`",
+      "All three: jira, internal-api, and experimental-todo — the union of project- and user-scoped servers is connected at session start",
+      "The user is prompted to choose one config or the other at session start"
+    ],
+    "explanations": [
+      "Project scope does not exclude user scope; both contribute to the attached server set.",
+      "There is no `/mcp enable` gate for user-scoped servers; they're attached automatically.",
+      "Both scopes contribute; the agent sees the union of all configured servers' tools at session start. This is exactly the simultaneous-availability rule.",
+      "There's no interactive scope-selection prompt; both are loaded automatically."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "1bc68e8a-0032-4607-abb4-a4b90684e755"
+  },
+  {
+    "question": "Which choice better fits a content catalogue (e.g., a list of recent Jira tickets, a database schema, a documentation tree): MCP tools or MCP resources?",
+    "options": [
+      "MCP tools — the agent can list and search dynamically, which is more flexible than static resources",
+      "MCP resources — they advertise catalogue contents at connection time, giving the agent visibility without exploratory tool calls; tools remain the right primitive for actions like creating or modifying items",
+      "Always tools, because MCP resources have been deprecated in favour of tool-based catalogues",
+      "Always resources, because every MCP capability should be exposed as a resource for caching"
+    ],
+    "explanations": [
+      "Dynamic list/search via tools costs turns and tokens for what is effectively static catalogue visibility; resources are the targeted primitive for catalogues.",
+      "Resources are the right mechanism for catalogues (advertised at connection time, no exploratory turns); tools remain right for actions. The two primitives are complementary, not interchangeable.",
+      "MCP resources are an active part of the protocol, not deprecated.",
+      "Resources are for content the agent reads; actions like create/modify still need tools — 'always resources' over-applies the pattern."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "85c2674c-41d1-45a2-89ef-a06889cfe972"
+  },
+  {
+    "question": "A Code Review Agent (Scenario 2) ships an MCP tool `pr_diff_review(repo, pr_number)` that runs lint, security, and style checks across a PR diff and returns annotated findings. Telemetry shows the agent still falls back to `Grep` and `Read` over the diff most of the time. The current description reads: \"pr_diff_review: Reviews PR diffs for issues.\" What is the highest-leverage fix per Task 2.4?",
+    "options": [
+      "Shorten the description to a single noun phrase so the model parses it faster",
+      "Rewrite the description to call out what the tool does that Grep/Read can't (lint + security + style across the full diff), the output shape (annotated findings keyed by file/line), and when to prefer it (any PR review question)",
+      "Add a JSON `priority: \"high\"` field next to the description to bias selection",
+      "Force `tool_choice` to `pr_diff_review` for every turn so the model is required to call it"
+    ],
+    "explanations": [
+      "Selection isn't driven by description brevity; the model needs positive reasons to deviate from always-present built-ins.",
+      "MCP descriptions must affirmatively explain capability beyond the built-in, output shape, and when-to-use — exactly the three ingredients Task 2.4 calls out for winning over Grep/Read.",
+      "There is no `priority` field in MCP tool definitions; the lever is description quality, not metadata.",
+      "Forcing `pr_diff_review` on every turn breaks any non-review question the agent receives and bypasses the actual problem (a description that doesn't compete on merit)."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "c18cf184-5ad0-44aa-a6d3-90be7e6b5f3e"
+  },
+  {
+    "question": "On a Windows machine, a developer runs `set GITHUB_TOKEN=ghp_...` in cmd.exe and then opens VS Code, where Claude Code spawns. The `github` MCP server (configured with `\"GITHUB_PERSONAL_ACCESS_TOKEN\": \"${GITHUB_TOKEN}\"`) fails to authenticate. What is the most likely cause?",
+    "options": [
+      "`${VAR}` expansion in `.mcp.json` is unsupported on Windows; only `%VAR%` works",
+      "Claude Code on Windows ignores environment variables and reads tokens only from a credential keyring",
+      "`set` only populates the variable for the current cmd session, so the parent VS Code process (and the Claude Code child it spawns) never sees it; using `setx` or setting the variable in user-level environment so VS Code inherits it is the fix",
+      "`.mcp.json` requires the variable to be exported with `export` syntax even on Windows"
+    ],
+    "explanations": [
+      "MCP env-var expansion uses `${VAR}` syntax cross-platform; Claude Code resolves it from the spawning process's environment regardless of OS.",
+      "Claude Code reads MCP env vars from the spawning process's environment; there is no Windows-specific keyring path.",
+      "`set` is per-shell-session only; the variable doesn't propagate to other processes. `setx` (or User-level Environment Variables in System Properties) makes the value persist into the environment that VS Code — and therefore Claude Code — inherits.",
+      "`export` is bash syntax; Windows uses `set` (transient) or `setx`/Environment-Variable settings (persistent). Neither is required by `.mcp.json` itself — the syntax is the OS shell's, not MCP's."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "6fe4b844-a910-47b8-bb6f-e3d8eb8de237"
+  },
+  {
+    "question": "A developer has been using a custom `notes` MCP server out of `~/.claude.json` for two weeks. They want to promote it into the team's project `.mcp.json` so colleagues can use it too. Per Task 2.4, what should they verify before committing the promotion?",
+    "options": [
+      "That the server spawns reliably on every teammate's machine without manual install steps (or those steps are documented and run by onboarding); that all credentials use `${VAR}` env-var expansion and no literal secrets remain; that tool descriptions are strong enough to compete with built-ins",
+      "Nothing — promoting a working personal server is always safe; teammates will sort out any local issues as they hit them",
+      "Only that the spawn command is identical; description quality is irrelevant for personal-origin servers",
+      "That the server lives in `~/.claude.json` for at least one month before promotion is allowed"
+    ],
+    "explanations": [
+      "Promotion changes the audience from one developer to the whole team. The three things that matter are reproducible spawn (so teammates aren't broken on pull), credential hygiene (no committed secrets), and description quality (so the tool actually gets selected against built-ins).",
+      "Committing a server that requires uncommunicated local installs is exactly the anti-pattern Task 2.4 flags — Claude Code fails to spawn for teammates who don't have the binary.",
+      "Description quality is independent of where the server originally lived; an under-described tool will lose to Grep regardless.",
+      "There is no convention or tooling-enforced waiting period; the gate is reproducibility and hygiene, not tenure."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "619aa7a9-a1d3-416e-a0fa-c919d115246e"
+  },
+  {
+    "question": "A team's project `.mcp.json` declares a `db-query` server with `\"DB_URL\": \"${DB_URL}\"`. The server starts fine on every developer's laptop, but in the CI runner the server fails to start with an authentication error. The CI machine has the same `.mcp.json`. What is the recommended fix?",
+    "options": [
+      "Replace `${DB_URL}` with a literal connection string in `.mcp.json` so CI doesn't need any environment configuration",
+      "Move `db-query` out of project `.mcp.json` and into a per-developer `~/.claude.json`, since CI shouldn't share project MCP configuration",
+      "Change `${DB_URL}` to `${DB_URL:-default}` syntax so CI falls back to a default when unset",
+      "Set `DB_URL` in the CI runner's environment (via the CI provider's secrets / runner env-var configuration) — env-var expansion works the same way in CI as on a dev laptop, so the fix is to populate the variable in the CI environment, not change the config"
+    ],
+    "explanations": [
+      "Hardcoding the literal value in `.mcp.json` defeats the whole point of `${VAR}` expansion: secrets leak into git history and every cloner inherits the same identity.",
+      "CI legitimately needs the same `db-query` server developers use; relocating to `~/.claude.json` doesn't address the underlying problem (no env var set on the CI machine).",
+      "MCP `${VAR}` expansion does not document a `${VAR:-default}` fallback syntax, and a default DB URL is rarely sensible for a real database.",
+      "`${VAR}` expansion resolves against whatever environment Claude Code runs in. CI is just another environment — set `DB_URL` via the CI provider's secrets/env mechanism and the same `.mcp.json` works everywhere."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "e336ae7b-abc6-42eb-8e6f-dc852e14beae"
+  },
+  {
+    "question": "An MCP-powered Jira integration has to expose four capabilities: list the 50 most recent issues, search by JQL, create an issue, and transition an issue's status. Which of these is the best fit for an MCP **resource** rather than a tool?",
+    "options": [
+      "`create_issue(project, title, body)` — opens a new ticket",
+      "`search_issues(jql)` — runs an arbitrary JQL query and returns matching tickets",
+      "`jira://issues/recent-50` — a read-only catalogue of the 50 most recent issues, advertised at connection time so the agent has up-front visibility of what exists",
+      "`transition_issue(id, status)` — moves a ticket through workflow"
+    ],
+    "explanations": [
+      "Creating data is an action, parameterized and side-effecting — the canonical case for a tool, not a resource.",
+      "Arbitrary JQL search is a parameterized query the agent invokes on demand; that's a tool, not a static resource catalogue.",
+      "Read-mostly, enumerable catalogue content (recent issues, doc trees, schemas) is exactly what MCP resources are for — advertised at connection time so the agent doesn't need exploratory `list_*` calls.",
+      "Workflow transitions are state-changing actions and inherently parameterized — that's tool territory, not resource territory."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "10a4442a-44ee-493a-93f9-1cc7bc3e74da"
+  },
+  {
+    "question": "An Engineering Coach (Scenario 5) attaches an MCP server for course materials with three tools: `list_courses(filter)`, `list_lessons(course_id)`, and `read_lesson(id)`. Logs show the agent typically takes 2–3 turns probing the catalogue before reading the right lesson. Per Task 2.4, what is the recommended redesign?",
+    "options": [
+      "Expose the course → lesson hierarchy as MCP resources (e.g., `coach://courses/<id>/lessons/<id>`) advertised at connection time, so the agent already sees what exists; keep `read_lesson` only if it needs parameters beyond the URI",
+      "Combine all three into a single mega-tool `find_and_read(query)` that hides the discovery internally",
+      "Force `tool_choice` on `list_courses` so the agent always discovers in a fixed order",
+      "Move the server to `~/.claude.json` so each user has a smaller per-session catalogue"
+    ],
+    "explanations": [
+      "The Task 2.4 prescription for catalogue content is exactly this: turn `list_*` round-trips into resources advertised at connection time, eliminating the discovery turns and letting the agent target the right item directly.",
+      "A combined tool still costs at least one turn for the wrapped discovery and hides the fact that the agent had visibility of the catalogue all along; resources solve the underlying problem.",
+      "Forcing `list_courses` first guarantees the wasted turn rather than removing it; the goal is to skip the listing step altogether.",
+      "Scoping doesn't address why the agent is burning turns on discovery; a smaller catalogue still costs `list_*` round-trips if the structure is tools-only."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "c73ba098-d46c-4208-a815-f4c3506dfffa"
+  },
+  {
+    "question": "A community-maintained Jira MCP server covers about 80% of the team's Jira workflow but is missing the `transition_issue` endpoint they need next sprint. What is the recommended path?",
+    "options": [
+      "Adopt the community server now for the 80% it does cover, and either contribute the `transition_issue` endpoint upstream or layer a tiny in-house MCP server alongside it that exposes only the missing endpoint",
+      "Skip the community server entirely and rebuild the full Jira surface as a custom in-house server for consistency",
+      "Adopt the community server and instruct teammates to perform `transition_issue` actions manually outside the agent",
+      "Wait for the upstream maintainers to add the endpoint, even if that takes months, since custom MCP servers are always to be avoided"
+    ],
+    "explanations": [
+      "The Task 2.4 default is to lean on community servers for standard integrations and reserve custom for genuine gaps. An 80% community + 20% custom split (or an upstream contribution) preserves the maintenance leverage of community while filling the team-specific gap.",
+      "Rebuilding the entire Jira surface duplicates years of community maintenance for a 20% gap — the trade-off is heavily one-sided against custom-everything.",
+      "Forcing manual workflow transitions defeats the agent's purpose for a workflow the team explicitly wants automated; custom is warranted here.",
+      "Custom MCP servers are explicitly the right call for filling a critical gap in an otherwise-good community server; 'always avoid custom' over-applies the community-first principle."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "86068e23-6b64-418e-b114-8a0ea12654a1"
+  },
+  {
+    "question": "A Slack MCP server is configured with `\"SLACK_WEBHOOK_URL\": \"${SLACK_WEBHOOK_URL}\"`. The server starts cleanly, but every `send_message` tool call returns HTTP 404 from Slack. The developer confirms `echo $SLACK_WEBHOOK_URL` in their shell prints a non-empty URL. Most likely cause?",
+    "options": [
+      "`.mcp.json` does not actually expand `${VAR}`; the literal string is being passed and Slack returns 404 for the unresolved value",
+      "`${VAR}` expansion is working — the variable resolves successfully, but the URL it expands to is stale or wrong (e.g., for a deleted Slack channel hook). Rotate the webhook and update the env var",
+      "Claude Code's MCP loader expands `${VAR}` only on the second tool call, so the first request always 404s",
+      "The server should be moved to `~/.claude.json`; `.mcp.json` doesn't support webhooks"
+    ],
+    "explanations": [
+      "If literal `${SLACK_WEBHOOK_URL}` were being sent, the developer would see auth/format errors well before a clean server start and a clean call shape — and `${VAR}` expansion in `.mcp.json` is a documented MCP feature that does work.",
+      "The server starts and the call reaches Slack (404, not connection-refused), so expansion is happening — the value itself is just pointing at an endpoint Slack no longer recognizes. The fix is to rotate/replace the webhook URL the env var resolves to.",
+      "There is no documented per-call gating; `${VAR}` is resolved when the server is spawned, not interleaved with tool calls.",
+      "`.mcp.json` happily holds webhook-style configurations; scope (`.mcp.json` vs `~/.claude.json`) is about *who* sees the server, not *what* protocols it can carry."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "00d33e1c-d378-4aed-919c-c6a36562cf55"
+  },
+  {
+    "question": "A teammate adds a half-finished `experimental-todo` MCP server to the project's `.mcp.json` 'just for the sprint, we'll yank it Friday.' Why is this a Task 2.4 anti-pattern?",
+    "options": [
+      "`.mcp.json` does not support short-lived entries; you must use `~/.claude.json` for anything under 30 days old",
+      "Project `.mcp.json` is checked into VCS and loaded by every teammate's session at startup, so an experimental server they don't have installed will break their Claude Code on pull. Personal/experimental servers belong in `~/.claude.json` until they're ready for the team",
+      "The entry should have been written as `\"experimental-todo\": { \"scope\": \"user\" }` so teammates skip it automatically",
+      "Without a `force-push` to remove it later, the entry will persist forever in everyone's session"
+    ],
+    "explanations": [
+      "There is no documented short-lived-entry rule; the boundary is whether the server is for the team or for one person.",
+      "This is the canonical scoping anti-pattern in Task 2.4 — every teammate's session tries to spawn the server, and any teammate without the binary installed has Claude Code fail at startup. Personal/experimental servers stay in `~/.claude.json` until they meet the promotion bar.",
+      "There is no inline `scope` field on MCP server entries; scoping is determined by which file the entry lives in (`.mcp.json` vs `~/.claude.json`).",
+      "Removing an entry from `.mcp.json` is a normal commit, not a force-push; this is a misunderstanding of git, not the MCP failure mode."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "0733ef95-2df8-490d-b18d-aaf838786b81"
+  },
+  {
+    "question": "Which of the following statements about MCP **resources** vs **tools** is FALSE?",
+    "options": [
+      "Resources are advertised at connection time, giving the agent visibility into available content without exploratory tool calls",
+      "Tools remain the right primitive for parameterized actions like creating, updating, or transitioning data",
+      "Resources help reduce wasted turns when the agent needs to know 'what exists' in a catalogue (issues, docs, schemas)",
+      "Resources are deprecated in current MCP; new servers should expose all data as `list_*` and `read_*` tools instead"
+    ],
+    "explanations": [
+      "True — connection-time advertisement is exactly the Task 2.4 reason to prefer resources for catalogues.",
+      "True — resources are read-mostly content; mutating actions belong to tools, and the two primitives are complementary.",
+      "True — eliminating exploratory `list_*` round-trips is the canonical motivation for resources.",
+      "False — MCP resources are an active part of the protocol; replacing them with `list_*` tools reintroduces the exploratory-turn problem resources were designed to remove. This is the statement the question asks you to identify."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "35bfa164-bbb3-406b-af4f-bfa00489eb45"
+  },
+  {
+    "question": "An MCP server exposes `manage_jira(action, ...)` where `action` is one of \"search\", \"create\", \"transition\", \"comment\", \"assign\". Selection telemetry shows the agent is flaky on Jira tasks. Two refactors are debated: (a) split it into five focused tools (`jira_search`, `jira_create`, ...), or (b) keep the single tool but write a longer description enumerating each action. Per Tasks 2.4 / 2.1, what is the better default?",
+    "options": [
+      "Split into five focused tools — a polymorphic `action` switch forces a single description to cover five different capabilities, output shapes, and when-to-use rules; five well-described tools beat one polymorphic tool even if the total tool count rises moderately, as long as the count stays under the Task 2.3 overload threshold",
+      "Keep the single tool; better descriptions are always sufficient, and splitting bloats the toolset against Task 2.3's overload concern",
+      "Split into five tools AND increase the model's `max_tokens` so it can reason longer over the larger toolset",
+      "Keep the single tool but enforce `tool_choice` for each `action` variant via the system prompt"
+    ],
+    "explanations": [
+      "A polymorphic `action` switch hides per-action description, output shape, and when-to-use behind a single signature — the model can't see, e.g., why `transition` differs from `comment`. Five focused tools each get their own description budget, which is what Task 2.1 needs and what Task 2.4 surfaces (these tools all join the same simultaneous selection space, so per-tool description quality matters more than tool count, until count itself becomes the bottleneck).",
+      "Plausible-sounding but wrong: a single description for five distinct actions is exactly what makes selection flaky in the first place. The Task 2.3 overload threshold is around the high-teens — going from 1 to 5 well-scoped tools doesn't realistically push you past it.",
+      "`max_tokens` controls generation length; it has no effect on tool-selection quality or which tool the model sees in the simultaneous space.",
+      "`tool_choice` is per-call and decided by the harness/caller, not 'enforced via the system prompt' — and forcing one tool removes the model's ability to choose appropriately for the actual user intent."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "9eb71731-52ae-45f9-a570-822bc5633908"
+  },
+  {
+    "question": "A team's project `.mcp.json` declares a server `jira` exposing `list_issues`. A developer's `~/.claude.json` declares an unrelated server `jira-internal` that *also* exposes a tool literally named `list_issues`. When the developer opens Claude Code in this project, what does the agent's tool-selection space look like at session start?",
+    "options": [
+      "Only the project-scoped tool is visible — `.mcp.json` always wins precedence over `~/.claude.json` for name collisions",
+      "Only the user-scoped tool is visible — `~/.claude.json` is loaded last and overrides earlier definitions",
+      "Both servers are connected and both `list_issues` tools enter the simultaneous-selection space. MCP discovery doesn't document a name-precedence rule across scopes; the duplicate-name situation is a configuration smell that should be fixed by renaming the tool on one of the servers",
+      "Claude Code automatically prefixes the second tool's name with the server name (e.g., `jira-internal.list_issues`) so the names are guaranteed unique"
+    ],
+    "explanations": [
+      "Project scope and user scope both attach at session start; neither overrides the other for tool definitions. The 'project wins' intuition is wrong — both contribute to the union.",
+      "Same trap in the other direction. There is no documented precedence rule between scopes; both are simply added to the simultaneous-selection space.",
+      "Project- and user-scoped MCP configs union into a single attached set at session start, and tools from both populate the same selection space. A literal name collision isn't resolved by MCP — it produces ambiguity that can degrade selection. The only clean fix is to rename the colliding tool on one of the servers.",
+      "While some clients namespace tools, the behaviour isn't part of MCP's documented surface and shouldn't be relied on. The Task 2.4 prescription is to avoid the collision in the configuration itself."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "9f82fcd9-e006-4d33-953a-399e1c9b97d7"
+  },
+  {
+    "question": "A `.mcp.json` references `${API_TOKEN}` for a third-party MCP server. The org's secret manager rotates this token on the first of every month. Which approach best aligns with Task 2.4 and ongoing operations?",
+    "options": [
+      "Hard-code the new token into `.mcp.json` each month and force-push to scrub the previous month's value from history",
+      "Replace `${API_TOKEN}` with a custom shell-out script reference that calls the secret manager fresh on every session start",
+      "Move the MCP server out of `.mcp.json` and into each developer's `~/.claude.json`, since rotating credentials are inherently per-user and don't belong in a project config",
+      "Have the secret manager populate the developer's shell `API_TOKEN` environment variable at login (via IT-managed shell init or an `eval $(secrets fetch)` step), so the existing `${API_TOKEN}` keeps resolving to the current month's value with no `.mcp.json` changes needed"
+    ],
+    "explanations": [
+      "Force-push is destructive, doesn't reach forks/mirrors, and a token that ever entered git history is permanently compromised regardless of cleanup attempts. Hard-coding is the very anti-pattern `${VAR}` expansion exists to prevent.",
+      "MCP `${VAR}` expansion is documented to read from the process environment, not from arbitrary shell-outs. Custom dynamic-loader plumbing isn't supported and adds operational fragility for no benefit over a properly-populated env var.",
+      "Rotation is about *credential lifecycle*, not *who needs access*. The server is still team-scoped (everyone needs it); only the secret value is per-user. Moving the entire server to `~/.claude.json` conflates the two axes and forces every teammate to redeclare the server config.",
+      "This is the canonical pattern: keep `${API_TOKEN}` in the committed config (no secrets in VCS, server description stays uniform), and move the rotation problem entirely to the env-var population step. The shell environment becomes the integration point with the secret manager — `.mcp.json` and the MCP server itself never need to change."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "90e7bab2-bd1c-4e7d-8c04-6ebf081619d8"
+  },
+  {
+    "question": "A `pricing` MCP server holds 200 SKUs and their current prices. Prices update from the upstream feed every ~15 seconds (it's market-data). A team is deciding whether to expose the SKU catalogue as MCP **resources** or as a `quote(sku)` **tool**. Which is the better fit?",
+    "options": [
+      "Resources — any read-only catalogue belongs as resources, regardless of update frequency, because resources eliminate exploratory tool calls",
+      "A `quote(sku)` tool — MCP resources are advertised at connection time and are best for read-mostly content; data that changes faster than a session would expose stale resources, so a tool that fetches current values on demand is the right primitive here. (You can still expose a separate small resource listing the SKU set itself, since the *set* is read-mostly even though the *prices* aren't.)",
+      "Resources, but with a custom `staleSeconds` field on each resource so the agent can decide whether to re-fetch",
+      "Both — expose every SKU's current price as both a resource and a tool, so the agent has redundant access paths"
+    ],
+    "explanations": [
+      "Half-truth trap. Resources excel for read-mostly catalogues (issues, doc trees, schemas) precisely because the *content* doesn't churn within a session. Volatile market data violates that assumption — the resource value would be stale before it's read.",
+      "Volatile / fast-changing data is the case Task 2.4's resources story does NOT cover. A `quote(sku)` tool fetches the current value on demand. The SKU *catalogue* (the list of which SKUs exist) is read-mostly and could legitimately be a resource — the prices themselves should not be.",
+      "MCP doesn't define a `staleSeconds` resource field; inventing one bypasses the actual decision (resources for read-mostly content vs tools for parameterized fetches).",
+      "Redundant primitives multiply the agent's selection burden against Task 2.4's same-selection-space rule and Task 2.3's overload concern, with no offsetting benefit."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "5e4fe6b1-1a12-4da6-b93a-f5b2876060f3"
+  },
+  {
+    "question": "A custom MCP `repo_search` tool ships with a strong description (capability beyond Grep, output shape, and explicit when-to-use language are all present). Telemetry still shows the agent picks built-in `Grep` ~70% of the time on questions where `repo_search` would be the right answer. The team has confirmed the description is good. What should they investigate NEXT?",
+    "options": [
+      "Whether the agent — particularly any subagents involved — has `repo_search` in its allowed-tool list at all (Task 2.3's distribution lever). A perfectly-described tool that's not visible to the role asking the question can't be selected, no matter how good the description is",
+      "Adding another paragraph to the description that repeats the when-to-use language with stronger phrasing",
+      "Editing the system prompt to lower the priority of `Grep`, e.g., 'Prefer custom tools over built-ins'",
+      "Switching `tool_choice` to `'any'` so the model is forced to pick *some* tool other than `Grep`"
+    ],
+    "explanations": [
+      "Tasks 2.4 and 2.3 chain: 2.4 puts every attached tool into a simultaneous selection space, but 2.3's distribution decides which tools each role / subagent actually sees. If a subagent's allowed-tool list doesn't include `repo_search`, no description quality will rescue it. After confirming descriptions, distribution is the next variable to check.",
+      "Repeating the same content makes the description noisier without changing the model's picture of the tool's capability. The team has already confirmed the description is strong.",
+      "Tool selection is driven by per-tool descriptions, not by ad-hoc 'priority' language in a system prompt. Treating selection as something the system prompt can override masks the underlying delivery problem.",
+      "`tool_choice: 'any'` requires *some* tool to be called but doesn't steer the model away from `Grep` — `Grep` is also a tool, so 'any' permits it. The real question is whether `repo_search` is even in scope for this agent."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "60a5c1f5-d918-43cd-838d-f8acd65442d2"
+  },
+  {
+    "question": "A team needs an Auth0 integration. A community Auth0 MCP server exists, but it's maintained by a single contributor, last release was 14 months ago, and there are 3 open issues flagged 'critical' (including one for a broken auth flow the team needs). The team's overall Auth0 use is standard. Per Task 2.4's community-vs-custom guidance, what is the recommended path?",
+    "options": [
+      "Adopt the community server unchanged — community-first is the documented default for any standard third-party integration, regardless of maintenance state",
+      "Adopt the community server but pin to a specific recent commit and budget time to either upstream a fix for the broken flow or maintain a fork; Task 2.4's community-first default is conditional on the community server being usable, and a stale single-maintainer server with critical open issues is exactly the 'critical gap in an otherwise-good community server' case where custom or fork work is warranted",
+      "Build a fully custom Auth0 MCP server in-house — any community server below a quality bar is automatically rejected and rewriting from scratch is the safest path",
+      "Skip MCP entirely for Auth0 and have the agent call the Auth0 REST API via Bash + curl for full control"
+    ],
+    "explanations": [
+      "The 'community-first' rule isn't unconditional — Task 2.4 explicitly carves out a 'critical gap in an otherwise-good community server' as a legitimate trigger for custom work. A 14-month-stale single-maintainer server with broken auth qualifies.",
+      "This is the nuanced reading: stay on the community surface for the 80% it covers, pin to a known-working commit, and either fix upstream or maintain a small fork/supplemental server for the gap. Adopting unchanged risks production breakage; full custom rewrite duplicates years of community surface for a gap.",
+      "Full custom rewrite is overkill — the community server still covers most of the standard Auth0 surface. Permanent maintenance for a solved problem is exactly what Task 2.4 says to avoid.",
+      "Bypassing MCP loses tool-selection discoverability, structured descriptions, and resource catalogues. A maintenance gap on the community server doesn't make raw curl the right answer."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "1a70e688-26d0-4e79-b91c-a17e9198f895"
+  },
+  {
+    "question": "A team adopts a community `search_jira(jql)` MCP server with an excellent description. They then add a custom internal `search_internal_db(query)` server, and a developer copies the Jira tool's description text into the new tool, swapping 'Jira' for 'internal DB' as a 'time-saver.' Why is this likely a Task 2.4 anti-pattern?",
+    "options": [
+      "Most community MCP licenses prohibit copying their description text into other tools, even with edits",
+      "Internal tools should always have shorter descriptions to keep the agent's context budget small",
+      "MCP requires every tool description to start with a unique identifier line; a paraphrase from another tool will fail validation",
+      "A description must accurately describe the *specific* tool's capability beyond built-ins, output shape, and when-to-use. A near-paraphrase from a different tool will mislead the model about what `search_internal_db` actually returns and when to prefer it over `Grep` or other tools — making the description's surface form 'good' but its content actively wrong"
+    ],
+    "explanations": [
+      "Plausible-sounding legalism but irrelevant. Most community MCP servers ship under permissive licenses that don't restrict description reuse, and 'license' is the wrong frame for the actual problem.",
+      "There is no documented short-description rule for internal tools; description quality is judged on accuracy and selection-decisiveness, not length. Trimming detail to save context tokens is exactly the wrong trade-off given how cheap descriptions are relative to the cost of wrong tool selection.",
+      "MCP doesn't define a 'unique identifier line' validation requirement; the 'fails validation' framing is invented.",
+      "The model's tool-selection signal IS the description; if `search_internal_db`'s description claims Jira-style behaviour (workflow status, SLA timers, etc.) when the actual tool returns rows from an internal table, the agent will route the wrong queries to it. The fix is a description specific to *this* tool's actual capability and output shape."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "603f0184-2cc0-4233-9316-41de8c476c9f"
+  },
+  {
+    "question": "A teammate's session in the same project shows tool count 24 with three MCP servers attached. Yours shows 18 tools with the same three servers. The project-scoped `.mcp.json` is identical and committed; both of you are on the same Claude Code version. What is the most likely explanation?",
+    "options": [
+      "Their `~/.claude.json` declares additional MCP servers (or additional tools on a server you also have) whose tools also enter their session's selection space — project- and user-scoped servers union together at session start, so two teammates with identical project configs but different user configs see different totals",
+      "MCP clients cap tool counts differently across releases; their client must be slightly newer and exposes more built-ins automatically",
+      "On certain operating systems Claude Code injects additional system tools (file search, shell history) on top of MCP; the difference reflects platform-specific built-ins",
+      "Tool counts include tools discovered from the working directory (e.g., scripts in `./tools/`); your working directory must be missing some files theirs has"
+    ],
+    "explanations": [
+      "This is the union-semantics consequence: at session start, Claude Code attaches every MCP server defined in BOTH `.mcp.json` AND `~/.claude.json` (and any other configured scopes), and the agent sees the union of their tools. Same project file does not imply same toolset, because user-scoped servers also contribute.",
+      "Tool count isn't capped by client version; this distractor invents a mechanism. Stick with the documented model: project + user scope union at session start.",
+      "MCP servers and built-in tools aren't OS-dependent in this way; Claude Code's built-ins are consistent across platforms.",
+      "MCP discovery uses configured server entries, not file-system scans of the working directory. There is no `./tools/` autodiscovery convention."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "6e812b80-ea25-4a77-a2bb-502db72d38b7"
+  },
+  {
+    "question": "A Multi-Agent Research session has 5 MCP servers exposing 26 tools in total. The `synthesis` subagent is selecting wrong tools ~30% of the time. The team has time for ONE focused change this sprint. Which has the highest leverage?",
+    "options": [
+      "Audit and rewrite descriptions across all 26 tools to maximize selection quality across the toolset",
+      "Apply Task 2.3's role-scoped distribution: build a smaller subagent toolset for `synthesis` that excludes tools it doesn't need (e.g., `db.write`, `web.bookmark`, `notes.create`), shrinking its selection space well below the overload threshold. Description work matters too, but with 26 tools the count itself is past the degradation point — reducing the choice field for that role gives the largest immediate gain",
+      "Move 3 of the 5 MCP servers from `.mcp.json` to `~/.claude.json` so only 2 are project-scoped",
+      "Switch the synthesis subagent's underlying model to a larger one so it can reason over more tools at once"
+    ],
+    "explanations": [
+      "Description quality matters and is genuinely valuable, but at 26 tools the dominant problem is the *count* itself sitting in one selection space — Task 2.3's overload territory. Description work alone won't move the needle as much as cutting the field of choice for this role.",
+      "Task 2.4 puts every attached tool into one simultaneous selection space; once you're past the overload threshold (~mid-to-high teens), the highest-leverage move is shrinking that space *for the role that's struggling*, which is Task 2.3 distribution. Excluding tools the synthesis role demonstrably doesn't need pays back immediately.",
+      "Scope (project vs user) doesn't change what the agent sees in this session — both scopes union into the same selection space. Moving servers between scopes doesn't shrink the per-session toolset.",
+      "Larger models help, but moving model class is a much bigger lift than a tool-distribution change and won't be the highest-leverage one-sprint change. It also ducks the underlying architectural issue."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "9101beef-a19f-4cb1-8e5a-7ffbd5888ab1"
+  },
+  {
+    "question": "A solo developer (no teammates) works on a personal project but sometimes switches between two laptops. They're choosing where to declare their MCP servers. Per Task 2.4's scoping rule, what's the best fit?",
+    "options": [
+      "`.mcp.json` only — even for a solo developer, project-scoped is the right default because it travels with the repo across machines and ensures both laptops see the same servers",
+      "`~/.claude.json` only — solo developers don't have teammates to share with, so user scope is always correct",
+      "`.mcp.json` for servers tied to *this codebase* (e.g., the project's bespoke API server, a project-specific docs server), and `~/.claude.json` for *cross-project personal tools* (e.g., a personal todo MCP, a personal note-taking server) — the actual rule is 'tied to this codebase vs personal across all work,' not 'team vs solo'",
+      "Neither — solo developers should pass `--mcp-server` flags on every Claude Code invocation to keep configs minimal"
+    ],
+    "explanations": [
+      "Half-right framing. Project-scoped travels with the repo, which is good for codebase-tied servers — but for cross-project personal tools, `~/.claude.json` is still the right home (and it follows the developer to whichever laptop they're on, *if* they sync that file). 'Always project' over-applies the rule.",
+      "Inverse trap. User-scoping cross-project tools is correct, but the project's own bespoke servers belong in `.mcp.json` so they live with the repo and would also be ready if the developer ever opens the codebase up to collaborators.",
+      "The scoping rule is about the server's binding, not the user's headcount: codebase-bound servers go in `.mcp.json`, cross-project personal servers go in `~/.claude.json`. Solo developers benefit from the same split — it cleanly separates 'this project's tools' from 'tools I always want.'",
+      "There is no `--mcp-server` per-invocation flag in standard Claude Code usage; configuration goes through `.mcp.json` and `~/.claude.json`."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.4"
+    ],
+    "phase": "post",
+    "qid": "e662d4d0-a4ec-4b6b-a702-e573b0c12aa5"
+  }
+]

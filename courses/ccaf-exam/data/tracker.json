@@ -1,0 +1,589 @@
+{
+  "schemaVersion": 2,
+  "examName": "Claude Certified Architect — Foundations",
+  "planStartDate": "2026-04-29",
+  "lastUpdated": "2026-05-16T13:08:48.361Z",
+  "lastTopicId": "4.2",
+  "currentTopicId": "1.1",
+  "topics": {
+    "1.1": {
+      "started": "2026-04-28T19:00:00+05:30",
+      "finished": "2026-04-29T00:04:13.802Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-04-28T09:03:42.653Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90
+        },
+        {
+          "timestamp": "2026-04-29T00:03:35.998Z",
+          "score": 10,
+          "total": 10,
+          "percent": 100
+        }
+      ],
+      "mastered": "2026-04-29T00:03:35.998Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-04-28T07:58:58.377Z",
+          "score": 8,
+          "total": 10,
+          "percent": 80
+        }
+      ]
+    },
+    "1.2": {
+      "started": "2026-04-29T08:12:54+08:00",
+      "finished": "2026-05-04T07:04:34.658Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-04-29T05:30:41.715Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90
+        }
+      ],
+      "mastered": "2026-04-29T05:30:41.715Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-04-29T00:44:44.323Z",
+          "score": 10,
+          "total": 10,
+          "percent": 100
+        }
+      ]
+    },
+    "1.3": {
+      "started": "2026-04-29T05:38:54.375Z",
+      "finished": "2026-05-02T09:58:16+08:00",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-04-29T12:52:58.901Z",
+          "score": 10,
+          "total": 10,
+          "percent": 100
+        }
+      ],
+      "mastered": "2026-04-29T12:52:58.901Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-04-29T06:19:03.205Z",
+          "score": 7,
+          "total": 10,
+          "percent": 70
+        }
+      ]
+    },
+    "1.4": {
+      "started": "2026-04-29T06:01:18.688Z",
+      "finished": "2026-05-04T07:11:03.245Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-04-30T15:30:40.563Z",
+          "score": 10,
+          "total": 10,
+          "percent": 100
+        }
+      ],
+      "mastered": "2026-04-30T15:30:40.563Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-04-30T12:39:18.608Z",
+          "score": 8,
+          "total": 10,
+          "percent": 80
+        }
+      ]
+    },
+    "1.5": {
+      "started": "2026-04-29T06:53:33.346Z",
+      "finished": "2026-05-02T10:04:21+08:00",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-01T11:53:17.764Z",
+          "score": 8,
+          "total": 10,
+          "percent": 80
+        },
+        {
+          "timestamp": "2026-05-02T04:34:30.671Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90
+        },
+        {
+          "timestamp": "2026-05-02T04:34:30.728Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90
+        }
+      ],
+      "mastered": "2026-05-02T04:34:30.671Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-01T11:39:45.355Z",
+          "score": 10,
+          "total": 10,
+          "percent": 100
+        }
+      ]
+    },
+    "1.6": {
+      "started": "2026-04-29T19:07:21+08:00",
+      "finished": "2026-05-02T05:29:50.217Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-02T05:43:00.504Z",
+          "score": 10,
+          "total": 10,
+          "percent": 100
+        }
+      ],
+      "mastered": "2026-05-02T05:43:00.504Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-01T12:17:45.226Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90
+        }
+      ]
+    },
+    "1.7": {
+      "started": "2026-04-29T20:04:27+08:00",
+      "finished": "2026-05-02T06:07:43.642Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-02T06:15:09.241Z",
+          "score": 10,
+          "total": 10,
+          "percent": 100
+        }
+      ],
+      "mastered": "2026-05-02T06:15:09.241Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-02T05:52:38.212Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90
+        }
+      ]
+    },
+    "2.1": {
+      "started": "2026-05-02T04:17:03.036Z",
+      "finished": "2026-05-04T04:26:29.466Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-04T06:21:53.442Z",
+          "score": 10,
+          "total": 10,
+          "percent": 100,
+          "grade": "green"
+        }
+      ],
+      "mastered": "2026-05-04T06:21:53.442Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-04T03:54:06.098Z",
+          "score": 10,
+          "total": 10,
+          "percent": 100
+        }
+      ]
+    },
+    "2.2": {
+      "started": "2026-05-02T04:17:03.036Z",
+      "finished": "2026-05-04T10:38:15.263Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-04T10:52:35.416Z",
+          "score": 7,
+          "total": 10,
+          "percent": 70,
+          "grade": "yellow"
+        },
+        {
+          "timestamp": "2026-05-04T11:09:29.995Z",
+          "score": 7,
+          "total": 10,
+          "percent": 70,
+          "grade": "yellow"
+        },
+        {
+          "timestamp": "2026-05-06T11:08:02.424Z",
+          "score": 8,
+          "total": 10,
+          "percent": 80,
+          "grade": "blue"
+        },
+        {
+          "timestamp": "2026-05-13T12:30:28.856Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90,
+          "grade": "green"
+        }
+      ],
+      "mastered": "2026-05-13T12:30:28.856Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-04T06:59:02.744Z",
+          "score": 6,
+          "total": 10,
+          "percent": 60
+        }
+      ]
+    },
+    "2.3": {
+      "started": "2026-05-02T04:17:03.036Z",
+      "finished": "2026-05-06T14:29:03.299Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-06T14:54:21.364Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90,
+          "grade": "green"
+        }
+      ],
+      "mastered": "2026-05-06T14:54:21.364Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-06T14:00:51.790Z",
+          "score": 8,
+          "total": 10,
+          "percent": 80
+        }
+      ]
+    },
+    "2.4": {
+      "started": "2026-05-02T04:17:03.036Z",
+      "finished": "2026-05-08T14:19:02.801Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-08T14:34:56.214Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90,
+          "grade": "green"
+        }
+      ],
+      "mastered": "2026-05-08T14:34:56.214Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-07T09:49:02.484Z",
+          "score": 8,
+          "total": 10,
+          "percent": 80
+        }
+      ]
+    },
+    "2.5": {
+      "started": "2026-05-02T04:17:03.036Z",
+      "finished": "2026-05-08T15:03:04.589Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-08T15:10:33.514Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90,
+          "grade": "green"
+        }
+      ],
+      "mastered": "2026-05-08T15:10:33.514Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-08T14:43:47.245Z",
+          "score": 6,
+          "total": 10,
+          "percent": 60
+        }
+      ]
+    },
+    "3.1": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-10T02:49:06.950Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-10T03:08:19.717Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90,
+          "grade": "green"
+        }
+      ],
+      "mastered": "2026-05-10T03:08:19.717Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-10T02:37:46.785Z",
+          "score": 8,
+          "total": 10,
+          "percent": 80
+        }
+      ]
+    },
+    "3.2": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-11T11:35:09.677Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-11T12:07:34.627Z",
+          "score": 8,
+          "total": 10,
+          "percent": 80,
+          "grade": "blue"
+        },
+        {
+          "timestamp": "2026-05-11T12:14:17.734Z",
+          "score": 10,
+          "total": 10,
+          "percent": 100,
+          "grade": "green"
+        }
+      ],
+      "mastered": "2026-05-11T12:14:17.734Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-11T11:17:37.177Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90
+        }
+      ]
+    },
+    "3.3": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-12T10:36:54.299Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-12T11:51:14.918Z",
+          "score": 10,
+          "total": 10,
+          "percent": 100,
+          "grade": "green"
+        }
+      ],
+      "mastered": "2026-05-12T11:51:14.918Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-12T08:41:09.260Z",
+          "score": 2,
+          "total": 10,
+          "percent": 20
+        }
+      ]
+    },
+    "3.4": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-12T12:16:34.389Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-12T12:22:50.335Z",
+          "score": 10,
+          "total": 10,
+          "percent": 100,
+          "grade": "green"
+        }
+      ],
+      "mastered": "2026-05-12T12:22:50.335Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-12T12:07:22.694Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90
+        }
+      ]
+    },
+    "3.5": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-13T12:06:47.049Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-13T12:15:50.899Z",
+          "score": 10,
+          "total": 10,
+          "percent": 100,
+          "grade": "green"
+        }
+      ],
+      "mastered": "2026-05-13T12:15:50.899Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-13T12:10:59.381Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90
+        }
+      ]
+    },
+    "3.6": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-16T02:53:29.255Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-16T03:13:29.570Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90,
+          "grade": "green"
+        }
+      ],
+      "mastered": "2026-05-16T03:13:29.570Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-16T02:14:43.850Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90
+        }
+      ]
+    },
+    "4.1": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-16T11:48:40.388Z",
+      "studyCompleted": true,
+      "quizPasses": [
+        {
+          "timestamp": "2026-05-16T11:59:46.020Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90,
+          "grade": "green"
+        }
+      ],
+      "mastered": "2026-05-16T11:59:46.020Z",
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-16T10:04:21.486Z",
+          "score": 5,
+          "total": 10,
+          "percent": 50
+        }
+      ]
+    },
+    "4.2": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-04T11:37:23.250Z",
+      "studyCompleted": false,
+      "quizPasses": [],
+      "mastered": null,
+      "preCheckResults": [
+        {
+          "timestamp": "2026-05-16T13:08:48.361Z",
+          "score": 9,
+          "total": 10,
+          "percent": 90
+        }
+      ]
+    },
+    "4.3": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-04T11:37:23.250Z",
+      "studyCompleted": false,
+      "quizPasses": [],
+      "mastered": null,
+      "preCheckResults": []
+    },
+    "4.4": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-04T11:37:23.250Z",
+      "studyCompleted": false,
+      "quizPasses": [],
+      "mastered": null,
+      "preCheckResults": []
+    },
+    "4.5": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-04T11:37:23.250Z",
+      "studyCompleted": false,
+      "quizPasses": [],
+      "mastered": null,
+      "preCheckResults": []
+    },
+    "4.6": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-04T11:37:23.250Z",
+      "studyCompleted": false,
+      "quizPasses": [],
+      "mastered": null,
+      "preCheckResults": []
+    },
+    "5.1": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-04T11:37:23.250Z",
+      "studyCompleted": false,
+      "quizPasses": [],
+      "mastered": null,
+      "preCheckResults": []
+    },
+    "5.2": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-04T11:37:23.250Z",
+      "studyCompleted": false,
+      "quizPasses": [],
+      "mastered": null,
+      "preCheckResults": []
+    },
+    "5.3": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-04T11:37:23.250Z",
+      "studyCompleted": false,
+      "quizPasses": [],
+      "mastered": null,
+      "preCheckResults": []
+    },
+    "5.4": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-04T11:37:23.250Z",
+      "studyCompleted": false,
+      "quizPasses": [],
+      "mastered": null,
+      "preCheckResults": []
+    },
+    "5.5": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-04T11:37:23.250Z",
+      "studyCompleted": false,
+      "quizPasses": [],
+      "mastered": null,
+      "preCheckResults": []
+    },
+    "5.6": {
+      "started": "2026-05-04T11:37:23.250Z",
+      "finished": "2026-05-04T11:37:23.250Z",
+      "studyCompleted": false,
+      "quizPasses": [],
+      "mastered": null,
+      "preCheckResults": []
+    }
+  },
+  "fieldRules": {
+    "started": "Set ONCE on the first study session for the topic. ISO 8601 with timezone offset. Never overwrite once set.",
+    "finished": "Updated on every revisit / re-study session (because the topic may be revisited if a quiz scores below 90%). ISO 8601 with timezone offset. Always reflects the most recent finish time.",
+    "studyCompleted": "Boolean. true once the user has read the topic at least once. Stays true on subsequent revisits.",
+    "quizPasses": "Array of {timestamp, score, total, percent} for each post-test attempt on this topic. Append-only.",
+    "mastered": "ISO 8601 datetime. Set when the most recent quiz attempt has percent >= 90 AND studyCompleted is true. Null otherwise. Cleared if a subsequent attempt drops below 90% (mastery is re-earned by passing again).",
+    "preCheckResults": "Array of {timestamp, score, total, percent} for the pre-knowledge check (baseline). Generated once on first study; not regenerated on revisits. Append-only — even retakes append."
+  }
+}

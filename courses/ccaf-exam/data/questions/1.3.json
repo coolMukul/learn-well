@@ -1,0 +1,882 @@
+[
+  {
+    "question": "You're configuring a research coordinator agent in the Claude Agent SDK and want it to delegate to specialised subagents. Which entry MUST appear in the coordinator's allowedTools list for delegation to work at all?",
+    "options": [
+      "\"Task\" — the built-in tool used to spawn subagents.",
+      "\"Subagent\" — the dedicated subagent invocation primitive.",
+      "\"Delegate\" — the Agent SDK alias for spawning peer agents.",
+      "\"web_search\" — the tool that triggers a remote subagent under the hood."
+    ],
+    "explanations": [
+      "Correct — subagent spawning in the Claude Agent SDK is performed via the built-in Task tool. If \"Task\" is missing from allowedTools, the coordinator cannot delegate and will silently try to do everything itself.",
+      "Wrong — there is no built-in tool named \"Subagent\" in the Agent SDK. Spawning is done through the Task tool.",
+      "Wrong — \"Delegate\" is not an SDK primitive. The mechanism is the Task tool.",
+      "Wrong — web_search is a content tool, not a spawning mechanism. Allowing it doesn't enable delegation."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "pre",
+    "qid": "9d77e93c-4958-463d-a928-c339c91e7241"
+  },
+  {
+    "question": "A coordinator agent emits Task({subagent_type: 'synthesis', prompt: 'synthesise the results'}). The synthesis subagent returns a vague paragraph with no citations. What's the most likely cause?",
+    "options": [
+      "The Task tool was misconfigured — it should attach the coordinator's recent messages automatically.",
+      "The synthesis subagent received only the literal prompt 'synthesise the results' and had no access to prior findings or attribution metadata.",
+      "Synthesis subagents in the SDK don't support citations by default.",
+      "The coordinator should have used fork_session instead of Task for synthesis."
+    ],
+    "explanations": [
+      "Wrong — the Task tool does not auto-attach prior messages. Subagent context is isolated by design.",
+      "Correct — subagents see only what's in the prompt. With no findings, sources, or quality criteria included, the subagent has nothing to synthesise from and no provenance to cite.",
+      "Wrong — citations come from passing structured findings with attribution into the prompt; nothing in the SDK forbids them.",
+      "Wrong — fork_session is for divergent exploration from a shared baseline; it doesn't fix the fact that no findings were passed."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "pre",
+    "qid": "542b8b30-46ec-4c20-914f-01908df7b4ee"
+  },
+  {
+    "question": "Which statement best describes how a subagent obtains the context it needs to do its job?",
+    "options": [
+      "It inherits the coordinator's full conversation history at spawn time.",
+      "It reads from a shared scratchpad that all agents in the system can access.",
+      "It receives only what the coordinator explicitly writes into the Task invocation prompt; nothing else is shared.",
+      "It picks up context from the most recent prior subagent's output by default."
+    ],
+    "explanations": [
+      "Wrong — subagent context is isolated. Coordinator history is not auto-inherited.",
+      "Wrong — there is no implicit shared scratchpad in the SDK's subagent model. Cross-agent state must be passed via the prompt.",
+      "Correct — subagents are isolated. The coordinator must hand-pass goal, scope, constraints, and prior findings in the Task prompt.",
+      "Wrong — there's no automatic chaining between subagents. Anything one needs from another must be copied explicitly by the coordinator."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "pre",
+    "qid": "b8caaa18-b72d-4c05-885c-4c200f29a577"
+  },
+  {
+    "question": "A coordinator wants to run three web search subagents in parallel — one per subdomain. Which approach actually achieves parallel execution in the Agent SDK?",
+    "options": [
+      "Emit one Task call, wait for the result, emit the next Task call, wait, then the third — relying on async scheduling under the hood.",
+      "Emit a single Task call with all three subdomains in the prompt and let the subagent fan out internally.",
+      "Set parallel: true on each AgentDefinition and emit calls one at a time.",
+      "Emit three Task tool-use blocks in the same coordinator response, so the runtime executes them concurrently."
+    ],
+    "explanations": [
+      "Wrong — that's serial. Each turn waits for the prior result; total latency is 3x a single search.",
+      "Wrong — a single subagent runs one prompt; it doesn't fan out into parallel sibling subagents on its own.",
+      "Wrong — there is no parallel: true flag on AgentDefinition; parallelism comes from emitting multiple Task calls in one turn.",
+      "Correct — parallel subagents in the SDK are achieved by emitting multiple Task tool_use blocks in a single coordinator turn. The runtime runs them concurrently and returns all tool_results together."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "pre",
+    "qid": "0b50dd46-27f7-4a12-8f92-dc782ab49773"
+  },
+  {
+    "question": "Which is a LEGITIMATE use case for fork_session as opposed to plain Task delegation?",
+    "options": [
+      "Spawning a fresh, isolated web search subagent that has no need of prior session history.",
+      "Comparing three alternative synthesis strategies against the same accumulated analysis baseline without restarting it for each.",
+      "Allowing two subagents to send messages to each other directly without going through the coordinator.",
+      "Deleting the coordinator's history to free up tokens before a long subtask."
+    ],
+    "explanations": [
+      "Wrong — that's the canonical use case for plain Task. fork_session is overkill and would carry context the search agent doesn't need.",
+      "Correct — fork_session branches the current session with all its built-up context, so each fork explores a divergent approach from the same baseline. That's exactly what comparing alternative strategies needs.",
+      "Wrong — fork_session does not enable peer-to-peer subagent comms. All comms still flow through the coordinator (hub-and-spoke).",
+      "Wrong — fork_session is not a context-clearing tool. It branches, it doesn't truncate."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "pre",
+    "qid": "59daaf1f-00f5-414e-bb1b-87f895759627"
+  },
+  {
+    "question": "An AgentDefinition for a synthesis subagent has allowedTools = []. Is this a configuration bug?",
+    "options": [
+      "Yes — every subagent must have at least one tool to be invokable.",
+      "Yes — without tools the synthesis subagent cannot return a tool_result back to the coordinator.",
+      "No — synthesis often reasons over its prompt and needs no tools; an empty allowedTools is a deliberate scoping choice.",
+      "No, but only if fork_session is used instead of Task to invoke it."
+    ],
+    "explanations": [
+      "Wrong — there is no minimum-tool requirement. Tool counts are scoped to the agent's role.",
+      "Wrong — the subagent's final assistant message is what the coordinator receives as the tool_result, not a tool call from the subagent itself.",
+      "Correct — synthesis typically reasons over the prompt's structured findings and emits a final response. No tools are needed, and scoping allowedTools narrowly is the recommended pattern (Task 2.3 — fewer tools per role improves selection reliability).",
+      "Wrong — the choice between Task and fork_session is independent of the allowedTools=[] decision."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "pre",
+    "qid": "5ffaac6d-36d0-4b6f-996f-d9f007a68744"
+  },
+  {
+    "question": "A coordinator passes search-subagent findings to a synthesis subagent as a single free-text paragraph: 'Universal banned vocal cloning, studios use GenAI more, 60% of releases ...'. The synthesis report ends up with no citations. What's the structural fix?",
+    "options": [
+      "Pass each finding in a structured format (e.g., JSON {id, claim, source: {type, name, url, date}}) so synthesis can reference and cite each piece of evidence.",
+      "Wrap the paragraph in <evidence>...</evidence> XML tags and the model will infer citations.",
+      "Tell the synthesis agent in its system prompt that 'citations are mandatory' — the format of the input doesn't matter.",
+      "Switch the synthesis agent to use fork_session so it inherits the search subagent's session and its source list."
+    ],
+    "explanations": [
+      "Correct — structured outputs that separate content from attribution metadata preserve provenance through the synthesis hop. Without IDs and source records, the synthesis agent has no way to cite reliably (Task 5.6).",
+      "Wrong — XML tags don't reconstitute lost source records. If URLs and document names aren't in the input, no wrapping recovers them.",
+      "Wrong — system-prompt instructions can't manufacture sources that aren't in the input. The structural problem is upstream.",
+      "Wrong — fork_session does not give a subagent another subagent's session. Each subagent is its own isolated process."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "pre",
+    "qid": "21f4428a-5211-4c6b-ac74-39d1080ada20"
+  },
+  {
+    "question": "The coordinator's system prompt for a research coordinator says: 'First call web_search_agent for music. Then call web_search_agent for film. Then call synthesis_agent. Then call report_agent.' What's the most accurate critique?",
+    "options": [
+      "The order is wrong — synthesis must come before search.",
+      "It uses the wrong tool — Task should be replaced with fork_session in coordinator prompts.",
+      "The prompt should specify allowedTools instead of subagent names.",
+      "It's procedural rather than goal-oriented; it locks the coordinator into a fixed pipeline and removes dynamic subagent selection and parallel spawning."
+    ],
+    "explanations": [
+      "Wrong — the order is conventional. The deeper issue is that the prompt is procedural at all.",
+      "Wrong — fork_session is a divergent-branching tool, not a replacement for Task in routine delegation.",
+      "Wrong — allowedTools is set on the AgentDefinition, not steered from the coordinator's runtime prompt; that's not the critique.",
+      "Correct — goal-oriented prompts (state goal, scope, quality criteria) let the coordinator dynamically pick subagents and emit parallel Task calls when appropriate. Procedural prompts hard-code a serial pipeline and lose the orchestration benefit."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "pre",
+    "qid": "a06ff4a6-5bab-4f80-ae89-4ed4ab409191"
+  },
+  {
+    "question": "Which AgentDefinition field is what the coordinator's model uses to ROUTE a delegation to the right subagent type?",
+    "options": [
+      "system_prompt — the coordinator reads it to understand subagent capabilities.",
+      "allowedTools — the longest tool list wins.",
+      "description — a short, role-focused string the coordinator uses to pick subagent_type.",
+      "name — the coordinator alphabetises and picks deterministically."
+    ],
+    "explanations": [
+      "Wrong — system_prompt is the subagent's own instructions, not the coordinator's routing signal.",
+      "Wrong — allowedTools constrains the subagent's actions, it doesn't drive routing.",
+      "Correct — descriptions are the coordinator-visible signal. Vague or overlapping descriptions cause routing errors; specific disjoint descriptions enable reliable subagent selection.",
+      "Wrong — names label the AgentDefinition but don't carry the role semantics the coordinator needs to choose between siblings."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "pre",
+    "qid": "c41f8f5d-73d2-4c94-a933-0ee0dda8fceb"
+  },
+  {
+    "question": "Which of these is an ANTI-PATTERN when invoking subagents from a coordinator?",
+    "options": [
+      "Including the user's original goal verbatim in every Task prompt to preserve the why.",
+      "Scoping each subagent's allowedTools to a small, role-specific list.",
+      "Spawning multiple Task calls in a single coordinator turn for parallel work.",
+      "Sending each subagent a one-line prompt and assuming they'll infer the goal, scope, and constraints from prior context they don't actually see."
+    ],
+    "explanations": [
+      "Wrong — restating the goal is a recommended practice; subagent context is isolated, so the goal must be in the prompt or it's lost.",
+      "Wrong — narrow allowedTools is a best practice (Task 2.3). It prevents cross-specialisation misuse and improves selection reliability.",
+      "Wrong — that's how parallelism is achieved in the SDK. It's the correct pattern, not an anti-pattern.",
+      "Correct — this is the canonical anti-pattern. Subagents see only what's in the Task prompt; assuming inheritance from prior context is the single biggest cause of off-target subagent output."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "pre",
+    "qid": "4d327a63-e0c9-43d4-bba0-75cb11c7cafc"
+  },
+  {
+    "question": "In Scenario 3 (multi-agent research), the coordinator must spawn one search subagent per subdomain (music, film, visual arts) so they execute concurrently. The total wall-clock time should match a single search, not 3x. Which coordinator response shape achieves that?",
+    "options": [
+      "Three sequential turns, each emitting one Task call and awaiting the tool_result before the next.",
+      "A single assistant turn containing three Task tool_use blocks; the runtime executes them concurrently and returns three tool_results together.",
+      "One Task call whose prompt asks the search subagent to run all three subdomains internally.",
+      "Three fork_session calls in one turn, each branching the coordinator's session for a different subdomain."
+    ],
+    "explanations": [
+      "Wrong — that's serial. Each turn waits for the prior result; total latency is roughly 3x a single search.",
+      "Correct — parallel subagent execution in the Agent SDK is achieved by emitting multiple Task tool_use blocks in a single coordinator turn. The runtime runs them concurrently and surfaces all tool_results back together.",
+      "Wrong — a single subagent runs one prompt; it can't transparently fan out into three sibling subagents executing concurrently. You'd lose per-subdomain isolation and parallelism.",
+      "Wrong — fork_session is for divergent exploration that needs the shared baseline. For routine parallel search per subdomain, plain Task is the right primitive — no need to carry the coordinator's full session into each fork."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "7d87f839-2288-4f4b-8b96-074e8e917eb1"
+  },
+  {
+    "question": "A Scenario 3 synthesis subagent keeps producing reports that conflate findings — two different studios' policies are merged into one bullet, and citations are missing. The coordinator currently passes findings as a paragraph: 'Universal banned vocal cloning. Disney expanded GenAI in pre-vis. Studios increasingly...' Which fix most directly addresses both symptoms?",
+    "options": [
+      "Add 'do not conflate findings; cite every claim' to the synthesis subagent's system prompt and re-run.",
+      "Switch synthesis from Task to fork_session so it inherits the search subagent's source list.",
+      "Have the coordinator emit findings to synthesis as structured items: [{id, claim, source: {type, name, url, date}}, ...] so synthesis can reference each by id and preserve attribution.",
+      "Increase the coordinator's allowedTools to include web_search so it can re-verify the synthesis output."
+    ],
+    "explanations": [
+      "Wrong — system-prompt instructions can't reconstitute attribution that wasn't passed. The structural problem is upstream of the synthesis prompt.",
+      "Wrong — fork_session does not give the synthesis subagent another subagent's session. Subagent isolation isn't bypassable that way.",
+      "Correct — structured findings with attribution metadata let synthesis cite each claim by id and prevent merging because each finding is a distinct record. This is the canonical fix from Tasks 1.3 and 5.6.",
+      "Wrong — adding tools to the coordinator doesn't fix the synthesis subagent's input format. The problem is the shape of the data it receives, not access to extra tools."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "3ec5ec81-0344-4f4b-80c1-b91504cea4fa"
+  },
+  {
+    "question": "An engineer ships a research coordinator with allowedTools=['web_search', 'read_document']. The coordinator's traces show no Task tool calls — instead it calls web_search and read_document directly in its own context, which fills up after a few hundred sources. What change is required?",
+    "options": [
+      "Add 'Task' to the coordinator's allowedTools and move web_search/read_document to the search and document subagents' AgentDefinitions, so the coordinator delegates instead of doing the work itself.",
+      "Increase the coordinator's max_tokens; the symptom is just context overflow.",
+      "Switch to fork_session for every web_search call; forking will keep each search in its own branch.",
+      "Combine web_search and read_document into a single 'research' tool to reduce per-tool context."
+    ],
+    "explanations": [
+      "Correct — without 'Task' in allowedTools the coordinator literally cannot spawn subagents and falls back to in-context work. The fix is structural: enable delegation and scope content tools to the specialist subagents.",
+      "Wrong — increasing max_tokens doesn't fix the architectural problem of the coordinator doing work that should be delegated. The coordinator's context still bloats.",
+      "Wrong — fork_session forks a session, it doesn't redirect tool calls into specialist subagents. The coordinator still runs the calls in-context.",
+      "Wrong — merging tools doesn't restore delegation. The coordinator still does the work in its own context, just with a chunkier tool."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "eb54686e-0238-40f8-b8f0-af3d32550e97"
+  },
+  {
+    "question": "A team building a research coordinator wrote subagent descriptions: 'researcher_a: helps with research', 'researcher_b: does analysis'. Routing accuracy is poor — the coordinator picks researcher_a for analysis tasks and vice versa. Which fix targets the root cause?",
+    "options": [
+      "Force tool_choice to a specific subagent_type on every coordinator turn.",
+      "Move both subagents under fork_session so the coordinator can compare their outputs.",
+      "Make their AgentDefinitions identical so the coordinator can pick either freely.",
+      "Rewrite the descriptions to be specific and disjoint — e.g., 'web_search_agent: searches public web for news/industry sources, returns {id, claim, source}' vs 'doc_analysis_agent: extracts findings from supplied document URLs, returns per-document summaries'."
+    ],
+    "explanations": [
+      "Wrong — forcing tool_choice every turn defeats dynamic subagent selection. The coordinator should be able to choose based on the task; the underlying problem is that descriptions don't differentiate.",
+      "Wrong — fork_session is for exploration from a shared baseline, not for fixing routing ambiguity between subagent types.",
+      "Wrong — making them identical leaves routing arbitrary. The coordinator routes off descriptions; identical descriptions are why the bug exists.",
+      "Correct — descriptions are the coordinator's primary routing signal. Specific, disjoint role descriptions let the coordinator pick reliably based on task semantics."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "8e1c37d5-7156-4746-aebf-6296dce794ed"
+  },
+  {
+    "question": "After a multi-turn analysis, a coordinator wants to compare three alternative report styles (chronological, per-subdomain comparison, per-source-type breakdown) against the SAME accumulated analysis without re-running search and document agents. Which primitive matches?",
+    "options": [
+      "Three Task calls in one turn, each prompt re-pastes the full accumulated analysis.",
+      "Three sequential Task calls, each running its own end-to-end analysis from scratch.",
+      "fork_session into three branches; each branch invokes the report subagent with the same baseline context but a different style brief.",
+      "A single Task call that asks one report subagent to choose the best of the three styles internally."
+    ],
+    "explanations": [
+      "Wrong — workable but lossy and expensive: re-pasting the full analysis into every Task prompt burns tokens and risks dropping nuance. fork_session is the precise primitive for this case.",
+      "Wrong — running the analysis from scratch three times throws away the shared baseline, defeating the purpose of comparing alternatives against the same evidence.",
+      "Correct — fork_session branches the current session with all its built-up context, so each fork explores a divergent approach (one report style each) from the same baseline. That's the textbook fork_session use case.",
+      "Wrong — a single subagent picking 'the best' internally hides the comparison. The coordinator wanted three concrete outputs to evaluate, not a self-judgment."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "6fcde3b8-f781-4b19-a5b8-bb13814d6e4d"
+  },
+  {
+    "question": "A coordinator tries to push reliability by writing an extremely detailed step-by-step procedure into its subagent prompts: 'open the search tool, type the exact query foo, click first three results, summarise each in 50 words, return as bullet list.' Reliability metrics WORSEN. Why?",
+    "options": [
+      "The step-by-step prompt exceeds context limits and the subagent can't read it all.",
+      "Procedural prompts strip the subagent of adaptability — when the search tool surfaces unexpected shapes (no results, paywalls, redirects) the subagent has no fallback because the procedure didn't anticipate it. Goal-oriented prompts (goal + scope + constraints + quality criteria) let the subagent recover.",
+      "The Task tool can't transmit procedures longer than 200 words.",
+      "Procedural prompts force tool_choice='any', which disables dynamic tool selection."
+    ],
+    "explanations": [
+      "Wrong — context limits aren't the issue at this scale. The semantic problem is the prompt being procedural at all.",
+      "Correct — goal-oriented prompts specify what success looks like and let the subagent pick a path. Procedural prompts lock it into one path that may not match the runtime; edge cases the procedure didn't list become silent failures. Specify goals + quality criteria.",
+      "Wrong — there's no 200-word cap on Task prompts. The problem is semantic, not bandwidth.",
+      "Wrong — there's no automatic linkage between procedural prompt content and tool_choice. tool_choice is set explicitly."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "c0b1a462-85d5-4521-abb0-57e69880580a"
+  },
+  {
+    "question": "Which statement most accurately captures the difference between Task and fork_session?",
+    "options": [
+      "Task is synchronous; fork_session is asynchronous.",
+      "Task always uses the coordinator's allowedTools; fork_session uses a separate allow-list.",
+      "Task is for short prompts; fork_session is for prompts longer than the context window.",
+      "Task spawns a fresh, isolated subagent that sees only its prompt; fork_session branches the CURRENT session (with all its accumulated context) into independent forks. Task is for routine delegation; fork_session is for divergent exploration from a shared baseline."
+    ],
+    "explanations": [
+      "Wrong — both are coordinator-driven primitives that run subagent work; the sync/async axis isn't the distinction. Parallelism comes from emitting multiple Task calls in one turn.",
+      "Wrong — Task uses the spawned subagent's AgentDefinition.allowedTools, not the coordinator's. fork_session inherits the parent session's tool config. The allow-list framing isn't the core difference.",
+      "Wrong — there's no length-driven choice between the two. The choice is semantic: fresh isolated context vs branched shared context.",
+      "Correct — that's the textbook distinction. Task = isolated subagent, prompt-only context, routine delegation. fork_session = branch current session with its built-up context, for divergent exploration that needs the shared baseline."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "3f18a636-f74e-458b-a5e9-97f229ae9888"
+  },
+  {
+    "question": "Two senior engineers debate how to invoke the synthesis subagent. Engineer A: 'just include the search results in the synthesis Task prompt verbatim.' Engineer B: 'summarise the search results into a paragraph and pass that — saves tokens.' From a Task 1.3 / 5.6 perspective, who's right and why?",
+    "options": [
+      "Engineer A — passing structured findings (with attribution) verbatim preserves provenance through the synthesis hop. Summarising drops source IDs, URLs, and dates that synthesis needs to cite correctly; once lost, attribution can't be reconstructed downstream.",
+      "Engineer B — the synthesis subagent works better with prose. Summarisation acts as preprocessing.",
+      "Neither — the synthesis subagent should be invoked via fork_session so it inherits the search session and bypasses the question entirely.",
+      "Both are right; the tradeoff is purely a token-budget decision and either choice is fine."
+    ],
+    "explanations": [
+      "Correct — provenance is the central concern. Pass findings as structured items {id, claim, source: {...}}; synthesis cites by id. Summarising paragraphs drop the metadata, breaking citations and inviting hallucinated sources.",
+      "Wrong — synthesis works fine on structured input and emits structured + cited output. Summarisation upstream destroys the metadata.",
+      "Wrong — fork_session doesn't share another subagent's session. Subagents are isolated processes.",
+      "Wrong — it's not just a token-budget question. Summarising drops attribution, which is a correctness issue, not a cost trade."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "d96f6c9d-35ce-436c-a5e9-c7248124ca05"
+  },
+  {
+    "question": "A research coordinator emits Task calls for three subdomains in parallel. They return findings, but the synthesis report still has clear coverage gaps — film coverage is half the depth of music. The three search prompts were nearly identical: 'find recent generative AI adoption news for {subdomain}'. What's the most likely root cause and fix?",
+    "options": [
+      "fork_session was needed instead of Task; switch all three to fork_session and rerun.",
+      "The Task tool was misconfigured; remove and re-add 'Task' to allowedTools to force a refresh.",
+      "Per-subdomain prompts didn't carry distinct scope/source-type partitioning, so subdomains with thinner public coverage came back light. Fix: add per-subdomain source-type guidance ('industry trade press for film, GVA reports for visual arts') and quality criteria ('flag findings older than 2024'), and let the coordinator iteratively refine if film comes back thin.",
+      "Synthesis must do its own web_search; add web_search to the synthesis subagent's allowedTools."
+    ],
+    "explanations": [
+      "Wrong — fork_session is for divergent exploration of the same baseline; it doesn't fix uneven per-subdomain coverage caused by under-specified search prompts.",
+      "Wrong — there's no refresh problem. The Task tool worked; the prompts and refinement loop are at fault.",
+      "Correct — uneven coverage is a coordinator-side decomposition issue: the per-subagent prompts didn't carry enough scope/source-type/quality guidance. Goal-oriented per-subdomain prompts plus an iterative refinement loop (Task 1.2) close the gap.",
+      "Wrong — pushing search into the synthesis subagent violates role separation (Task 2.3) and fragments evidence collection. The fix lives in the coordinator's prompt design and refinement loop."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "05c9c70d-78d1-4d50-abb2-8279e0f74002"
+  },
+  {
+    "question": "Which of the following best describes the role of an AgentDefinition's `system_prompt` (versus its `description`)?",
+    "options": [
+      "system_prompt is what the coordinator reads to choose between subagent types; description is the subagent's running instruction set.",
+      "system_prompt is the persistent specialisation instruction the SUBAGENT reads (its role, output format, mandatory behaviours); description is the short, role-focused string the COORDINATOR uses to pick which subagent_type to invoke.",
+      "system_prompt and description are interchangeable; both are sent to the subagent at spawn time.",
+      "system_prompt is only used in fork_session; description is only used by Task."
+    ],
+    "explanations": [
+      "Wrong — that's reversed. The coordinator routes off description; the subagent reads system_prompt.",
+      "Correct — clean separation: description routes (coordinator-side signal), system_prompt specialises the subagent (its persistent role and output rules). Vague descriptions cause routing errors; weak system_prompts cause off-target output.",
+      "Wrong — they have distinct roles. Description is for routing; system_prompt is for the subagent's runtime behaviour.",
+      "Wrong — both fields apply regardless of whether Task or fork_session is used."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "6cee5d5d-7a1b-4af2-a4f8-17dcab4394ca"
+  },
+  {
+    "question": "A team's coordinator runs web_search in one turn, gets results, then in the next turn emits Task({subagent_type: 'synthesis_agent', prompt: 'Produce a 2-page report on AI adoption in music in 2025.'}). The synthesis output is generic and cites no sources. What's the most direct fix?",
+    "options": [
+      "Add more search subagents to gather more evidence before synthesising.",
+      "Add web_search to the synthesis subagent's allowedTools so it can search if it needs evidence.",
+      "Include the search subagent's complete findings — with attribution metadata — verbatim in the synthesis Task prompt, since subagent context is isolated.",
+      "Increase the synthesis subagent's max_tokens budget so it has more room to elaborate."
+    ],
+    "explanations": [
+      "Wrong — more search subagents produce more findings, but if those findings are still not passed into the synthesis Task prompt, synthesis sees nothing. The bug is at the coordinator's invocation, not the search step.",
+      "Wrong — adding web_search to synthesis is cross-specialisation misuse (Task 2.3). Synthesis should reason over the prompt; tool sprawl degrades selection and dilutes the role.",
+      "Correct — subagent context is isolated. The Task prompt is the only input synthesis sees, so the coordinator must copy the prior findings (preserving attribution) into that prompt. Without it, synthesis improvises.",
+      "Wrong — there's nothing for the model to elaborate on. Bigger budgets don't manufacture evidence; missing inputs require the coordinator to supply them."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "9d4b3b4f-72f2-4601-8814-885e5fb66dc9"
+  },
+  {
+    "question": "A coordinator wants to spawn three web_search subagents in parallel, each scoped to a different subdomain (music, film, visual arts). Which assistant-turn shape achieves true parallelism in the Agent SDK?",
+    "options": [
+      "Three sequential turns, each containing one Task tool_use block, waiting for the prior result before emitting the next.",
+      "A single tool_use block whose input includes a list of three subdomains; the runtime fans them out internally.",
+      "A single assistant turn containing three Task tool_use blocks, each with subagent_type='web_search_agent' and a different subdomain-scoped prompt.",
+      "A single Task tool_use block invoking a 'parallel_search_agent' that internally loops over the subdomains."
+    ],
+    "explanations": [
+      "Wrong — that's serial, not parallel. Each turn waits for the prior tool_result, so wall-clock cost is the sum (3×) rather than the max (1×).",
+      "Wrong — there's no list-based fan-out in the Task input schema. The coordinator must emit one Task tool_use block per subagent invocation.",
+      "Correct — true parallelism in the SDK is defined by multiple Task tool_use blocks in the same coordinator turn. The runtime executes them concurrently and returns all tool_results together.",
+      "Wrong — a single 'parallel_search_agent' that loops internally is sequential inside one subagent. The coordinator-level parallelism comes from emitting multiple Task calls per turn, not from a wrapper subagent."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "f65c0266-0ae4-4579-a344-f0795d7cc3ff"
+  },
+  {
+    "question": "A coordinator needs to invoke a doc_analysis subagent on a freshly fetched PDF. The subagent doesn't need any prior session context — just the PDF and a goal. Which primitive is appropriate, and why?",
+    "options": [
+      "Task — spawn a fresh isolated subagent and pass the PDF reference plus the goal in the prompt. Routine delegation should not inherit session history.",
+      "fork_session — clone the coordinator's session so the subagent inherits any context that might turn out to be relevant.",
+      "A direct read_document call from the coordinator itself — spawning a subagent for one document is overhead.",
+      "Both Task and fork_session in parallel, then merge the outputs to be safe."
+    ],
+    "explanations": [
+      "Correct — Task is the right primitive for routine isolated delegation. The subagent gets only what's in the prompt, which keeps its context focused.",
+      "Wrong — fork_session is for divergent exploration from a shared baseline. Using it for routine delegation contaminates the subagent with irrelevant history and inflates tokens.",
+      "Wrong — pulling the document analysis into the coordinator's own context bloats it (lost-in-the-middle risk per Domain 5) and forfeits the per-role specialisation a doc_analysis subagent provides.",
+      "Wrong — running the same delegation through two primitives doesn't add safety; it doubles cost and forces a merge step."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "d75c1493-015d-4140-9eb6-ad2f8e4c5b47"
+  },
+  {
+    "question": "A coordinator uses fork_session for every subagent invocation because the team thought 'it's faster than re-pasting context.' After deployment, subagent prompts overshoot token budgets and outputs include irrelevant tangents from prior turns. What's the architectural diagnosis?",
+    "options": [
+      "fork_session inherits the full current session; using it for routine delegation forces every subagent to carry baseline context it doesn't need, contaminating focus and inflating tokens. Use Task for routine delegation; reserve fork_session for divergent exploration from a shared baseline.",
+      "fork_session has a memory leak the team should report to Anthropic.",
+      "The forks are running on stale context — the coordinator should checkpoint the session before each fork.",
+      "fork_session is fine here; the team should reduce its system prompt size to compensate for the inherited tokens."
+    ],
+    "explanations": [
+      "Correct — this is the canonical fork_session misuse. fork_session is the right primitive only when each branch genuinely needs the shared baseline (e.g., comparing alternative report styles against the same accumulated analysis). For everything else, Task keeps contexts isolated and tight.",
+      "Wrong — there is no memory leak. The behaviour is by design: forks inherit the session. The misuse is the team applying it where Task is correct.",
+      "Wrong — staleness isn't the symptom. The forks are seeing exactly what the session contained; the issue is that they shouldn't have inherited it at all.",
+      "Wrong — shrinking the system prompt papers over the symptom. The architectural fix is to switch to Task for non-divergent invocations."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "b4e9940f-53fe-47b0-93c3-d5e9eee71332"
+  },
+  {
+    "question": "You are defining the AgentDefinition for a synthesis_agent that combines structured findings into a cited report by reasoning over its prompt. Which allowedTools value is most appropriate?",
+    "options": [
+      "['web_search', 'read_document'] — so it can verify any claim that looks suspicious.",
+      "['Task'] — so it can spawn sub-subagents if it needs to.",
+      "[] — synthesis reasons over the prompt; giving it unrelated tools invites cross-specialisation misuse and degrades selection reliability when too many tools are exposed.",
+      "['web_search', 'read_document', 'Task'] — maximum flexibility lets it adapt to any input."
+    ],
+    "explanations": [
+      "Wrong — letting synthesis re-search introduces cross-specialisation: it produces inconsistent evidence relative to what the search subagent already returned, and breaks the coordinator's centralised observability.",
+      "Wrong — giving synthesis the Task tool effectively turns it into a second coordinator, breaking the hub-and-spoke topology and creating two competing decomposition authorities.",
+      "Correct — synthesis is a reasoning role over a prompt. An empty allowedTools is the principled choice; it prevents misuse, keeps the per-agent tool count low (Task 2.3 — 18 tools degrades selection vs 4–5), and matches the role's specialisation.",
+      "Wrong — 'maximum flexibility' is the anti-pattern. It compounds cross-specialisation misuse with tool overload; both degrade subagent reliability."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "4bcc6897-4305-4fa6-be23-bda99729ac69"
+  },
+  {
+    "question": "A coordinator routes 'analyse this 2024 SEC filing' to web_search_agent instead of doc_analysis_agent. The two AgentDefinition descriptions are 'web_search_agent: helps the team research things on the internet' and 'doc_analysis_agent: helps the team look at documents and find stuff.' What's the cleanest architectural fix?",
+    "options": [
+      "Add a routing layer that pre-classifies queries before the coordinator sees them.",
+      "Use forced tool_choice to always select doc_analysis_agent for filing-related queries.",
+      "Train a custom classifier on historical routing decisions and replace the coordinator's selection logic.",
+      "Rewrite the descriptions to be specific and disjoint — e.g., 'web_search_agent: searches public web sources for current news, blog posts, and recent reports' vs 'doc_analysis_agent: extracts findings from PDF/HTML documents already retrieved into the session.' The model uses descriptions as the primary routing signal."
+    ],
+    "explanations": [
+      "Wrong — bolting on an external classifier hides the underlying defect (overlapping descriptions) and adds a separate failure mode. Fix the routing signal at its source.",
+      "Wrong — forced tool_choice for one phrase doesn't generalise; the next ambiguous filing-adjacent query routes wrong again. The structural fix is in the descriptions.",
+      "Wrong — same as above, but with more engineering. Custom classifiers are warranted only when the description-based routing has been proven insufficient even after disjoint descriptions are written.",
+      "Correct — AgentDefinition descriptions are the model's primary routing signal in a coordinator-subagent system. The original descriptions overlap (both 'help with research'). Specific, disjoint descriptions fix the routing at its source."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "22af06ed-d2ff-4eb1-bb1f-e2c7cfbdfe11"
+  },
+  {
+    "question": "For a search subagent invoked to find authoritative recent evidence on a topic, which prompt design best preserves the subagent's adaptability while still holding it to a measurable standard?",
+    "options": [
+      "A goal-oriented prompt that names the goal, scope, constraints (date range, source types), output shape, and quality criteria — letting the subagent pick the search strategy that fits the tool surface.",
+      "A fully procedural prompt: 'Search exactly term X, take the first three results, summarise each in 50 words, return as a list.' Procedure prevents drift.",
+      "A vague single-line prompt: 'do a thorough search of this topic.' Maximum freedom maximises creative recall.",
+      "A goal-oriented prompt without quality criteria, on the theory that criteria limit the subagent's creativity."
+    ],
+    "explanations": [
+      "Correct — goals + scope + constraints + criteria is the prescribed shape. The subagent adapts its execution to whatever the tool surface returns while still being held to the criteria the coordinator cares about.",
+      "Wrong — procedural prompts lock the subagent into one execution path that may not match the tool surface (e.g., the first three results may be ads). They also remove recovery from edge cases.",
+      "Wrong — a vague prompt produces vague output. Without measurable criteria the subagent has no definition of done; the result is 'whatever happened.'",
+      "Wrong — quality criteria are what make goals measurable. Dropping them returns the prompt to ambiguity; the subagent can no longer self-evaluate."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "b91e95dc-306f-4008-8d03-9f0829252333"
+  },
+  {
+    "question": "You want every synthesis output to flag thin evidence (claims supported by only one source) and every report to be Markdown with citations by source ID. Where should each constraint live?",
+    "options": [
+      "Both in the user's original message at runtime.",
+      "Both in the coordinator's user-facing system prompt.",
+      "Persistent role and format constraints belong in each subagent's AgentDefinition system_prompt; per-invocation goal, scope, and quality criteria belong in the Task prompt the coordinator emits.",
+      "Both should be hard-coded into the runtime via PostToolUse hooks; prompts are unreliable."
+    ],
+    "explanations": [
+      "Wrong — pushing constraints to the user message means every user request must repeat them, and the runtime can't enforce them across users. Persistent role constraints belong in the AgentDefinition.",
+      "Wrong — the coordinator's system prompt isn't visible to subagents (subagent context is isolated). Constraints placed there have no effect on synthesis or report subagents.",
+      "Correct — this is the proper division. Persistent specialisation (role, format) lives in the AgentDefinition's system_prompt; per-invocation goals/scope/criteria live in the Task prompt. The coordinator composes the latter; the AgentDefinition holds the former.",
+      "Wrong — hooks (Task 1.5) are for deterministic enforcement of runtime invariants (e.g., normalising tool results), not for shaping subagent specialisation. Use AgentDefinition system_prompts for that."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "0385a9df-d7e9-41fe-9fcd-f3f47c2a81f1"
+  },
+  {
+    "question": "A coordinator emits three Task calls in one turn — all with prompt 'find recent gen-AI adoption news' — for music, film, and visual arts. Synthesis returns heavily duplicated bullets. What's the diagnosis specific to Task 1.3 mechanics?",
+    "options": [
+      "Parallel Task execution doesn't actually run concurrently in the SDK; results are processed sequentially.",
+      "The synthesis subagent's system_prompt is missing instructions to deduplicate.",
+      "The Task tool's input schema does not guarantee parallelism unless an explicit 'parallel: true' flag is set.",
+      "The coordinator parallelised correctly (three Task calls in one turn) but failed to partition scope in the per-subagent prompts. Parallel subagents have isolated contexts and cannot deduplicate against each other; each subagent's prompt must give it a disjoint slice (e.g., 'music', 'film', 'visual arts')."
+    ],
+    "explanations": [
+      "Wrong — multiple Task tool_use blocks in one turn run concurrently by design. The latency profile here would already confirm that; the symptom (duplication) doesn't trace to ordering.",
+      "Wrong — synthesis can deduplicate textual overlap, but the deeper issue is that all three subagents searched for the same evidence. The fix is upstream of synthesis.",
+      "Wrong — no such flag exists. Concurrency comes from emitting multiple Task tool_use blocks in one assistant turn, not a runtime flag.",
+      "Correct — this is the textbook coupling of Task 1.2 (scope partitioning) and Task 1.3 (parallel Task calls). Parallel subagents see only their own prompt; without a disjoint slice in each, they converge on the same evidence."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "3189dd0d-e4dc-4122-85f6-940de9970198"
+  },
+  {
+    "question": "You emit Task({subagent_type: 'doc_analysis_agent', prompt: 'extract findings'}). Beyond the prompt field, what context does the subagent receive at boot from the coordinator's session?",
+    "options": [
+      "The full coordinator system prompt, conversation history, and prior subagent results — the runtime stitches them in transparently.",
+      "Only the Task call's prompt field. The subagent's system prompt comes from its own AgentDefinition; nothing from the coordinator's runtime context is auto-inherited.",
+      "The coordinator's allowedTools list, so the subagent knows what its peer agents can do.",
+      "A read-only handle to the coordinator's working memory that the subagent can call into when it needs more context."
+    ],
+    "explanations": [
+      "Wrong — this is the misconception Task 1.3 is built to dispel. There is no auto-stitching; the runtime does not inject coordinator context into Task subagents.",
+      "Correct — subagent context is isolated. Boot-time inputs are the AgentDefinition's system prompt + the Task call's prompt field. Anything else the subagent needs must be copied into that prompt by the coordinator.",
+      "Wrong — there's no shared visibility into peer allowedTools. Each subagent only knows what its own AgentDefinition exposes.",
+      "Wrong — there is no shared-memory handle. All cross-agent state passes through the coordinator (hub-and-spoke); the subagent cannot reach back into coordinator state."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "fd154f68-db6b-4afb-9129-3076c5837219"
+  },
+  {
+    "question": "A web_search_agent finishes its work and its findings are needed by both the synthesis_agent AND a separate fact_check_agent. The team wonders whether the search subagent should send its output to both directly or through the coordinator. Which is correct in the Agent SDK's hub-and-spoke topology?",
+    "options": [
+      "The search subagent's final assistant message is returned to the coordinator as a single tool_result; the coordinator then composes two separate Task prompts (to synthesis and to fact_check), each containing whatever slice of the findings each needs.",
+      "The search subagent should emit two tool_use blocks of its own — one Task call to synthesis, one to fact_check — chaining the work directly.",
+      "Configure the search subagent's AgentDefinition with a 'downstream_agents' list naming synthesis and fact_check; the runtime auto-forwards the output.",
+      "Use fork_session from the search subagent so synthesis and fact_check both inherit the search session's context."
+    ],
+    "explanations": [
+      "Correct — subagents return one tool_result (their final assistant message) to the coordinator. The coordinator is the only routing point in hub-and-spoke; it pastes the relevant findings into each downstream Task prompt itself.",
+      "Wrong — that turns the search subagent into a second coordinator and breaks hub-and-spoke. Subagents are leaves; they don't route to siblings.",
+      "Wrong — there is no 'downstream_agents' field on AgentDefinition. The runtime does not auto-forward; the coordinator has to compose every Task prompt explicitly.",
+      "Wrong — fork_session branches the coordinator's session, not a subagent's. A subagent cannot 'fork itself' to two siblings, and even if you forked the coordinator after search, fork_session doesn't replace the requirement to write each Task prompt."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "cacf0ad1-2427-4e93-94b8-cd3130287392"
+  },
+  {
+    "question": "The coordinator emits three parallel Task calls to web_search_agent (music, film, visual arts). The film one fails — the search tool times out and the subagent returns an error message as its final assistant turn. Music and visual arts succeed. What does the coordinator see, and what's the recommended response?",
+    "options": [
+      "The whole turn is rolled back; the coordinator re-emits all three Task calls from scratch.",
+      "The runtime hides failed subagents from the coordinator; only successful tool_results surface.",
+      "The coordinator receives three tool_result blocks — two with successful findings, one whose content is the failed subagent's error message. The coordinator decides next-step policy: retry the film call with a refined prompt, proceed with degraded coverage and flag it in synthesis, or escalate to the user.",
+      "The Task tool returns success only when all parallel calls succeed; the coordinator gets a single aggregate failure."
+    ],
+    "explanations": [
+      "Wrong — there is no atomic rollback across parallel Task calls. Each Task is independent; partial success is normal.",
+      "Wrong — failures are surfaced. The coordinator must observe and decide, otherwise it can't adapt.",
+      "Correct — each Task call's tool_result is independent. A subagent's final assistant message (whether 'here are 7 findings' or 'I could not complete the search because…') is the tool_result. Recovery is a coordinator-level decision: refine and retry, degrade and flag, or escalate.",
+      "Wrong — there is no aggregate-success semantic across parallel Task calls. Partial results are visible to the coordinator independently."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "461a047d-7978-45d6-89e1-4e3bd052a811"
+  },
+  {
+    "question": "An engineer adds 'Task' to the synthesis_agent's allowedTools 'so it can spawn helper subagents if it gets stuck.' What's the principled critique?",
+    "options": [
+      "Giving a subagent the Task tool turns it into a second coordinator, splitting decomposition authority and breaking the hub-and-spoke topology. Routing decisions and observability belong with the single coordinator; helper subagents should be spawned by the coordinator, not by peers.",
+      "It's fine — nested subagents are the recommended way to add depth to a research pipeline.",
+      "It's fine but only if the helper subagent's allowedTools is empty.",
+      "It's fine but only if fork_session is used instead of Task for the nested spawn."
+    ],
+    "explanations": [
+      "Correct — hub-and-spoke means one decomposer. Nesting Task inside a leaf subagent creates two competing planners, fragments observability, and lets context bloat propagate uncontrolled. If synthesis discovers a gap, the canonical pattern is for the coordinator to inspect synthesis's output and spawn the helper itself.",
+      "Wrong — nested coordinators are an anti-pattern, not a recommended depth mechanism. The exam consistently flags multi-coordinator topologies as the wrong shape.",
+      "Wrong — the helper's allowedTools is irrelevant; the architectural problem is that synthesis is now planning, which is the coordinator's job.",
+      "Wrong — Task vs fork_session is orthogonal. The structural problem is the second decomposer, regardless of which spawning primitive is used."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "843fa2d1-3b1b-44fa-96bd-5a80497f97db"
+  },
+  {
+    "question": "A coordinator emits two Task calls in the same turn, both with subagent_type='web_search_agent' but different prompts. The team asks: 'do these two invocations share state since they reference the same AgentDefinition?'",
+    "options": [
+      "Yes — repeated invocations of the same subagent_type share a persistent in-memory state across calls, which is why role specialisation works.",
+      "No — each Task call spawns a brand-new isolated subagent process. The shared AgentDefinition only provides the same static system_prompt and allowedTools to each spawn; nothing about runtime state, prior calls, or sibling progress is shared.",
+      "Yes — when the same subagent_type is invoked in the same turn, the runtime collapses them into one subagent that handles both prompts.",
+      "No — but the second invocation can read the first's tool_result through a shared cache keyed by subagent_type."
+    ],
+    "explanations": [
+      "Wrong — there is no persistent subagent state. AgentDefinition supplies static config (description, system_prompt, allowedTools) to each fresh spawn; runtime state is per-instance.",
+      "Correct — AgentDefinition is static config, not a runtime object. Each Task call instantiates a fresh, isolated subagent that sees only its own prompt and the AgentDefinition's system_prompt. Two parallel music + film searches don't share progress, can't deduplicate against each other, and don't see each other's outputs.",
+      "Wrong — same-type Task calls in one turn are NOT collapsed; they run as independent parallel subagents. Collapsing would defeat the purpose of giving each a different scope.",
+      "Wrong — there is no inter-Task cache keyed by subagent_type. Every spawn is fresh; the coordinator is the only place where outputs aggregate."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "a8b36859-4215-4e32-b52e-eb310332448f"
+  },
+  {
+    "question": "A coordinator's prompt-template for invoking the synthesis subagent includes the original user goal verbatim, the per-subdomain findings with attribution, and the quality criteria — but omits the date the user asked the question. Synthesis returns a report that mixes 2023 and 2025 evidence and treats them as equivalent. What's the most precise diagnosis?",
+    "options": [
+      "Synthesis subagents always need a fork_session to inherit the coordinator's notion of 'now'.",
+      "The bug is in the search subagents — they should have filtered to 2025 before passing findings on.",
+      "Attribution metadata included source dates per finding, but the synthesis prompt didn't carry the temporal scope ('this report concerns 2025') as a quality criterion. Subagent context is isolated, so 'recent' has no anchor unless the coordinator writes the temporal frame into the Task prompt.",
+      "Synthesis can't reason about dates; the coordinator must post-process the output to filter by year."
+    ],
+    "explanations": [
+      "Wrong — fork_session doesn't inject a temporal frame. The coordinator must include the temporal scope as a constraint in the Task prompt.",
+      "Wrong — if pre-2025 evidence is potentially relevant context (history), filtering at search is lossy. The right place for the temporal scope is the synthesis Task prompt's quality criteria.",
+      "Correct — temporal context is part of scope/criteria. Subagents are isolated; they can't infer 'we're in May 2026 and the user wants 2025-only' unless the coordinator writes it into the prompt. Attribution dates per finding are necessary but not sufficient — the prompt must instruct synthesis on how to use them.",
+      "Wrong — synthesis can absolutely reason about dates if the prompt frames the temporal scope. Pushing the fix to post-processing skips the structural fix in the coordinator's prompt design."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "05a2fbb7-a777-4827-bcfb-030f741ee249"
+  },
+  {
+    "question": "A team is debating whether to delegate every operation to a subagent. The coordinator currently spawns a 'date_format_agent' via Task to convert a single ISO string to a human-readable date — work that takes the coordinator one line of reasoning. What's the right architectural call?",
+    "options": [
+      "Keep the date_format_agent — every distinct responsibility deserves its own subagent for cleanliness.",
+      "Replace it with fork_session so the conversion runs against the coordinator's full context.",
+      "Eliminate the subagent. Spawning Task for trivial single-shot work that fits in the coordinator's existing context is overhead — full Task overhead (spawn, prompt, tool_result round-trip) for no specialisation benefit. Delegate when the work is heavyweight (web search, document analysis) or when isolation provides value (parallel scope partitioning); not for every distinct operation.",
+      "Move the date_format logic into a PostToolUse hook so it runs automatically after every tool result."
+    ],
+    "explanations": [
+      "Wrong — subagent-per-responsibility is over-decomposition. Specialisation matters when work is heavyweight or isolation matters; trivial in-context reasoning belongs in the coordinator.",
+      "Wrong — fork_session is not a delegation primitive for trivial work; it's for divergent exploration from a shared baseline. Misuse here.",
+      "Correct — subagents earn their cost when they isolate heavy work, scope tools, or enable parallelism. Trivial in-context formatting doesn't qualify; the Task overhead exceeds the benefit. Use Task where decomposition adds value, not as a default for every operation.",
+      "Wrong — hooks are deterministic runtime invariants (Task 1.5), not a dumping ground for trivial reasoning. Misapplying hooks here couples unrelated tool results to date formatting."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "b5e5a685-922a-46ff-9452-af8b93992b85"
+  },
+  {
+    "question": "A coordinator passes findings to synthesis, but the synthesis subagent's output doesn't reference the user's original ask — it produces a generic 'state of generative AI' overview when the user asked specifically about creative industries. The coordinator's prompt to synthesis included the findings (with attribution) and quality criteria, but not a restatement of the user's question. What's the canonical fix?",
+    "options": [
+      "Re-issue the request through fork_session so the synthesis subagent inherits the original user message.",
+      "Restate the user's original goal verbatim at the top of every Task prompt — synthesis context is isolated, so without the goal in the prompt, the subagent has no anchor for 'what counts as on-target.' Findings + criteria alone don't fix purpose drift; the goal is what binds them.",
+      "Switch synthesis to allowedTools=['web_search'] so it can re-check what the user wanted.",
+      "Add a system_prompt instruction to synthesis: 'always assume the user wants creative-industries content.' This shifts the burden away from per-invocation prompts."
+    ],
+    "explanations": [
+      "Wrong — fork_session doesn't propagate the user's message into a Task subagent. Even if it did, the architectural fix is to restate the goal in the Task prompt; this is exactly what 'goal-oriented prompts' means in 1.3.",
+      "Correct — every Task prompt must include the original user goal. Without it, the subagent has findings and criteria but no purpose, and drifts. This is the most-cited authoring discipline in 1.3 because subagent context isolation makes purpose-loss invisible.",
+      "Wrong — synthesis can't web-search the user's intent, and adding tools to synthesis is cross-specialisation misuse. The fix is in the Task prompt's content, not the subagent's tools.",
+      "Wrong — hard-coding domain assumptions into the system_prompt makes the synthesis subagent un-reusable. Per-invocation goals belong in the Task prompt, not baked into AgentDefinition."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "303e05de-008e-42fc-b8ea-f654f6c89aab"
+  },
+  {
+    "question": "A coordinator wants a doc_analysis_agent and a web_search_agent to BOTH run, then have synthesis combine their outputs. The team writes: turn 1 → emit Task(doc_analysis) and Task(web_search) in one assistant turn (parallel); turn 2 → receive both tool_results, emit Task(synthesis) with both findings copied into its prompt. Which best describes this pattern?",
+    "options": [
+      "Anti-pattern — doc_analysis and web_search should be sequential; web_search may need findings from docs first.",
+      "Anti-pattern — synthesis should fork_session from one of the search agents to inherit findings rather than have the coordinator re-paste them.",
+      "Correct pattern — parallel evidence-gathering Task calls in one turn (when their scopes are independent), followed by a synthesis turn whose prompt is composed by the coordinator from both parallel results. This is the canonical Scenario-3 shape: fan-out evidence collection, fan-in via coordinator-composed synthesis prompt.",
+      "Correct pattern, but the coordinator should have also passed its own conversation history to synthesis so the subagent has the broadest possible context."
+    ],
+    "explanations": [
+      "Wrong — when scopes are independent (web sources vs supplied PDFs), parallel evidence collection is exactly the right shape. Sequencing only when one truly depends on the other.",
+      "Wrong — fork_session does not give one subagent another subagent's session. Each subagent is isolated; the coordinator must aggregate and pass.",
+      "Correct — fan-out (parallel Task in one turn for independent scopes) followed by fan-in (coordinator composes a single synthesis prompt that copies findings verbatim with attribution) is the textbook hub-and-spoke shape from 1.3 / Scenario 3.",
+      "Wrong — pasting the coordinator's full conversation history bloats the synthesis context with irrelevant prior turns. Subagent prompts should be tight: goal + relevant findings + criteria."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "34fe7491-fda5-40c5-8e95-db680b9b8d15"
+  },
+  {
+    "question": "A team's research coordinator currently emits one Task per turn (serial) and the wall-clock time is 4× a single search. They flip the architecture so all four Task calls go out in one turn. Latency drops to ~1×, but synthesis quality also drops — outputs now have unresolved internal contradictions (e.g., one subdomain says GenAI adoption is rising, another says falling, and synthesis can't reconcile). What did parallelisation expose?",
+    "options": [
+      "Parallel Task calls degrade subagent reliability; the runtime can't allocate enough compute to four concurrent agents.",
+      "The serial version implicitly let later subagents see earlier findings (because each was a separate turn after the prior tool_result), which masked decomposition gaps. Parallel Task calls are independent and isolated, so any cross-subdomain reconciliation must now happen explicitly in synthesis (or earlier in coordinator-driven scope partitioning) rather than emerging from sequential context build-up.",
+      "Parallelisation is wrong here; switch to fork_session to let the four subagents share state.",
+      "Synthesis needs a longer max_tokens budget to handle four parallel inputs; the contradictions are a token-truncation artefact."
+    ],
+    "explanations": [
+      "Wrong — there is no per-agent compute degradation in parallel. Reliability isn't the issue; the issue is that parallel agents are isolated, which exposes pre-existing decomposition gaps.",
+      "Correct — serial subagents could see prior findings if the coordinator pasted them into each next Task prompt; that hid uneven decomposition behind sequential context. Parallel Task calls share nothing, so contradictions surface and synthesis must reconcile them. The fix is at the coordinator: tighter scope partitioning (Task 1.2) and explicit reconciliation guidance in synthesis's prompt — not abandoning parallelism.",
+      "Wrong — fork_session does not let parallel subagents share state. Each fork is independent; fork_session shares the coordinator's baseline at fork time, not cross-fork sibling state.",
+      "Wrong — token budget doesn't manufacture reconciliation. The contradictions are real and must be resolved by tighter coordinator-side decomposition or explicit synthesis guidance."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "413e45ed-4cda-4d60-a09b-1fb03a123ba9"
+  },
+  {
+    "question": "A coordinator passes web-search results to a synthesis subagent as a free-form Markdown blob: \"Source A says X. Source B says Y. Source C says Z.\" The synthesis output reads well but reviewers cannot reconstruct which claim came from which source — the citations are lost in synthesis. The team is debating fixes. Which option best preserves attribution downstream?",
+    "options": [
+      "Increase the coordinator's detail level so the prose blob includes URLs in parentheses after each claim, trusting the synthesis subagent to copy them through.",
+      "Move synthesis into the coordinator's own turn so it sees the raw search results directly and skips the subagent.",
+      "Have synthesis call back into the coordinator after each claim to ask which source it came from.",
+      "Pass evidence as a structured array of  objects in the subagent prompt and instruct synthesis to emit the same  field on every output claim."
+    ],
+    "explanations": [
+      "Inline-prose URLs are fragile: the synthesis model summarises and reorders, and the parenthetical citations drift or get dropped because nothing forces them to travel with the claim. The format itself, not the level of detail, is the defect.",
+      "Bypassing the subagent collapses the hub-and-spoke shape and dumps full search context into the coordinator turn, which doesn't solve attribution and reintroduces the context-window problem the subagent was added to mitigate.",
+      "Per-claim callbacks turn synthesis into a chatty serial loop, defeating the whole reason synthesis is one consolidated subagent and burning tokens on metadata that should have travelled with the data in the first place.",
+      "Structured  evidence with an explicit instruction to carry  through to the output makes attribution part of the data contract rather than relying on the model to remember provenance through summarisation. This is the canonical fix."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.3"
+    ],
+    "phase": "post",
+    "qid": "d190b698-5167-4251-b979-8b0c62e3b0dd"
+  }
+]

@@ -1,0 +1,882 @@
+[
+  {
+    "question": "You declare a tool with a JSON `input_schema` and Claude calls it. What does the Anthropic API guarantee about the `tool_use.input` payload?",
+    "options": [
+      "It conforms to the schema (valid JSON syntax, declared keys, types, required fields, enum values).",
+      "It is semantically correct — line items sum to totals and fields are placed in the right keys.",
+      "It will be returned only when Claude is fully confident, otherwise the API returns plain text.",
+      "It is automatically validated against a Pydantic model registered alongside the tool."
+    ],
+    "explanations": [
+      "Correct. The API enforces JSON-syntactic and schema-shape compliance before responding.",
+      "No — the schema validates shape, not semantics. Sums and field-placement are not enforced.",
+      "No — `tool_choice` controls whether a tool is called, not the API's confidence in the payload.",
+      "No — Pydantic is a downstream validator you wire up yourself; the API doesn't know about it."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "pre",
+    "qid": "a5ac71ec-8cf8-4a26-9f4e-4bf01ffe4267"
+  },
+  {
+    "question": "A team is moving from 'ask Claude for JSON in a code fence and parse it' to tool_use with a JSON schema. What problem does the migration eliminate?",
+    "options": [
+      "Semantic errors in the extracted data, including line items that don't sum to totals.",
+      "Free-form text JSON parse failures (trailing commas, prose preambles, markdown leakage).",
+      "The need to specify required fields anywhere in the system.",
+      "All hallucinations, including fabricated values for missing source data."
+    ],
+    "explanations": [
+      "No — semantic errors persist. Schemas validate shape, not meaning.",
+      "Correct. Tool use removes the free-form text channel for the structured payload.",
+      "No — required vs optional fields are still part of schema design.",
+      "No — fabrication of missing values is a separate problem solved by nullable fields."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "pre",
+    "qid": "a3524fdf-d28b-4eed-930c-f7d59c2f2ac2"
+  },
+  {
+    "question": "Three different document types may arrive (invoice, purchase order, receipt). You have one extraction tool per type and want guaranteed structured output without hard-coding which schema to use. Which `tool_choice` is correct?",
+    "options": [
+      "`\"auto\"` — let the model decide whether structured output is needed.",
+      "`\"any\"` — Claude must call a tool but is free to pick which one matches the document.",
+      "`{\"type\":\"tool\",\"name\":\"extract_invoice\"}` — force the most common type.",
+      "Disable `tool_choice` — register all three tools and let normal generation pick."
+    ],
+    "explanations": [
+      "No — `\"auto\"` allows Claude to reply with text instead of calling a tool, breaking the guarantee.",
+      "Correct. `\"any\"` guarantees a tool call while letting Claude select the matching schema.",
+      "No — forcing one schema means PO and receipt documents get extracted into the wrong shape.",
+      "No — that's `\"auto\"` semantics; the guarantee is lost."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "pre",
+    "qid": "54cfa122-a1b5-46b4-b7d0-17cce562978e"
+  },
+  {
+    "question": "You need `extract_metadata` to run before any enrichment step. Which `tool_choice` value enforces this?",
+    "options": [
+      "`{\"type\":\"tool\",\"name\":\"extract_metadata\"}` — force that specific tool by name.",
+      "`\"any\"` — Claude will pick the right one.",
+      "`\"auto\"` — the model already knows extraction comes first.",
+      "Set `metadata: required` on the system prompt."
+    ],
+    "explanations": [
+      "Correct. Forced tool selection requires Claude to call exactly that tool on this turn.",
+      "No — with `\"any\"` Claude could pick a different registered tool.",
+      "No — `\"auto\"` lets Claude reply with text instead.",
+      "No — there is no such system prompt directive; behaviour is controlled by `tool_choice`."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "pre",
+    "qid": "5c122bde-c767-45ee-9a90-02ed4eb6f51e"
+  },
+  {
+    "question": "An extraction tool's schema marks `phone_number` as required, but the source document has no phone number. What does Claude tend to do?",
+    "options": [
+      "Skip the tool call entirely and reply with an error message.",
+      "Return a `tool_use` block with `phone_number` omitted; the API rejects it.",
+      "Fabricate a plausible-looking phone number to satisfy the required field.",
+      "Throw a validation exception inside the API."
+    ],
+    "explanations": [
+      "No — Claude completes the tool call when forced or instructed; it doesn't error out gracefully.",
+      "Tool calls usually succeed; required fields incentivise the model to fill them rather than omit.",
+      "Correct. Required fields with no source value incentivise the model to invent a value.",
+      "No — the API doesn't validate semantically; it just enforces shape, and a fabricated string is shape-valid."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "pre",
+    "qid": "58aa6c06-2d99-4dee-874f-4491671d1c09"
+  },
+  {
+    "question": "How do you let Claude honestly signal 'this value isn't in the source document'?",
+    "options": [
+      "Add a `\"confidence\"` field and ask Claude to set it to 0 when unsure.",
+      "Tighten the schema with regex patterns so invalid values fail validation.",
+      "Mark the field optional (omit from `required`) or nullable (`type: [\"string\",\"null\"]`).",
+      "Use `tool_choice: \"auto\"` so Claude can refuse to call the tool."
+    ],
+    "explanations": [
+      "Confidence fields are a separate technique and don't change the fabrication incentive on required fields.",
+      "Regex patterns produce validation failures, not honest `null` values.",
+      "Correct. Optional/nullable fields let Claude return `null`, preserving the truth that data is missing.",
+      "No — refusing to call the tool breaks the structured-output contract."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "pre",
+    "qid": "36f6cf21-4da4-4363-be5b-b529214878e9"
+  },
+  {
+    "question": "An enum is `\"category\": {\"enum\": [\"invoice\",\"purchase_order\",\"receipt\"]}` but a credit memo arrives. What does the strict three-value enum do, and what's the recommended fix?",
+    "options": [
+      "Forces a least-wrong pick (silently miscategorising); fix by adding `\"unclear\"` and/or `\"other\"` + a detail string.",
+      "Returns null for the category; fix by making the field required.",
+      "Fails the API call; fix by removing the enum constraint.",
+      "Triggers a model refusal; fix by switching to `tool_choice: \"any\"`."
+    ],
+    "explanations": [
+      "Correct. Closed enums force a least-wrong selection; `\"unclear\"`/`\"other\"`+detail keep categories extensible.",
+      "Enums don't return null automatically; required-ness doesn't help here.",
+      "The API call succeeds — the model picks one of the allowed values, just the wrong one.",
+      "Models don't refuse on enum mismatch; they pick the closest enum value."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "pre",
+    "qid": "83fac531-4f42-4e32-98ad-74c3da843375"
+  },
+  {
+    "question": "Where do format normalisation rules (date format `YYYY-MM-DD`, two-decimal currency, ISO-3166 country codes) belong?",
+    "options": [
+      "Hard-coded as regex `pattern` constraints in the JSON schema.",
+      "In a downstream Pydantic model only; the prompt and schema should stay neutral.",
+      "In the prompt alongside the schema — the schema enforces shape; the prompt enforces format.",
+      "In the model name (e.g., switch to a model fine-tuned for finance documents)."
+    ],
+    "explanations": [
+      "Most rules aren't cleanly expressible as regex; even when expressible, schema validation failures are a worse signal than a normalised value.",
+      "Pydantic catches violations after the fact; better to have Claude produce normalised values upfront, guided by the prompt.",
+      "Correct. Format rules belong in the prompt; schema enforces shape only.",
+      "Out of scope — fine-tuning isn't part of the API surface tested here."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "pre",
+    "qid": "f29542b4-01cb-4b73-a9ec-59a4b9b353f9"
+  },
+  {
+    "question": "A schema requires `total`, `subtotal`, `tax`, and `line_items[].price`. The extracted row has `subtotal:80, tax:8, total:100, line_items:[{price:40},{price:40}]`. What does the schema validator say?",
+    "options": [
+      "Validation fails because line items don't sum to subtotal.",
+      "Validation fails because subtotal+tax doesn't equal total.",
+      "Validation passes — schemas enforce shape, not arithmetic.",
+      "Validation passes only if `tool_choice` is set to forced."
+    ],
+    "explanations": [
+      "No — schemas don't compute sums or check cross-field consistency.",
+      "No — schemas don't compute arithmetic relationships.",
+      "Correct. Every field is the right type and present; the schema is satisfied. The arithmetic error is a semantic problem.",
+      "`tool_choice` doesn't change schema validation behaviour."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "pre",
+    "qid": "19e94f91-af83-4c0c-819e-c885ff841814"
+  },
+  {
+    "question": "Why might you use `\"other\"` plus a separate `category_detail` string field instead of a closed enum?",
+    "options": [
+      "To force Claude to always pick a specific category and refuse `\"other\"`.",
+      "To replace the enum entirely with free-form strings.",
+      "Because enums must always include at least four values.",
+      "To keep categories extensible — Claude can return `\"other\"` with a detail; frequent details get promoted into the enum."
+    ],
+    "explanations": [
+      "The opposite — `\"other\"` is for the cases where the closed list is insufficient.",
+      "No — the enum still covers known categories; `\"other\"` is the escape hatch.",
+      "There's no minimum-size rule for enums.",
+      "Correct. The pattern keeps the enum extensible without rewriting it on every new category."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "pre",
+    "qid": "1ac9ab03-006a-4264-a638-8e6e8c4aa360"
+  },
+  {
+    "question": "An extractor's schema requires `customer_email` as a string. The source document doesn't include an email anywhere, but the harness logs show Claude returned `\"john.smith@example.com\"`. What's the most likely cause?",
+    "options": [
+      "The Anthropic API auto-fills required fields with synthetic data when the source lacks them.",
+      "Required fields incentivise fabrication; with no source value, Claude invented a plausible email.",
+      "The extraction tool was registered with a default value of `john.smith@example.com`.",
+      "JSON schema validators inject placeholder values for missing strings."
+    ],
+    "explanations": [
+      "False — the API doesn't synthesise field values.",
+      "Correct. Required fields with absent source values produce fabricated outputs; the fix is making the field nullable.",
+      "Tools don't carry default values that the API auto-fills.",
+      "JSON schema validators reject invalid input; they don't inject placeholders."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "79f14ce8-a8e4-4dab-8ea8-1fe3de8566d3"
+  },
+  {
+    "question": "You register `extract_invoice`, `extract_po`, `extract_receipt`. The doc type is unknown and you must guarantee a structured payload. Which `tool_choice` is correct?",
+    "options": [
+      "`{\"type\":\"tool\",\"name\":\"extract_invoice\"}` — invoices are most common.",
+      "`\"auto\"` — Claude decides the right tool.",
+      "Set `tool_choice` to `\"required\"` (the API's default for guaranteed calls).",
+      "`\"any\"` — Claude must call a tool, free to pick the matching schema."
+    ],
+    "explanations": [
+      "Forcing one schema misroutes POs and receipts.",
+      "`\"auto\"` lets Claude reply with text — no guarantee of a tool call.",
+      "There is no `\"required\"` value — the three options are `\"auto\"`, `\"any\"`, and forced by name.",
+      "Correct. `\"any\"` guarantees a tool call without forcing a specific schema."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "904d8d27-ec70-4106-af84-84c06585dada"
+  },
+  {
+    "question": "After moving to tool_use with a strict JSON schema, the team finds that the malformed-JSON error rate dropped to zero, but the warehouse occasionally logs invoices where the line items don't sum to the total. Best next step?",
+    "options": [
+      "Add a regex pattern to the `total` field to enforce two decimal places.",
+      "Switch `tool_choice` from forced to `\"any\"` so Claude can pick a stricter tool.",
+      "Add a downstream semantic validator (e.g., Pydantic) that re-checks `sum(line_items) == total` and routes mismatches to a review queue.",
+      "Mark `total` as nullable so Claude can return null when unsure."
+    ],
+    "explanations": [
+      "Regex on a single field doesn't catch cross-field arithmetic mismatches.",
+      "Switching tool_choice doesn't change semantic correctness.",
+      "Correct. Schemas validate shape; cross-field arithmetic belongs in a downstream validator.",
+      "Nullable on `total` invites the model to return null when it's actually present — wrong remediation."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "56910490-ce93-4312-a65c-a8d0d39906c1"
+  },
+  {
+    "question": "Which statement most accurately captures what `tool_use` with a JSON schema guarantees vs what it doesn't?",
+    "options": [
+      "Guarantees both syntactic and semantic correctness — the schema is the contract.",
+      "Guarantees the model never fabricates values; semantic errors are eliminated.",
+      "Guarantees schema-shape compliance (valid JSON, declared keys, types, enums); does NOT guarantee arithmetic relationships, field-placement, or format normalisation.",
+      "Guarantees nothing without a downstream Pydantic validator running first."
+    ],
+    "explanations": [
+      "Wrong — semantics are not enforced.",
+      "Wrong — fabrication of required fields is exactly the failure mode that nullable fields address.",
+      "Correct. Shape only; semantics are separate.",
+      "The shape guarantee is real and immediate; downstream validation adds semantic checks on top."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "dbfcc151-15d2-4a03-8fc6-55f3c1e44eb5"
+  },
+  {
+    "question": "Source documents inconsistently format dates as `\"April 4, 2026\"`, `\"4/4/26\"`, `\"04-Apr-2026\"`. The schema declares `invoice_date` as a string. What's the cleanest way to ensure the warehouse receives `\"2026-04-04\"`?",
+    "options": [
+      "Add a strict ISO-8601 regex pattern to the schema and let validation failures bubble up.",
+      "Add an instruction in the prompt: `Dates must be formatted as YYYY-MM-DD`.",
+      "Pre-process every document with a date parser before sending to Claude.",
+      "Mark `invoice_date` as nullable so Claude can return null when the format is ambiguous."
+    ],
+    "explanations": [
+      "Regex catches the wrong format after the fact; the prompt rule produces the right format upfront.",
+      "Correct. Format normalisation belongs in the prompt; the schema enforces shape only.",
+      "Pre-processing duplicates work that Claude can do natively when given the rule.",
+      "Nullable doesn't address format inconsistency; it addresses missing data."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "e5ca706a-92ec-4480-9b9e-46983254bb53"
+  },
+  {
+    "question": "A classifier uses `\"category\": {\"enum\": [\"invoice\", \"purchase_order\", \"receipt\"]}` and you notice ~10% of warehouse rows are subtly miscategorised on edge-case documents. What's the recommended schema change?",
+    "options": [
+      "Add `\"unclear\"` to the enum, route those rows to a human review queue, and optionally add `\"other\"` + a `category_detail` string for new categories.",
+      "Remove the enum constraint entirely so Claude can return any string.",
+      "Force `tool_choice: \"any\"` so Claude can pick a stricter classifier.",
+      "Mark `category` as nullable so Claude can leave it blank when uncertain."
+    ],
+    "explanations": [
+      "Correct. `\"unclear\"` surfaces ambiguity; `\"other\"`+detail handles new categories without rewrites.",
+      "Removing the constraint loses the structured-output contract entirely.",
+      "`tool_choice` doesn't address enum design.",
+      "Nullable is for absent values, not for ambiguous classification."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "7345df72-8900-46ba-9bd4-36176f51c247"
+  },
+  {
+    "question": "Why might `\"phone\": {\"type\": [\"string\", \"null\"]}` be preferred over `\"phone\": {\"type\": \"string\"}` in an extraction schema?",
+    "options": [
+      "Nullable fields are validated faster by the API.",
+      "Nullable fields force Claude to always return `null`, simplifying downstream logic.",
+      "Nullable is a syntactic requirement of `tool_use`.",
+      "Nullable fields prevent the model from fabricating values when the source document doesn't contain a phone number — Claude can return `null` honestly."
+    ],
+    "explanations": [
+      "Performance isn't the reason; correctness is.",
+      "Wrong — Claude returns the value when present and `null` when absent.",
+      "It isn't required syntax; it's a design choice for honest absent-value handling.",
+      "Correct. Nullable fields preserve the truth that data is missing rather than incentivising fabrication."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "c1359886-3f08-4990-8abb-97c3e7ac69ea"
+  },
+  {
+    "question": "Which combination is most appropriate when extracting a known-shape entity from a single document type, in a pipeline where the next step depends on receiving exactly that shape?",
+    "options": [
+      "Define one extraction tool; set `tool_choice: {\"type\":\"tool\",\"name\":\"extract_X\"}`.",
+      "Define one extraction tool; set `tool_choice: \"auto\"`.",
+      "Define one extraction tool; omit `tool_choice` (use API default).",
+      "Define multiple variants of the tool and let `tool_choice: \"any\"` choose."
+    ],
+    "explanations": [
+      "Correct. Forced tool selection guarantees the right schema runs.",
+      "`\"auto\"` lets Claude reply with text — no guarantee.",
+      "API default is `\"auto\"` — same problem.",
+      "Multiple variants of the same tool muddies the design and gives Claude unnecessary choice."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "8fc9c5bc-94e2-46dd-bc71-6f3fe5bf1ad7"
+  },
+  {
+    "question": "A schema declares `total: number` and `currency: enum[USD,EUR,GBP]`. A document is in JPY. What happens?",
+    "options": [
+      "The API rejects the request because JPY isn't in the enum.",
+      "The model picks one of the allowed enum values (least-wrong selection), silently corrupting the row.",
+      "The model returns the literal string `\"JPY\"` and the API auto-corrects.",
+      "The harness automatically retries with a wider enum."
+    ],
+    "explanations": [
+      "API doesn't reject — the model just picks an allowed value.",
+      "Correct. Closed enums force least-wrong picks; the fix is `\"other\"` + a `currency_detail` string.",
+      "API enforces the enum; non-allowed values aren't returned.",
+      "There's no auto-retry mechanism; the harness gets whatever the model picked."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "50835201-b02a-449e-8cc2-9cd8a9c29b82"
+  },
+  {
+    "question": "In a multi-turn pipeline, you force `extract_metadata` on turn 1, then on turn 2 you want Claude to optionally call enrichment tools or summarise. What's the right `tool_choice` on turn 2?",
+    "options": [
+      "Keep `{\"type\":\"tool\",\"name\":\"extract_metadata\"}` — consistency matters.",
+      "`\"any\"` — force a tool call but let Claude pick.",
+      "`\"auto\"` — Claude decides whether to call a tool or reply with text.",
+      "Disable tool registration entirely on turn 2."
+    ],
+    "explanations": [
+      "Forcing the same tool on turn 2 re-runs metadata extraction unnecessarily.",
+      "`\"any\"` forces a tool call when the right answer might be a plain text summary.",
+      "Correct. `\"auto\"` lets Claude pick text or a tool — appropriate when both are valid outcomes.",
+      "Disabling tools removes Claude's ability to enrich; not what you want."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "2fb6d50e-fb13-4d2c-887b-4c2084406293"
+  },
+  {
+    "question": "You audit an extraction pipeline and find that for invoices missing a 'PO number' line, Claude consistently returns `\"PO-00000\"`. What's the schema-design root cause and fix?",
+    "options": [
+      "The schema marks `po_number` as required string. Make it nullable so Claude can return `null` honestly when absent.",
+      "The model's temperature is too high. Lower it to 0.",
+      "The prompt is too long. Shorten it to under 500 tokens.",
+      "The tool is registered twice. Deregister the duplicate."
+    ],
+    "explanations": [
+      "Correct. Required fields with no source value drive fabrication; nullable preserves truth.",
+      "Temperature affects randomness, not the structural fabrication incentive.",
+      "Prompt length isn't the issue.",
+      "Duplicate registration would surface as different errors, not consistent fabrication."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "837ebe1f-1c6e-4b99-b628-e5baf35ad2e1"
+  },
+  {
+    "question": "An engineer argues 'my schema has `pattern: \"^[0-9]{4}-[0-9]{2}-[0-9]{2}$\"` on every date field, so I don't need format rules in the prompt.' What's the most accurate critique?",
+    "options": [
+      "Regex patterns are equivalent to prompt rules; either approach works.",
+      "Regex patterns reject the wrong format after the fact; a prompt rule produces the right format upfront. Most format constraints (currency precision, locale) aren't cleanly expressible as regex.",
+      "Patterns aren't supported by the Anthropic JSON-schema validator.",
+      "Patterns must live in the prompt to be enforced."
+    ],
+    "explanations": [
+      "Not equivalent — the prompt rule shapes generation; regex only catches violations.",
+      "Correct. Format rules belong in the prompt; schema enforces shape only.",
+      "Patterns are supported, but that's not the relevant point.",
+      "Patterns live in the schema by definition; the issue is which is the right tool."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "aa71f628-9908-4755-8e9b-ac424085d266"
+  },
+  {
+    "question": "A pipeline uses `tool_choice: \"auto\"` with a single `extract_invoice` tool. The team reports that ~5% of invocations get a plain text response and the next stage fails. Cleanest fix?",
+    "options": [
+      "Add more documentation in the system prompt instructing Claude to always call the tool.",
+      "Change `tool_choice` to `{\"type\":\"tool\",\"name\":\"extract_invoice\"}` to force the tool call.",
+      "Set the model temperature to 0 to make tool-calling deterministic.",
+      "Switch to `\"any\"` — same effect as forced for a single tool."
+    ],
+    "explanations": [
+      "Prompt instructions are advisory; `tool_choice` is a hard constraint.",
+      "Correct. Forced tool selection guarantees the call; `\"auto\"` is unsafe for this scenario.",
+      "Temperature affects randomness, not the structural decision to call vs reply.",
+      "`\"any\"` works but is less explicit than forcing by name when there's only one schema."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "bc7bdcd5-7b9e-4680-ae0b-50bbbf6b5c3a"
+  },
+  {
+    "question": "You design an `extract_contact` tool with `email`, `phone`, `address` all marked `\"type\": [\"string\", \"null\"]`. A source document lists only an email. What's the expected output?",
+    "options": [
+      "`{\"email\":\"x@y.com\"}` (other keys omitted entirely).",
+      "An API error — required fields cannot be null.",
+      "`{\"email\":\"x@y.com\", \"phone\":null, \"address\":null}` — honest, schema-valid.",
+      "Claude refuses to call the tool because phone and address are missing."
+    ],
+    "explanations": [
+      "When properties are declared, the model typically returns each key — `null` for absent values.",
+      "Nullable is the opposite of required; there's no error.",
+      "Correct. Nullable fields let Claude return `null` for absent source values.",
+      "Models don't refuse based on absent source data; they fill what they can."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "00ccacf8-f6b8-43ab-a0f2-5a7a944e36da"
+  },
+  {
+    "question": "Which scenario is best served by `tool_choice: \"any\"` rather than forced tool selection?",
+    "options": [
+      "A single extraction tool, single document type, deterministic next step.",
+      "A coordinator that may or may not need to call a tool depending on user intent.",
+      "Multiple registered extraction tools, each tied to a different document type, where the next stage requires structured output regardless of which type arrived.",
+      "Any extraction pipeline — `\"any\"` is the most permissive correct choice."
+    ],
+    "explanations": [
+      "Single tool + single type = forced is more explicit.",
+      "Optional tool calls are the `\"auto\"` use case; `\"any\"` forces a call.",
+      "Correct. `\"any\"` guarantees a structured payload while letting Claude pick the matching schema.",
+      "`\"any\"` isn't always correct — it forces a tool call, which `\"auto\"` doesn't."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "68c9f471-6b3d-40d4-a350-36cae45fdb56"
+  },
+  {
+    "question": "An extractor's schema validation passes 100% of rows, but the data team flags 2% of warehouse rows as 'numerically inconsistent.' The most likely root cause is:",
+    "options": [
+      "The schema is wrong and needs stricter type definitions.",
+      "The model's temperature is too high.",
+      "`tool_choice` is set to `\"auto\"` instead of forced.",
+      "JSON schema doesn't enforce cross-field arithmetic; semantic errors slip through and need a downstream validator."
+    ],
+    "explanations": [
+      "Stricter types don't catch arithmetic.",
+      "Temperature isn't the structural cause.",
+      "Forced vs auto affects whether tool is called, not arithmetic correctness.",
+      "Correct. Schema validates shape only; arithmetic and cross-field consistency are validator territory."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "eeb18251-c7dd-49a3-aea2-a796626931b7"
+  },
+  {
+    "question": "A team wants to log every document that Claude couldn't confidently classify, separately from documents that genuinely fall outside the known categories. Best schema design?",
+    "options": [
+      "Single `\"other\"` enum value plus a detail string — same outcome.",
+      "Add `\"unclear\"` to the enum for low-confidence cases AND `\"other\"` + `category_detail` for legitimate new categories — they serve different review queues.",
+      "Only `\"unclear\"` — force everything else into the closed enum.",
+      "Remove the enum — log raw classifications for human review."
+    ],
+    "explanations": [
+      "Conflates two different signals (low confidence vs. new category).",
+      "Correct. The two values have distinct semantics and route to different queues.",
+      "Forces miscategorisation on legitimately new types.",
+      "Loses structured-output benefits entirely."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "23557d06-8cf1-4c2e-9646-970abb5b07aa"
+  },
+  {
+    "question": "When designing an extraction tool, which fields should be marked `required` vs nullable?",
+    "options": [
+      "Mark every field required — it's the safest default and forces precision.",
+      "Mark every field nullable — it's the most flexible.",
+      "Required for fields the document always contains; nullable for fields that may legitimately be absent in the source.",
+      "Required vs nullable doesn't matter; the model treats them the same."
+    ],
+    "explanations": [
+      "Required fields with absent values incentivise fabrication.",
+      "Universal nullability loses the contract that key fields are present.",
+      "Correct. Match required-ness to the documents' actual structure to avoid fabrication.",
+      "The model treats them very differently; required-ness drives fill-vs-omit behaviour."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "53a613a7-03fe-4c95-a8c3-0a210b36056f"
+  },
+  {
+    "question": "An invoice extractor returns shape-valid JSON but the team notices 1% of rows have the shipping address in the `billing_address` field. Best remediation?",
+    "options": [
+      "Add a regex pattern to `billing_address` that rejects shipping-style strings.",
+      "Switch `tool_choice` from `\"any\"` to forced.",
+      "Tighten the prompt to disambiguate label-to-field mapping (e.g., 'Billing address comes from the section labelled \"Bill To\"; shipping from \"Ship To\".') and add a downstream validator that flags identical billing/shipping pairs for review.",
+      "Mark both addresses as nullable so Claude can return null for ambiguous cases."
+    ],
+    "explanations": [
+      "Regex can't tell 'shipping' from 'billing' formatting — both look the same.",
+      "tool_choice doesn't address field-placement.",
+      "Correct. Field-placement errors live in the prompt and validator layers, not the schema.",
+      "Nullable doesn't address the case where Claude has data but assigned it wrong."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "03ab2253-0928-4958-a771-c83324b281d0"
+  },
+  {
+    "question": "A tool's `input_schema` declares `total: number`. Claude returns `{\"total\": \"$1,234.56\"}`. What happens?",
+    "options": [
+      "The harness sees a string and must JSON-parse it.",
+      "The API rejects the response and Claude retries internally.",
+      "The API enforces the schema, so the model wouldn't return this — `total` would be a number. To ensure it's `1234.56` and not `1234`, include format rules in the prompt (no symbols, two decimals) since the schema only enforces type.",
+      "The API auto-coerces the string to a number and returns 1234.56."
+    ],
+    "explanations": [
+      "The payload arrives parsed in `tool_use.input`; no manual parse needed.",
+      "There's no internal retry mechanism for type mismatches at this layer.",
+      "Correct. Schema enforces type; format precision is a prompt-level concern.",
+      "API doesn't auto-coerce types; the schema enforces them as declared."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "b06ed842-a339-4a53-8410-719d0e0f8f36"
+  },
+  {
+    "question": "A team uses `tool_choice: \"any\"` with one registered extraction tool 'to be safe.' A reviewer suggests forcing the tool by name instead. Which most accurately captures the trade-off?",
+    "options": [
+      "`\"any\"` is broken with single-tool setups; the API rejects it.",
+      "Forced tool selection is more explicit — future readers can tell only one schema is intended, future-proof against later tool additions (a new tool wouldn't accidentally be picked), and clearer to readers reviewing the code; `\"any\"` is a strictly weaker statement.",
+      "There's no difference; the two are aliases.",
+      "`\"any\"` is faster; forced selection adds a second round-trip."
+    ],
+    "explanations": [
+      "`\"any\"` works fine with one tool.",
+      "Correct. Explicitness, future-proofing, and readability favour forced selection.",
+      "They differ: `\"any\"` lets Claude pick from all registered tools.",
+      "No round-trip difference."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "5f3a6a3a-ba8e-45e9-a8d0-adb076dc79f7"
+  },
+  {
+    "question": "An extractor pipeline forces `extract_invoice`. The harness finds that on rare PDFs, the resulting `tool_use.input` has `total: 100` but `line_items: [{\"price\": 30}, {\"price\": 30}]` (sums to 60). The schema validates fine. Which combination of fixes is correct?",
+    "options": [
+      "Make `total` nullable; tighten enums; switch to `tool_choice: \"any\"`.",
+      "Lower temperature to 0; add a regex pattern on `total`; remove `line_items` from the schema.",
+      "Add a downstream validator (e.g., Pydantic) that re-checks `sum(line_items.price) == total` within tolerance, route mismatches to a review queue, and reinforce in the prompt that line items must sum to the declared total.",
+      "Switch from tool_use to free-form JSON output and parse defensively."
+    ],
+    "explanations": [
+      "None of these address cross-field arithmetic.",
+      "Removing `line_items` loses the data; regex on `total` doesn't validate sums.",
+      "Correct. Cross-field consistency belongs in a downstream validator with prompt reinforcement.",
+      "That regresses to the malformed-JSON failure mode you escaped from."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "db7e158c-880d-4f26-8287-6edc06fec02a"
+  },
+  {
+    "question": "Consider these two designs for a `currency` field. Design A: `enum: [\"USD\",\"EUR\",\"GBP\"]`. Design B: `enum: [\"USD\",\"EUR\",\"GBP\",\"other\"]` plus nullable `currency_detail` string. Why is B preferred for a global pipeline?",
+    "options": [
+      "B reduces token usage in the response.",
+      "B is required by the JSON-schema specification.",
+      "A is invalid — JSON-schema enums must include `\"other\"`.",
+      "B keeps the closed-enum contract for known cases AND surfaces unknown currencies (`\"other\"` + detail) for review, instead of forcing JPY/CHF/etc. into a least-wrong USD/EUR/GBP pick."
+    ],
+    "explanations": [
+      "Token usage isn't the rationale.",
+      "Not required.",
+      "Enums don't require `\"other\"`; A is valid but loses the long-tail case.",
+      "Correct. The combination preserves the closed-enum contract while remaining extensible."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "c51740fb-cb8e-4693-9645-3e1a912fceb2"
+  },
+  {
+    "question": "An extractor returns shape-valid JSON, but engineers notice the `notes` field is empty for documents where the source clearly has a notes paragraph. The schema marks `notes` as nullable. What's likely happening, and what's the right next step?",
+    "options": [
+      "Nullable fields are silently dropped by the API; mark `notes` as required.",
+      "The model is using nullability as permission to skip work it's unsure about; reinforce in the prompt that `notes` should be populated when present in the source, only return `null` when truly absent.",
+      "The model temperature is wrong; raise it to 1.0.",
+      "Switch `tool_choice` to forced; nullable fields aren't compatible with `\"any\"`."
+    ],
+    "explanations": [
+      "Nullable fields aren't dropped; they're passed through.",
+      "Correct. Nullability can over-encourage `null`; the prompt should clarify when to populate vs return null.",
+      "Temperature isn't the cause.",
+      "Compatibility isn't the issue; behaviour clarity is."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "9c7ba086-6e5f-473e-8dad-a2d3140d12ff"
+  },
+  {
+    "question": "A junior engineer says: 'I don't need a Pydantic validator — the JSON schema on the tool already validates everything.' Which response is most accurate?",
+    "options": [
+      "Agreed; tool_use schemas are sufficient for production.",
+      "Pydantic is only useful for type coercion, which the API already does.",
+      "JSON schema on the tool eliminates syntax errors and shape errors but does NOT enforce arithmetic, cross-field consistency, plausibility checks, or business rules — those need a downstream validator.",
+      "Pydantic is incompatible with the Anthropic API; you'd need a different SDK."
+    ],
+    "explanations": [
+      "Wrong — semantic errors persist.",
+      "Pydantic does much more than coercion in this context.",
+      "Correct. Pydantic (or any semantic validator) catches what shape-only schemas can't.",
+      "No incompatibility; Pydantic operates on the parsed tool input."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "c5639666-af44-49ca-9816-4e2180ddfd29"
+  },
+  {
+    "question": "A document arrives that's clearly an invoice, but the `\"category\"` field in the extracted output is `\"unclear\"`. Closer inspection shows the source has unusual formatting. What's the design implication?",
+    "options": [
+      "The enum is wrong; remove `\"unclear\"` to force a confident pick.",
+      "The model temperature is too low.",
+      "`\"unclear\"` is doing exactly what it should — surfacing low-confidence cases to a review queue. The fix is on the review side: triage and either re-extract with a tightened prompt or flag the source for upstream cleanup.",
+      "Replace `\"unclear\"` with `null` to make the field optional."
+    ],
+    "explanations": [
+      "Removing `\"unclear\"` reverts to forcing least-wrong picks.",
+      "Temperature isn't the issue.",
+      "Correct. `\"unclear\"` is the safety valve; the review queue is where ambiguity gets resolved.",
+      "`null` and `\"unclear\"` have different semantics; null = absent, unclear = ambiguous."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "18eeb2a7-ac51-4955-b449-54a8516e4c14"
+  },
+  {
+    "question": "A pipeline forces `extract_invoice` and downstream Pydantic validation passes. Six months later, the team adds a new tool `extract_credit_memo` and switches `tool_choice` to `\"any\"` so Claude can pick. Audit shows that ~3% of incoming credit memos are now extracted as invoices with wrong fields. Most likely root cause and fix?",
+    "options": [
+      "The `extract_invoice` tool description doesn't sufficiently distinguish invoice vs credit memo; Claude defaults to the more familiar tool. Tighten tool descriptions and prompt-level disambiguation rules; consider a separate classifier turn that picks the tool name, then forces it on turn 2.",
+      "Pydantic validation broke; rewrite the validators.",
+      "`\"any\"` is broken for two-tool setups; revert to forced.",
+      "The model temperature is causing flicker between tools; lower to 0."
+    ],
+    "explanations": [
+      "Correct. Tool selection under `\"any\"` is driven by descriptions and prompt; ambiguity surfaces as wrong-tool selection. A two-turn pattern (classify, then force) is robust.",
+      "Pydantic isn't the issue when the wrong tool runs.",
+      "`\"any\"` works fine; it's a description-clarity problem.",
+      "Temperature isn't the structural cause."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "f30a9b12-3043-4b56-8de0-dcfaf52b19f4"
+  },
+  {
+    "question": "Engineer A claims: 'JSON schema on tool_use prevents hallucinated values.' Engineer B claims: 'No, only nullable fields prevent fabrication.' Which is more accurate, and why?",
+    "options": [
+      "A — schema enforcement guarantees correctness.",
+      "Neither — the API auto-detects fabrication.",
+      "Both are equally correct; they're describing the same mechanism.",
+      "B is closer — schemas prevent shape errors, but required fields with absent source values still drive the model to fabricate. Nullable fields let Claude return `null` honestly. Both shape enforcement AND nullable-field design are needed for the full picture."
+    ],
+    "explanations": [
+      "Schemas don't prevent semantic fabrication.",
+      "No such auto-detection.",
+      "They describe different mechanisms with different scopes.",
+      "Correct. Schema enforces shape; nullable fields prevent the fabrication-to-satisfy-required incentive."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "26bba662-ffe3-4a4f-b141-1c5b2261d69c"
+  },
+  {
+    "question": "A skeptical reviewer says: 'Forcing tool selection with `tool_choice: {\"type\":\"tool\",\"name\":\"X\"}` is the same as `tool_choice: \"any\"` when only tool X is registered, so always use \"any\" for simplicity.' What's the most defensible counter?",
+    "options": [
+      "They produce different latency profiles.",
+      "Forced selection is explicit about which schema is intended, future-proof against later tool additions (a new tool wouldn't accidentally be picked), and clearer to readers reviewing the code; `\"any\"` is a strictly weaker statement.",
+      "`\"any\"` doesn't actually force a tool call; only forced does.",
+      "The Anthropic API rejects `\"any\"` when only one tool is registered."
+    ],
+    "explanations": [
+      "Latency is the same.",
+      "Correct. Explicitness, future-proofing, and readability favour forced selection.",
+      "Both force a tool call; the difference is which.",
+      "`\"any\"` works fine with a single registered tool."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "95f3498f-2d63-4873-ac32-3d792d910295"
+  },
+  {
+    "question": "A pipeline force-calls `extract_metadata` on every turn. The team adds a follow-up enrichment step that needs Claude to either call an enrichment tool or summarise. What anti-pattern surfaces if `tool_choice` stays forced on the metadata tool throughout the conversation?",
+    "options": [
+      "Metadata extraction silently fails on follow-up turns.",
+      "The harness drops the metadata payload because it's stale.",
+      "Claude re-extracts metadata every turn because forced selection re-fires the same tool, blocking enrichment and burning tokens; the fix is to relax `tool_choice` after the initial extraction (e.g., to `\"auto\"` so Claude can pick enrichment or summarise as appropriate).",
+      "The API rejects forced tool selection on multi-turn conversations."
+    ],
+    "explanations": [
+      "Forced tool selection succeeds — it just fires repeatedly.",
+      "The harness keeps the payload; staleness isn't an API behaviour.",
+      "Correct. `tool_choice` is a per-turn parameter; leaving it forced re-fires the tool unnecessarily.",
+      "No such API restriction."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.3"
+    ],
+    "phase": "post",
+    "qid": "e8306341-dd5e-4870-a79f-c9200a1067f3"
+  }
+]

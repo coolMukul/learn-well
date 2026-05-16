@@ -1,0 +1,992 @@
+[
+  {
+    "question": "Your customer support agent uses an agentic loop. After each model response, what is the correct primary signal to decide whether the loop should iterate again or terminate?",
+    "options": [
+      "Whether the assistant's text content contains a phrase like \"I'm done\" or \"resolved\"",
+      "Whether the response's stop_reason is \"tool_use\" (continue) or \"end_turn\" (terminate)",
+      "Whether the loop has reached a maximum iteration count configured by the developer",
+      "Whether any tool result returned an error code, which should always halt the loop"
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Wrong — parsing assistant text for 'done'/'resolved' is brittle (locale- and model-version-sensitive). A tool-calling turn may include narrative text before its tool_use block, so matching on text terminates early and silently drops the actual action.",
+      "Correct — stop_reason is the canonical signal. 'tool_use' means Claude is requesting a tool execution and the loop must continue (run tools, append tool_result blocks, re-send). 'end_turn' means Claude has finished and the loop terminates.",
+      "Wrong — iteration caps are a circuit-breaker, not a control mechanism. Using a cap as the primary stopper truncates legitimate multi-step tasks mid-flight while still letting broken loops burn the full budget.",
+      "Wrong — tool errors should be returned to the model as tool_result blocks so it can react (retry with different params, escalate, give up gracefully). Halting the loop on error is a category mistake."
+    ],
+    "qid": "e53aabc4-96ea-42dc-9e8e-18ca63cf31d3"
+  },
+  {
+    "question": "A developer reports that their multi-agent research loop occasionally terminates while Claude was still mid-task. Inspecting the implementation, the loop exits as soon as the assistant emits any non-empty text block. What is the most accurate diagnosis?",
+    "options": [
+      "Claude's tool-use turns can also include narrative text before or alongside tool_use blocks; using text presence instead of stop_reason causes premature termination",
+      "The model is hallucinating an end_turn signal; the fix is to lower the temperature and re-prompt for tool calls",
+      "Tool results are not being appended to history, so the model produces text instead of tool calls",
+      "The loop is missing an iteration cap, so the runaway is being killed by a downstream timeout"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Correct — Claude's tool_use turns can include narrative text *before* or alongside the tool_use block. Using `len(text) > 0` as a termination check misses that the actual stop_reason is still 'tool_use', so the loop exits early and the requested tool is never executed.",
+      "Wrong — there's no 'hallucinated end_turn'; stop_reason is set deterministically by the API. Lowering temperature is unrelated to the structural bug here.",
+      "Wrong — failing to append tool results causes loops or hallucinated outcomes, not premature termination. The symptom described is exit-on-text, not skipped-tool-call.",
+      "Wrong — a missing iteration cap allows runaway loops; it does not cause early termination. Caps are circuit-breakers, not the primary signal."
+    ],
+    "qid": "3a2dbac6-1d85-4870-93e8-2b4ca8613e2b"
+  },
+  {
+    "question": "You're building an agentic loop for a refund-processing workflow. Between iterations, after executing the tools Claude requested, what must be appended to the conversation history before the next request?",
+    "options": [
+      "A summarized natural-language description of what the tools did, so the context stays compact",
+      "Only the tools that returned successfully — failed tool calls should be omitted to avoid confusing the model",
+      "Tool result blocks (each correlated by tool_use_id to its corresponding tool_use) so the model can reason over the actual returned data on the next iteration",
+      "A developer-authored \"system\" message instructing Claude on what to do next based on the tool outputs"
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Wrong — summarising tool results into prose loses the structured data Claude needs to reason. The model may re-call tools or hallucinate outcomes when it can't see the actual returned data.",
+      "Wrong — failed tool calls must be reported back as tool_result blocks too. Hiding failures means the model can't react (retry, escalate, give up); it just sees the tool_use 'disappear' and may re-call it.",
+      "Correct — tool result blocks correlated by tool_use_id let Claude match what it asked for to what came back. This is the canonical mechanism that keeps the loop's causal trail intact.",
+      "Wrong — developer-authored 'system' messages between iterations bypass model-driven decision-making. The model should reason from the actual tool outputs, not from your hand-crafted instructions about them."
+    ],
+    "qid": "4b4ad425-0de5-43bd-8980-7bcf55b4d35a"
+  },
+  {
+    "question": "A team has hard-coded their support agent to always call get_customer, then lookup_order, then process_refund in a fixed sequence, treating Claude as a step within the pipeline rather than the controller. Which limitation most directly results from this design choice?",
+    "options": [
+      "The pipeline cannot use the Anthropic API's tool_use stop_reason because fixed sequences require manual control",
+      "Claude can no longer adapt to requests that don't fit the sequence (e.g., a status inquiry that needs no refund) and cannot reorder or skip calls based on intermediate results",
+      "Tool results no longer need to be appended to history, eliminating the loop's main reliability issue",
+      "The system will fail any request that exceeds the configured iteration cap, even simple ones"
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Wrong — fixed sequences don't prevent using stop_reason; they just don't take advantage of it. The Anthropic API doesn't reject anything based on whether you scripted the pipeline.",
+      "Correct — model-driven decision-making is the defining property of an agentic loop. Hard-coding the sequence forces every request through the full path (status inquiries walk through refund), prevents reordering or skipping based on intermediate findings, and removes adaptability.",
+      "Wrong — appending tool results to history is required regardless of whether the pipeline is scripted or model-driven. The two concerns are independent.",
+      "Wrong — iteration caps are independent of pipeline rigidity. A scripted pipeline may run within or above any configured cap without the cap being the failure mode described."
+    ],
+    "qid": "017edfcb-afaa-4d0d-83d0-ed23b00def7a"
+  },
+  {
+    "question": "A junior engineer proposes \"making the agentic loop safer\" by capping it at 10 iterations and treating that cap as the main termination mechanism. Why is this an anti-pattern, even though the cap itself isn't harmful as a safety net?",
+    "options": [
+      "Iteration caps cause the Anthropic API to reject subsequent requests once the limit is hit",
+      "The cap will be exceeded by any non-trivial agentic task, so it provides no real safety",
+      "Caps as the primary stopper truncate legitimate multi-step tasks mid-flight while still letting broken loops burn the full budget; stop_reason should be the primary signal and the cap only a circuit-breaker",
+      "stop_reason is not reliable enough to drive termination, so the cap must be the primary signal in production systems"
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Wrong — the API doesn't track or reject based on your application's iteration count. Caps are an entirely client-side construct.",
+      "Wrong — many legitimate agentic tasks fit within 10 iterations; the issue is making the cap *primary*, not the cap value itself.",
+      "Correct — caps as the *primary* stopper truncate legitimate multi-step tasks mid-flight while still letting broken loops burn the full N iterations. stop_reason should drive iteration; the cap is a circuit-breaker that fires only when stop_reason has been wrong for too long.",
+      "Wrong — stop_reason is the deterministic signal Claude emits to indicate continuation vs termination. It is exactly the signal you should rely on; the cap is the safety net."
+    ],
+    "qid": "279c2ff1-2ff9-4e3a-bcfd-daf98ccc7c30"
+  },
+  {
+    "question": "In an agentic loop built on the Claude Agent SDK, which value of `stop_reason` indicates that your code should execute the requested tools and continue iterating?",
+    "options": [
+      "\"end_turn\"",
+      "\"tool_use\"",
+      "\"max_tokens\"",
+      "\"stop_sequence\""
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "pre",
+    "explanations": [
+      "Wrong — `\"end_turn\"` means Claude has finished its turn; the loop terminates, it does not iterate.",
+      "Correct — `\"tool_use\"` means Claude has emitted one or more tool_use blocks and is asking your code to execute them; the loop must continue (run tools, append tool_result blocks, re-send).",
+      "Wrong — `\"max_tokens\"` means the response was truncated by the token budget. It signals an incomplete answer, not a tool execution request.",
+      "Wrong — `\"stop_sequence\"` means generation hit a configured stop string. It is a termination cause, not a tool-execution cue."
+    ],
+    "qid": "95c6c1c2-0fe5-406b-a3e4-a08462c15e49"
+  },
+  {
+    "question": "After your loop executes the tools Claude requested in a given turn, what does Claude need to see on the *next* request so it can reason over the actual outputs?",
+    "options": [
+      "Tool result blocks appended to the conversation history (each correlated by tool_use_id)",
+      "A natural-language summary of what the tools did",
+      "Only the tool results that succeeded; failures should be omitted",
+      "Nothing — Claude infers tool outcomes from its own prior reasoning"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "pre",
+    "explanations": [
+      "Correct — tool_result blocks correlated by tool_use_id let Claude match each result to the call that asked for it. This is the canonical mechanism that keeps the causal trail intact between iterations.",
+      "Wrong — summarising tool outputs into prose loses the structured data Claude needs to reason. The model may re-call the tool or hallucinate the outcome when it cannot see the actual fields.",
+      "Wrong — failed calls must be reported back as tool_result blocks too, so the model can react (retry with different params, escalate, give up gracefully). Hiding failures looks like the call vanished.",
+      "Wrong — Claude does not 'remember' that it asked for a tool call across requests; without an appended tool_result on the next request, from the model's perspective the call never produced any output."
+    ],
+    "qid": "2c6ebb93-34f8-4f79-a334-14a3c7cd6fb4"
+  },
+  {
+    "question": "Which statement most accurately describes \"model-driven decision-making\" in an agentic loop?",
+    "options": [
+      "A separate classifier model picks the next tool before each iteration",
+      "Claude chooses the next tool at each step based on the accumulated conversation context",
+      "Tools are always invoked in parallel by default",
+      "A pre-defined decision tree routes between tools deterministically"
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "pre",
+    "explanations": [
+      "Wrong — there is no separate classifier model in an agentic loop; that's a routing pipeline pattern, not the loop itself.",
+      "Correct — the defining property of an agentic loop is that Claude picks the next tool from accumulated context at each step. Your code is a transport, not a controller.",
+      "Wrong — parallel tool calls are possible (multiple tool_use blocks in one turn) but are not the default and are not what 'model-driven' means.",
+      "Wrong — pre-defined decision trees are scripted pipelines, the *opposite* of model-driven decision-making. They remove Claude's ability to adapt to intermediate findings."
+    ],
+    "qid": "4e69b9d4-3fdb-4c1c-811d-ca6ff72d4639"
+  },
+  {
+    "question": "Your loop receives a model response with `stop_reason: \"end_turn\"`. What is the correct loop behavior?",
+    "options": [
+      "Append the response to history and immediately re-send to keep Claude reasoning",
+      "Force a tool call by switching tool_choice to \"any\" and re-sending",
+      "Terminate the loop — Claude has finished its turn",
+      "Increase the iteration cap and try again"
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "pre",
+    "explanations": [
+      "Wrong — `\"end_turn\"` means Claude has finished. Re-sending the same conversation would either get an identical end_turn back or push the model into making something up.",
+      "Wrong — forcing a tool call after Claude has decided to end the turn fights the model. If you genuinely need a tool call you have a prompting/design problem upstream, not a tool_choice problem.",
+      "Correct — `\"end_turn\"` is the canonical signal that the loop is done. Terminate.",
+      "Wrong — iteration caps are circuit-breakers, unrelated to `\"end_turn\"`. There's nothing to retry; Claude has finished."
+    ],
+    "qid": "6bcdb440-1ff8-4ad5-a858-6470e9378a21"
+  },
+  {
+    "question": "A production agent occasionally exits while Claude is still mid-task. The loop is implemented as: \"break out of the loop as soon as the assistant emits any non-empty text block.\" What is the most likely root cause?",
+    "options": [
+      "Claude's tool-using turns can include narrative text alongside tool_use blocks, so text presence is not a reliable termination signal — the canonical signal is stop_reason",
+      "The model's temperature is too high and is hallucinating end_turn",
+      "Tool results are being appended in the wrong order in history",
+      "The Anthropic API is dropping the final tool_use block when responses are long"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "pre",
+    "explanations": [
+      "Correct — a tool_use turn can include narrative text *before* its tool_use block (e.g., 'I'll look up the order'). Treating any non-empty text as termination terminates legitimate multi-step turns; stop_reason is the canonical signal.",
+      "Wrong — there is no 'hallucinated end_turn'. stop_reason is set deterministically by the API based on what the response actually contains. Temperature is unrelated.",
+      "Wrong — wrong-order tool_results cause confused reasoning, but the symptom described (early exit) is structurally about *what triggers exit*, not result ordering.",
+      "Wrong — the API does not silently drop tool_use blocks. The bug is in the loop's termination heuristic, not the response payload."
+    ],
+    "qid": "77225a0c-2530-4a49-b39e-edf2be62936d"
+  },
+  {
+    "question": "A customer support agent reliably handles refunds but consistently fails to call `escalate_to_human` even when needed. Inspecting the trace, Claude does emit text like \"I'll escalate this case\" right before what should be the escalation tool call — but the loop has already exited by then. What is the bug?",
+    "options": [
+      "The escalate_to_human tool's description is too short; rewrite it to win selection",
+      "tool_choice should be set to {\"type\": \"tool\", \"name\": \"escalate_to_human\"} on every turn",
+      "The agent doesn't have permission to call escalate_to_human and is silently failing",
+      "The loop is using assistant text content (e.g., \"escalate\") as the termination signal instead of stop_reason, so it terminates on the narrative preamble before the tool call"
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "pre",
+    "explanations": [
+      "Wrong — escalate_to_human's description is fine; the loop is exiting before that tool ever gets called. Improving descriptions doesn't help if execution never reaches them.",
+      "Wrong — forcing a specific tool every turn breaks every other case (refunds, status checks). The bug is termination, not tool selection.",
+      "Wrong — silent permission failures show up as tool errors, not as loops that exit before the call is made. The trace shows narrative followed by exit, not a denied call.",
+      "Correct — the loop is using assistant text as the termination signal, so the model's preamble ('I'll escalate this case') trips the heuristic and the loop exits before the tool_use block is even returned. Use stop_reason instead."
+    ],
+    "qid": "7ee7b3c5-4ea1-46ac-952d-a6d3e6420b65"
+  },
+  {
+    "question": "A team hard-codes their support agent as a fixed pipeline: `get_customer` → `lookup_order` → `process_refund`. They report that even simple status-only inquiries walk the full sequence and that the agent can't adapt when, say, the order doesn't exist. What's the right structural fix?",
+    "options": [
+      "Add an extra \"is_status_inquiry\" prerequisite step at the start of the pipeline",
+      "Replace the fixed pipeline with an agentic loop and let Claude pick tools from context based on stop_reason",
+      "Increase model temperature so the agent is more creative within the pipeline",
+      "Add few-shot examples showing the pipeline being used end-to-end"
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "pre",
+    "explanations": [
+      "Wrong — adding a fourth scripted prerequisite step doesn't fix rigidity; it adds another fixed step. The whole pattern is the problem.",
+      "Correct — model-driven decision-making is the structural answer. Letting Claude pick tools from context based on stop_reason is what enables skipping irrelevant steps and adapting to missing data.",
+      "Wrong — temperature changes generation creativity within a fixed pipeline; it does nothing to remove the pipeline itself or restore tool-selection adaptability.",
+      "Wrong — few-shot examples don't help when the architecture forces every request through the same path. The agent isn't picking poorly; it isn't picking at all."
+    ],
+    "qid": "a00a9c7e-8750-4a29-b2db-4df007144ad1"
+  },
+  {
+    "question": "Which of the following is an *anti-pattern* when designing an agentic loop?",
+    "options": [
+      "Continuing the loop while `stop_reason == \"tool_use\"`",
+      "Appending tool_result blocks (with their tool_use_id) before the next request",
+      "Using a heuristic on the assistant's text content as the primary termination signal",
+      "Letting Claude pick the next tool from accumulated context"
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "pre",
+    "explanations": [
+      "Wrong — this is the correct continuation rule. `\"tool_use\"` means Claude is requesting tool execution and the loop must iterate.",
+      "Wrong — appending tool_result blocks correlated by tool_use_id is exactly what keeps the causal chain intact. This is required behavior.",
+      "Correct — text-content heuristics for termination are brittle (locale- and model-version-sensitive) and bypass the canonical stop_reason signal. The exam treats this as a textbook anti-pattern.",
+      "Wrong — letting Claude pick tools from context is the defining property of an agentic loop and is exactly the right design."
+    ],
+    "qid": "7a05dc41-65fd-4626-9eb7-a512ed4e4a15"
+  },
+  {
+    "question": "Which statement about iteration caps in a well-designed agentic loop is correct?",
+    "options": [
+      "An iteration cap should be the primary termination mechanism; stop_reason is unreliable",
+      "An iteration cap is a circuit-breaker / runaway-safety net; stop_reason is the primary termination signal",
+      "Iteration caps must be set so low that they fire on every multi-step task",
+      "Iteration caps are equivalent to stop_reason and either can be used interchangeably"
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "pre",
+    "explanations": [
+      "Wrong — caps as the primary stopper truncate legitimate multi-step tasks while still letting broken loops burn the full N. stop_reason is the deterministic signal designed for this purpose.",
+      "Correct — the cap is a safety net for runaway behavior; stop_reason drives normal termination. Both can coexist; neither replaces the other.",
+      "Wrong — setting the cap so low it fires on every task means it is not a circuit-breaker, it is a guillotine. Caps should be roomy enough to never fire on healthy traces.",
+      "Wrong — caps and stop_reason are not interchangeable. stop_reason is what Claude tells you about the turn; the cap is what you tell yourself about runaway protection."
+    ],
+    "qid": "b2cfa7ec-1792-4ca5-8a9a-b037753a27a2"
+  },
+  {
+    "question": "A developer drops failed tool_result blocks from history \"to avoid confusing the model.\" Why is this problematic?",
+    "options": [
+      "The model needs to see the failure to react intelligently — retry with different params, escalate, or give up gracefully; hiding failures makes the agent look like it's ignoring tools",
+      "It violates Anthropic's pricing terms and can result in throttling",
+      "It causes the API to throw 429 errors on the next request",
+      "It only matters when the same tool fails twice in a row"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "pre",
+    "explanations": [
+      "Correct — Claude needs to see failures in context to react: retry with different params, choose a different tool, escalate, or give up gracefully. Hiding failures makes the model behave as if the call never happened, leading to repeated calls or hallucinated outcomes.",
+      "Wrong — there is no Anthropic pricing or throttling penalty for omitting tool_result blocks. The failure mode is correctness, not billing.",
+      "Wrong — the API does not return 429 for omitted tool_result blocks. 429 is rate limiting, unrelated to message-shape choices.",
+      "Wrong — the problem manifests on the very first failure: Claude can't react to a failure it cannot see, regardless of how often it recurs."
+    ],
+    "qid": "0ebdf097-19cf-41c1-8d48-0eb976672713"
+  },
+  {
+    "question": "Your refund agent receives a response with `stop_reason: \"tool_use\"` containing **two** tool_use blocks in the same turn — `lookup_order` and `check_loyalty_status` (Claude has emitted parallel tool calls). What is the correct loop behavior?",
+    "options": [
+      "Execute only the first tool_use block, append its tool_result, and re-send — loops should always step one tool at a time",
+      "Choose whichever tool the assistant text mentions first, execute that, and discard the other",
+      "Execute both tool calls, append both tool_result blocks (each correlated by its own tool_use_id), and re-send",
+      "Reject the response and re-prompt with `tool_choice: {\"type\": \"tool\", \"name\": \"lookup_order\"}` to force a single call"
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Wrong — agentic loops do not require one-tool-at-a-time stepping. When the model emits multiple tool_use blocks in a single turn, all of them are intentional parallel calls and all must be executed before the next request.",
+      "Wrong — picking based on assistant text fragments is exactly the brittle heuristic the loop must avoid. The tool_use blocks are the canonical instruction; honor both.",
+      "Correct — execute every tool_use block in the turn and append a tool_result for each, correlated by its own tool_use_id. The next request then carries Claude's full context for both calls and it can synthesize accordingly.",
+      "Wrong — forcing a single tool_choice override fights the model's deliberate parallel selection. Parallel calls are a feature, not an error to reject."
+    ],
+    "qid": "40a1d984-474c-4492-9ee5-2100d9007240"
+  },
+  {
+    "question": "An engineer's loop strips `tool_use_id` from tool_result blocks before appending them to history, claiming \"it shrinks the payload.\" Over long sessions the agent starts behaving as if previous tools never ran. What is the structural diagnosis?",
+    "options": [
+      "tool_use_id is what correlates a tool_result back to its originating tool_use; without it Claude cannot match results to its prior calls and effectively reasons as if the calls didn't happen",
+      "Removing the id makes the message too short, so the model falls back to its training data for completions",
+      "tool_use_id is required by the Anthropic SDK only; the model itself doesn't consume it",
+      "stop_reason is computed from the presence of tool_use_id, so dropping it returns the wrong stop_reason"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Correct — tool_use_id is the correlation key between a tool_use block and its tool_result. Without it Claude cannot match results to its prior calls; over a long session it loses the ability to reason about which result came from which call, so it behaves as if the calls never produced output.",
+      "Wrong — falling back to training data is not how the model handles missing correlation; the failure mode here is concrete (lost causal mapping in this session's history), not training-data drift.",
+      "Wrong — tool_use_id is consumed by the model's reasoning, not just by the SDK. The model uses it to thread results to calls; dropping it confuses reasoning, not just bookkeeping.",
+      "Wrong — stop_reason is computed from the response's structure (presence of tool_use blocks, end_turn signal, etc.), not from tool_use_id on prior tool_results."
+    ],
+    "qid": "e173552b-21ca-4a2e-90ed-6f2acfd2cc3c"
+  },
+  {
+    "question": "An agent produces correct results 90% of the time but in failing traces, Claude appears to \"ignore\" the result of a tool it just called and re-issues the same tool a second time on the next iteration. Which loop-level cause best explains this pattern?",
+    "options": [
+      "Temperature was too high on that request",
+      "tool_choice was set to \"any\" instead of \"auto\"",
+      "The model exceeded its token budget, so the result was implicitly discarded",
+      "The loop forgot to append the tool_result block for that call before sending the next request, so from Claude's perspective the call never produced output"
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Wrong — temperature changes creativity; it doesn't cause the model to forget that it just received a tool_result. The pattern is structural, not stochastic.",
+      "Wrong — `tool_choice: \"any\"` forces *some* tool call but does not remove existing tool_results from history. The pattern of re-issuing the same tool points to missing history, not forced selection.",
+      "Wrong — token-budget overflow truncates with `stop_reason: \"max_tokens\"`, surfacing visibly. It does not silently discard prior tool_results from the next request.",
+      "Correct — if a tool_result is never appended, the next request shows Claude a tool_use with no matching result. From the model's perspective the call never produced output, so it dutifully re-issues it. Always append a tool_result for every tool_use before the next request."
+    ],
+    "qid": "2a39f85f-c072-4650-948b-905ccc41d9f3"
+  },
+  {
+    "question": "Which of the following workflows is best described as an *agentic loop* rather than a *scripted pipeline*?",
+    "options": [
+      "Code calls Claude with a fixed prompt template, parses the text response with regex, then deterministically calls tool A, then re-prompts with another fixed template, then calls tool B",
+      "Code sends a request, inspects stop_reason; if `\"tool_use\"`, executes the requested tools, appends tool_result blocks, and re-sends — repeating until `\"end_turn\"`",
+      "A shell script that runs `claude_call.sh` followed by `tool_a.sh` followed by `tool_b.sh` in a fixed order",
+      "A workflow engine where each node is a hard-coded prompt and edges are pre-defined transitions"
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Wrong — this is a scripted pipeline: fixed prompt template, regex parsing, deterministic ordering. Claude is reduced to a step in your code's logic, not the controller.",
+      "Correct — this is the canonical agentic loop: send, inspect stop_reason, on `\"tool_use\"` execute and re-send with appended results, terminate on `\"end_turn\"`. The model picks each tool from context.",
+      "Wrong — sequential shell scripts with hard-coded ordering are workflow automation, not agentic. There is no model-driven decision-making, just fixed dependencies.",
+      "Wrong — workflow engines with pre-defined nodes and edges are explicitly *not* agentic. The structure of the graph encodes the decisions, leaving the model with no control."
+    ],
+    "qid": "55f325ad-7066-4729-993b-b921ba77db35"
+  },
+  {
+    "question": "A developer reports their refund-handling loop runs `process_refund` correctly but then keeps issuing additional tool_use turns instead of producing a final confirmation with stop_reason \"end_turn\". What is the most useful *loop-layer* debugging step?",
+    "options": [
+      "Lower the model's temperature to push it toward terminating",
+      "Add explicit \"stop now\" instructions to the system prompt",
+      "Inspect the message history to confirm that for every prior tool_use, a matching tool_result block (correlated by tool_use_id) was appended before the next request",
+      "Cap iterations at 3 to force termination"
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Wrong — temperature affects creativity, not whether the model perceives the task as complete. The loop layer is what builds Claude's perception of state via the message history.",
+      "Wrong — system-prompt 'stop now' instructions are brittle workarounds. If the model is iterating because it doesn't see prior results, no system-prompt instruction will fix that.",
+      "Correct — re-issuing tool_use turns past completion is the classic signature of missing tool_results in history. Walk the message history and verify every prior tool_use has a matching tool_result (by tool_use_id) appended before the next request was sent.",
+      "Wrong — a hard cap of 3 truncates legitimate work alongside the bug. Caps are circuit-breakers, not debugging tools, and they hide rather than diagnose the structural issue."
+    ],
+    "qid": "f45c5b60-a1d8-4732-979e-264266298727"
+  },
+  {
+    "question": "Two engineers debate loop termination. Engineer A: \"Just use stop_reason.\" Engineer B: \"Use stop_reason as the primary signal, but also keep an iteration cap as a circuit-breaker.\" Which is the most defensible production design?",
+    "options": [
+      "A — caps are unnecessary if stop_reason is implemented correctly",
+      "B — stop_reason drives normal termination; the cap acts as a circuit-breaker that prevents a misbehaving model or buggy loop from burning unbounded tokens",
+      "Neither — natural-language matching on assistant text is more reliable than either",
+      "Either is fine — they're functionally identical in production"
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Wrong — caps are inexpensive insurance against bugs in your loop, infrastructure failures, and unexpected model behavior. Production systems need defense in depth even when the primary signal is correctly implemented.",
+      "Correct — stop_reason is the canonical signal for normal termination; the cap is a circuit-breaker for the cases where stop_reason isn't reaching you correctly (your bug, network issue, or model misbehavior). They serve different purposes.",
+      "Wrong — text-matching is exactly the anti-pattern both engineers are trying to avoid. It is locale- and version-fragile.",
+      "Wrong — they are not interchangeable: stop_reason answers 'what does Claude say?' while a cap answers 'what is the worst we will let happen?'. Conflating them produces either fragile termination or runaway costs."
+    ],
+    "qid": "618f1cf4-1ab2-4c60-99ce-25b0b0913a0c"
+  },
+  {
+    "question": "A new agent builder's loop is: send → if `assistant_text` contains the word \"I'll\" continue, else terminate. They report inconsistent behavior across model upgrades and across non-English customer interactions. What is the structural reason this design is unstable?",
+    "options": [
+      "The model's stylistic phrasing varies across versions and locales, so any natural-language termination heuristic will drift; stop_reason is the version- and locale-stable canonical signal",
+      "The Anthropic API normalizes locale automatically, so the heuristic is fine in practice",
+      "An iteration cap would address this issue completely on its own",
+      "Tool descriptions need to be localized so the heuristic continues to work"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Correct — natural-language phrasing varies across model versions and across user/agent locales. Any termination heuristic that depends on a phrase will drift the moment the model is updated or the conversation is in a different language. stop_reason is stable across both.",
+      "Wrong — there is no automatic locale normalization in the API; the model produces language appropriate to the conversation. Heuristics on text content remain locale-sensitive.",
+      "Wrong — an iteration cap doesn't fix wrong termination decisions; it just bounds how long the wrong decision can run. The structural fix is replacing the heuristic with stop_reason.",
+      "Wrong — localizing tool descriptions is unrelated to assistant-text-based loop termination. The fragility is in the loop's exit condition, not in tool selection."
+    ],
+    "qid": "93a2f44c-9446-4c84-9710-9e09e16d4884"
+  },
+  {
+    "question": "A multi-agent research system delegates work to a subagent via the Task tool. Inside that subagent, an agentic loop runs to completion (terminating on its own `end_turn`). The coordinator then incorporates the subagent's final output. From the *coordinator's* perspective, what drives the coordinator's own loop iteration?",
+    "options": [
+      "The coordinator iterates while *its own* response's stop_reason is \"tool_use\" — invoking the subagent is just a tool call from the coordinator's perspective; the subagent's internal stop_reason has no effect on the outer loop",
+      "The coordinator iterates whenever any subagent has any `tool_use` block, anywhere in the hierarchy",
+      "The coordinator's loop terminates when the subagent's final assistant text contains a phrase like \"done\" or \"finished\"",
+      "There is a single shared stop_reason across the entire agent hierarchy that all loops read"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Correct — from the coordinator's perspective the subagent invocation is a tool call. The coordinator iterates on its own stop_reason: `\"tool_use\"` continues (the subagent's output comes back as a tool_result), `\"end_turn\"` terminates. The subagent's internal stop_reason governs only its own loop.",
+      "Wrong — there is no shared notion of `tool_use` across the hierarchy. Each loop reads only its own response's stop_reason; the subagent's internal calls are invisible to the coordinator's loop logic.",
+      "Wrong — terminating the coordinator's loop based on assistant text from anywhere is the same anti-pattern as text-based termination in a single-agent loop, and it's worse here because the text comes from a different agent's output.",
+      "Wrong — stop_reason is per-response, not shared. Each agent has its own loop reading its own stop_reason; no cross-hierarchy field exists."
+    ],
+    "qid": "37813d87-6d94-481b-8c36-f747ebc516cc"
+  },
+  {
+    "question": "A loop's termination check is `if response.content[0].type == \"text\" and response.content[0].text: break`. Why is this an anti-pattern, even when it appears to work on simple tasks?",
+    "options": [
+      "Index 0 may not exist on long responses, causing IndexError",
+      "tool_use blocks are always serialized as type \"text\" in this SDK, so the check never fires",
+      "`response.content` is always a single block, so indexing is unnecessary",
+      "Tool-calling turns can also contain text blocks (preamble narration before a tool_use); using \"non-empty text\" as the termination signal terminates legitimate multi-step turns mid-flight — the canonical signal is stop_reason"
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Wrong — index 0 always exists on a non-empty response; the bug isn't index validity, it's *what the check tests*. The structural anti-pattern is using text content as the termination signal.",
+      "Wrong — tool_use blocks are not serialized as type 'text'; they have type 'tool_use'. The check fires on actual text blocks, which can appear in tool-calling turns.",
+      "Wrong — `response.content` can contain multiple blocks (text + tool_use, or multiple tool_use). Indexing into [0] is itself a hidden bug, but the question is about why the *termination logic* is wrong.",
+      "Correct — tool-calling turns frequently contain a text block (the model narrating intent) followed by tool_use blocks. Treating any non-empty text as termination kills legitimate multi-step turns mid-flight. Use stop_reason instead."
+    ],
+    "qid": "8da119c7-6d30-414b-81aa-64c1691d890d"
+  },
+  {
+    "question": "Two agentic-loop implementations are reviewed. Implementation A treats every stop_reason that isn't `\"end_turn\"` as termination. Implementation B explicitly handles `\"tool_use\"` as continue, `\"end_turn\"` as terminate, and treats other values like `\"max_tokens\"` or `\"stop_sequence\"` as separate cases that surface to the caller or trigger continuation rather than silent termination. Which design is more robust in production, and why?",
+    "options": [
+      "A — collapsing every non-end_turn case to \"terminate\" is simpler and avoids edge-case handling code",
+      "B — only `\"tool_use\"` should iterate the loop; non-tool_use codes (especially `\"max_tokens\"`) often represent conditions that warrant retry, continuation, or escalation, not silent termination",
+      "They are functionally identical because stop_reason values other than tool_use and end_turn never occur in practice",
+      "Neither — assistant text content should be the primary termination signal regardless of stop_reason"
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "explanations": [
+      "Wrong — collapsing every non-end_turn case to 'terminate' silently drops legitimate continuation cases like `\"tool_use\"`, which is exactly the signal the loop must continue on.",
+      "Correct — only `\"tool_use\"` should iterate the loop; other codes (`\"max_tokens\"` for truncation, `\"stop_sequence\"` for configured stops, refusal codes) deserve specific handling — retry, surface to the caller, or escalate — rather than silent termination.",
+      "Wrong — non-`tool_use`/`end_turn` codes do occur in practice (`max_tokens` from long generations, `stop_sequence` when a stop string is configured) and ignoring them masks bugs.",
+      "Wrong — text content is exactly the anti-pattern both designs are trying to avoid. It's not the right primary signal in any production system."
+    ],
+    "qid": "4d010e51-452c-4dbe-b91b-d8198211ad5b"
+  },
+  {
+    "question": "Your loop appends `tool_result` blocks under a new `assistant` role message after running tools. Claude responds inconsistently and sometimes acts as if no tool was ever called. What is the structural fix?",
+    "options": [
+      "Switch the assistant message to a single text block containing the tool outputs as JSON; Claude will reason over the text directly.",
+      "Move the tool_result blocks into a `system` message so the API treats them as authoritative context.",
+      "Append `tool_result` blocks under a **user**-role message between assistant turns. The API expects tool_result blocks in user-role messages so they thread back to the prior assistant tool_use as input to the next assistant turn.",
+      "Increase `max_tokens` so Claude has room to re-process the results within the same assistant turn."
+    ],
+    "explanations": [
+      "Wrong — converting structured tool_result blocks into stringified JSON inside a text block loses the structured correlation Claude relies on (the tool_use_id linkage). The model is built to reason over tool_result blocks specifically, not over text-encoded approximations of them.",
+      "Wrong — the system role is for the developer-authored system prompt, not for tool outputs. Putting tool results there breaks the canonical message structure and is not how the API consumes them.",
+      "Correct — tool_result blocks must live in user-role messages. They are inputs to Claude's next assistant turn; placing them in assistant content makes them look like Claude's own output rather than the result of a prior tool call.",
+      "Wrong — max_tokens controls generation length, not message-structure interpretation. The bug is the role/shape of the appended message, not the response budget."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "e7ef33ae-408c-4add-9f15-5aefd2c18750"
+  },
+  {
+    "question": "Between iterations of a healthy agentic loop, what happens to the conversation history?",
+    "options": [
+      "It grows monotonically — each turn (assistant tool_use, user tool_result, the next assistant response) is appended. Claude sees the full trace on every request, which is what lets it reason about prior calls.",
+      "The Anthropic SDK auto-prunes older turns once they have been acted upon, so the history stays bounded.",
+      "Only the most recent tool_use and its tool_result are retained; older turns are dropped to save tokens.",
+      "The loop replaces the previous assistant turn with the new one each iteration so the history stays a fixed shape."
+    ],
+    "explanations": [
+      "Correct — the message history grows monotonically across iterations. Every assistant response (text + any tool_use blocks) and every user response (tool_result blocks) is appended in order. This growing history is exactly what enables model-driven decision-making across turns.",
+      "Wrong — the SDK does not auto-prune turns. Truncation/compaction is a different concern (handled at session boundaries or by /compact, not by the loop itself).",
+      "Wrong — pruning older turns mid-loop would erase the causal trail Claude reasons over. Tools called several iterations back are still relevant context for the next decision.",
+      "Wrong — replacing prior turns would erase the tool_use/tool_result correlations Claude depends on. Each iteration appends; nothing is overwritten."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "7eeb9c4b-dbd6-4c33-af01-7db93e547a94"
+  },
+  {
+    "question": "A response arrives with `stop_reason: \"tool_use\"` and content `[text(\"Looking up the order…\"), tool_use(name=lookup_order, …)]`. What is the correct loop behavior?",
+    "options": [
+      "Terminate — the assistant emitted text, which means Claude is narrating rather than acting.",
+      "Skip the tool_use block since the text block came first; Claude can be re-prompted if a tool call is actually needed.",
+      "Re-prompt Claude to clarify whether it wants to call a tool or just narrate, since the response is ambiguous.",
+      "Execute the tool_use block, append its tool_result (correlated by tool_use_id), and re-send. The text is incidental narration; `stop_reason: \"tool_use\"` is the canonical instruction to continue."
+    ],
+    "explanations": [
+      "Wrong — using text presence as a termination signal is the textbook anti-pattern. stop_reason is \"tool_use\" here, which is the canonical instruction to continue.",
+      "Wrong — content blocks are not ranked by order. Claude's tool_use blocks are deliberate calls regardless of whether text appears alongside them.",
+      "Wrong — the response is not ambiguous. stop_reason: \"tool_use\" is unambiguous; the loop continues by executing the tool.",
+      "Correct — stop_reason is the canonical signal. Text content alongside a tool_use block is just narration (\"preamble\") and must not change loop behavior; execute the tool and proceed."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "ccc6079a-4eaa-4dc3-9160-a0f0686d2fe5"
+  },
+  {
+    "question": "An engineer adds: \"if the model returns only text with `stop_reason: \\\"end_turn\\\"` but our system thinks more work is needed, call `escalate_to_human` ourselves before terminating.\" What is structurally wrong with this?",
+    "options": [
+      "escalate_to_human is reserved for the model and the Anthropic API will reject any call originating outside a tool_use block.",
+      "It bypasses model-driven decision-making — the loop has become the controller. Whether to escalate is a context-dependent decision the model should make from accumulated history; introducing loop-side heuristics diverges agent behavior from what its prompt and tool descriptions imply.",
+      "Tools called outside a tool_use block are not added to conversation history, so the model never learns the escalation happened.",
+      "The Anthropic SDK validates that every tool execution corresponds to a tool_use_id from a prior assistant turn and will throw at runtime."
+    ],
+    "explanations": [
+      "Wrong — there is no API-level restriction on which tools your code can run; the API does not police your client logic. The objection is architectural, not enforced by the API.",
+      "Correct — model-driven decision-making is the defining property of an agentic loop. Adding loop-side heuristics that act as if the model decided puts the loop in the controller seat and makes agent behavior diverge from what the prompt and tool descriptions describe.",
+      "Wrong — you can append whatever you want to history. The structural problem is who is making the decision, not whether the artifact gets logged.",
+      "Wrong — the SDK does not validate tool executions against tool_use_ids; it just forwards messages. The objection is architectural."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "0290ecf7-181b-4e7d-9b3f-3f2a56b37048"
+  },
+  {
+    "question": "A long, multi-tool turn returns `stop_reason: \"max_tokens\"` — Claude was emitting tool_use blocks and got truncated mid-stream. What should the loop do?",
+    "options": [
+      "Treat it as `\"end_turn\"` and terminate; max_tokens means Claude effectively finished what it could fit.",
+      "Treat it as `\"tool_use\"` and execute whatever tool_use blocks are present; the truncated content can be inferred by the next iteration.",
+      "Surface the condition to the caller (or retry with a higher max_tokens, or let the model continue if the SDK supports continuation). `\"max_tokens\"` is **neither** continue nor terminate — it is an incomplete response that needs explicit handling, not silent mapping to either bucket.",
+      "re-send the same prompt with `tool_choice: \"any\"` to force Claude to pick a single tool and produce a shorter response."
+    ],
+    "explanations": [
+      "Wrong — max_tokens means the response was cut off, not that Claude finished its turn. Mapping it to end_turn discards a real signal that the system needs to react to.",
+      "Wrong — the response is partial; the tool_use blocks present may be incomplete (missing inputs) and there may be more Claude wanted to emit. Executing them blindly is unsafe.",
+      "Correct — max_tokens is a third state distinct from tool_use/end_turn. It signals truncation, which calls for retry with a larger budget, escalation, or surfacing to the caller. Silently coercing it into either bucket masks the underlying problem.",
+      "Wrong — switching tool_choice fights the issue. Claude's response was not malformed by tool selection; it ran out of tokens. The fix is budget, not selection mode."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "81097791-a465-4ca4-b843-b0b2f716c5ca"
+  },
+  {
+    "question": "A response with `stop_reason: \"tool_use\"` contains three tool_use blocks (`lookup_order`, `check_loyalty_status`, `fetch_recent_returns`). Your loop executes only the first, appends its tool_result, and re-sends — ignoring the other two. What is the predicted downstream symptom?",
+    "options": [
+      "Claude is likely to re-issue the two missing tools on the next turn (because their tool_use entries have no matching tool_result), wasting iterations and confusing the message history. Every tool_use in a turn must be executed and have its tool_result appended before re-sending.",
+      "The Anthropic API will reject the next request because the message history is structurally invalid (tool_use without matching tool_result).",
+      "The two un-executed tool_use blocks will be silently dropped from history when the next request is sent; Claude will have no record they were ever requested.",
+      "Claude will continue its task as if the unexecuted tools succeeded with empty results, since `stop_reason: \"tool_use\"` was already consumed."
+    ],
+    "explanations": [
+      "Correct — from the model's perspective, an unmatched tool_use looks like a call that produced no output, so it dutifully re-issues the same call. The discipline is: if the turn emitted N tool_use blocks, the loop runs all N and appends N tool_result blocks before re-sending.",
+      "Wrong — the API does not validate tool_use/tool_result symmetry. The structural inconsistency causes model confusion, not an API rejection.",
+      "Wrong — nothing is silently dropped from your client-managed message history. The blocks remain unmatched, which is the source of the bug.",
+      "Wrong — Claude does not infer empty results for unmatched tool_use blocks; it generally re-issues them, because from its perspective the call produced no data."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "6ebbee95-221f-4940-ae53-6f727a8b1003"
+  },
+  {
+    "question": "A `lookup_order` tool throws an exception in your code. The loop must communicate this back to Claude so it can react. Which is the correct pattern?",
+    "options": [
+      "Drop the assistant turn that contained the tool_use entry and re-send a clean conversation, since the tool call effectively did not happen.",
+      "Append a `system` message explaining the error, then re-send so the model treats the failure as authoritative context.",
+      "Append nothing — Claude will infer the tool was not called when no new data appears in the next turn.",
+      "Append a `tool_result` block correlated by `tool_use_id` with `isError: true` and a short error description. The model sees the failure in the canonical channel and can react in context (retry with different params, choose a different tool, escalate)."
+    ],
+    "explanations": [
+      "Wrong — rewriting history to hide the tool_use entry erases the causal trail and is structurally fragile. The right move is to communicate the failure, not pretend the call did not happen.",
+      "Wrong — system messages are not the channel for tool failures. Tool failures must be reported via tool_result so they correlate to the originating tool_use_id and Claude can react.",
+      "Wrong — Claude does not infer 'tool failed' from absent data; it generally re-issues the call (since from its perspective the call produced no output).",
+      "Correct — `tool_result` with `isError: true` is the canonical channel for tool failures. It preserves correlation by tool_use_id and lets Claude reason about the failure (retry, fall back, escalate) using the same machinery it uses for successful results."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "5e4b23ac-d815-4805-ad26-eab5cf4f277b"
+  },
+  {
+    "question": "An iteration counter is added for production observability. The team debates whether it should also be the primary termination signal. Which design fits agentic-loop principles?",
+    "options": [
+      "Drop the counter — it is redundant with stop_reason traces and just bloats logs.",
+      "Log every iteration for observability AND keep a generous hard cap (well above any expected legitimate task length) as a runaway circuit-breaker. stop_reason still drives normal termination; the cap fires only on broken loops.",
+      "Make the counter the primary termination signal (cap = N) — it is deterministic and easy to reason about, while stop_reason is fragile.",
+      "Cap iterations very tightly (e.g., 3) so any non-trivial task fails fast and forces developers to redesign for fewer steps."
+    ],
+    "explanations": [
+      "Wrong — observability of iteration count is genuinely useful for debugging runaway loops, performance, and cost analysis. Logging it is not bloat; conflating it with control is the mistake.",
+      "Correct — observability and runaway protection are complementary to (not substitutes for) stop_reason-driven termination. A roomy cap is a safety net; stop_reason remains the canonical signal.",
+      "Wrong — using the cap as the primary signal truncates legitimate multi-step tasks while letting broken loops still burn the full N. stop_reason is exactly the deterministic per-turn signal designed for this purpose.",
+      "Wrong — a tight cap that fires on every non-trivial task is a guillotine, not a circuit-breaker. It punishes correct behavior and obscures bugs."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "1609a54b-497a-4f0f-abfa-f8f6841beb1d"
+  },
+  {
+    "question": "You move an agentic workflow from an interactive Claude Code session into CI/CD via `claude -p` (non-interactive). The loop terminates early in CI but works interactively. The implementation uses `if response.stop_reason == \"end_turn\": terminate`. What is the most likely diagnosis?",
+    "options": [
+      "`-p` mode forces a single iteration regardless of stop_reason; agentic loop semantics are unavailable in non-interactive mode.",
+      "`-p` mode disables tool_use entirely; only text generation is supported in CI.",
+      "`-p` mode does not change agentic-loop semantics — stop_reason behaves identically. The early termination must come from elsewhere in the loop (a heuristic on text, a low cap, missing tool_result append). Inspect the loop, not the CLI flag.",
+      "The Anthropic API rate-limits non-interactive sessions to a small fixed iteration count and silently terminates after the limit is reached."
+    ],
+    "explanations": [
+      "Wrong — `-p` is about IO, not loop semantics. The loop runs the same way; what differs is interactivity (no prompts, output sent to stdout).",
+      "Wrong — tool_use works in non-interactive mode. The flag changes how the session interacts with the user, not what the model can do.",
+      "Correct — agentic-loop semantics are identical across interactive and non-interactive modes. If the symptom only appears in CI, look for environment differences (a hard cap that triggers under different timing, a missing tool_result append surfacing only on certain inputs, or a text heuristic that fires on language the model produces only in batch mode).",
+      "Wrong — the API does not impose a hidden iteration cap based on `-p`. Iteration limits are entirely in your client code."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "0c9907d2-ca51-42ed-bb78-85ef8847d55b"
+  },
+  {
+    "question": "Your team adds an automated invariant check that runs after every loop iteration. Which invariant most directly guards against the most common loop bugs?",
+    "options": [
+      "Every `tool_use` block in the conversation history has a matching `tool_result` block (correlated by `tool_use_id`) appended before the next request. Violations cause Claude to re-issue tools, hallucinate outcomes, or behave as if calls did not happen.",
+      "The total token count of the conversation stays under 10% of the model context window so the model never feels constrained.",
+      "Each turn's assistant text content is a complete, non-empty sentence — empty text indicates a malformed response.",
+      "The number of tool_use blocks per turn is exactly 1, since parallel tool calls are unsupported and indicate a model error."
+    ],
+    "explanations": [
+      "Correct — unmatched tool_use blocks are the single most common cause of agentic-loop pathologies (re-issued tools, hallucinated outcomes, runaway iterations). Asserting tool_use ↔ tool_result symmetry catches almost every history-correctness regression.",
+      "Wrong — token-count thresholds are useful for cost/performance, but they do not catch the structural bugs that cause loop misbehavior. A loop can be perfectly healthy near the context limit and broken at 1% utilization.",
+      "Wrong — empty assistant text content is fine; tool_use turns can have minimal or no text. The presence/absence of text says nothing about loop correctness.",
+      "Wrong — multiple tool_use blocks per turn (parallel calls) are a feature, not a bug. The invariant should be that all of them are executed and matched; not that there is exactly one."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "21696aec-52da-4ef0-86d3-fd21d0356ba2"
+  },
+  {
+    "question": "An engineer asks: \"In our agentic loop, do we need to send the full message history on every iteration, or just the latest tool_result?\" Choose the correct answer with the principle behind it.",
+    "options": [
+      "The full message history (system, prior user, prior assistant turns including tool_use blocks, prior tool_results) must be sent on each iteration. The Anthropic Messages API is stateless across requests, so without prior turns Claude cannot correlate tool_use_ids or recall earlier reasoning.",
+      "Only the latest user message; Anthropic stores conversation state server-side keyed by a conversation_id and replays it for you.",
+      "Only the prior assistant message; tool_results are server-cached for an hour and re-attached automatically.",
+      "Whichever shape your SDK helper chooses; the API tolerates both stateful and stateless use of the messages endpoint."
+    ],
+    "explanations": [
+      "Correct — the API has no built-in session/state, so the developer-owned message history is the loop's memory. Sending only deltas would leave the model unable to match prior tool_use blocks to their results or recall what it has already done.",
+      "Wrong — there is no server-side conversation_id replay in the standard Messages API. Treating it as if there were causes Claude to lose all prior context immediately and re-issue prior tools or hallucinate outcomes.",
+      "Wrong — tool_results are not server-cached; they live in the developer-managed history. If you only resend the prior assistant message, every prior tool_result is lost and the next turn is essentially blind.",
+      "Wrong — the API is stateless; statefulness is not a configuration. Believing the helper chose statefulness for you usually surfaces as inconsistent behavior across helper versions."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "0550b6f0-6b5c-41b3-ad1e-6d688d6f5f9e"
+  },
+  {
+    "question": "A team is choosing between an agentic loop and a fixed pipeline (`get_customer` → `lookup_order` → `process_refund`) for a customer-support workflow whose inbound requests range from simple status checks to multi-issue escalations. Which is the strongest single argument for the agentic loop?",
+    "options": [
+      "Pipelines cannot return errors, so they are unsuitable for support workflows.",
+      "Pipelines are always faster than agentic loops, so the loop adds latency for no benefit.",
+      "Inbound requests vary in shape, and an agentic loop lets Claude pick (and skip) tools per request from accumulated context, while a fixed pipeline forces every request through the same steps. Pipelines remain valid only when the workflow is genuinely uniform across inputs.",
+      "Agentic loops use less context-window than scripted pipelines because Claude prunes prior turns automatically."
+    ],
+    "explanations": [
+      "Wrong — pipelines can absolutely return errors; that is not the distinguishing trade-off. The mistake is comparing a feature parity question to the actual issue (adaptability).",
+      "Wrong — for genuinely uniform workflows a pipeline can be lower-latency than a multi-turn loop. The loop's advantage is adaptability, not speed.",
+      "Correct — model-driven decision-making is the defining property. When inputs vary, only the loop can adapt the tool sequence per request; a pipeline locks every input into a fixed flow even when steps are irrelevant.",
+      "Wrong — Claude does not auto-prune prior turns. Loops typically use *more* tokens than a pipeline because each iteration carries the growing history."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "89c191e7-d012-4ea4-8a50-6208b9b964e5"
+  },
+  {
+    "question": "To save tokens, a loop drops every `tool_result` block from prior iterations and keeps only the current turn's `tool_result`s in history. What is the most likely production symptom?",
+    "options": [
+      "Faster responses with no behavioral impact, since Claude only needs the latest tool results.",
+      "The loop crashes because tool_use_id pairing is missing when tool_results are removed.",
+      "stop_reason flips to \"end_turn\" early as an automatic safety the API applies when history is malformed.",
+      "Claude re-issues earlier `tool_use` calls because their results are gone — every `tool_use` in history needs a matching `tool_result`, and dropping them forces redundant re-invocation and inconsistent state across the conversation."
+    ],
+    "explanations": [
+      "Wrong — Claude needs the *whole* prior history to reason about what has already been done. Dropping prior results consistently produces re-issued tools or hallucinated outcomes, not silent equivalence.",
+      "Wrong — the loop does not crash; the API will accept a malformed history. The bug is behavioral (Claude acts as if prior tools never ran), not a runtime error.",
+      "Wrong — the API does not silently rewrite stop_reason based on history shape. stop_reason is the model's signal, not a safety net the platform applies for malformed inputs.",
+      "Correct — the canonical invariant is that every `tool_use` in history has its matching `tool_result`. Trimming verbose *content* inside a result is fine; removing the block (and its tool_use_id) is not."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "311c20b8-aea6-40a3-a034-ecf0e2a1e358"
+  },
+  {
+    "question": "Your loop sees `stop_reason: \"tool_use\"` with one `tool_use` block (`process_refund`). The tool returns `{ approved: false, reason: \"policy_violation\" }`. The dev's code does NOT append the `tool_result`; instead it injects a synthetic `user` message (\"Refund could not be processed. Please escalate.\") and resumes the loop. What is the principled critique?",
+    "options": [
+      "The fix is fine — adding context as a synthetic user message is equivalent to appending a tool_result, just expressed in natural language.",
+      "Synthetic user messages break the canonical channel: Claude no longer sees the structured failure correlated by `tool_use_id`, so its escalation reasoning is divorced from the actual tool outcome. The correct fix is to append the `tool_result` (with `isError: true` if appropriate) and let Claude pick the next action.",
+      "The loop should retry `process_refund` automatically until it succeeds; failures should never propagate to the model.",
+      "Claude cannot read user messages mid-loop, so the synthetic message is silently ignored by the API."
+    ],
+    "explanations": [
+      "Wrong — natural-language summaries are not equivalent. The model loses the tool_use_id ↔ tool_result correlation, the structured field shape, and the canonical signal that the *tool itself* failed (vs the user changing tack).",
+      "Correct — tool outcomes belong in `tool_result` blocks. Bypassing that channel undermines model-driven decision-making and discards the structured failure information Claude is trained to react to.",
+      "Wrong — silent in-harness retries strip Claude's ability to escalate or branch. Some failures (policy violations) are not retryable; the model should see them and decide.",
+      "Wrong — Claude does read user messages. The bug is not that the message is dropped; it is that the message is the wrong channel for a tool outcome."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "48eb28e4-6fb2-4133-9598-bba841c9f5a3"
+  },
+  {
+    "question": "A team adds a custom tool `finish_task` and prompts Claude: \"Call `finish_task` when you are done.\" Their loop terminates when Claude calls `finish_task` instead of when `stop_reason == \"end_turn\"`. Why is this an anti-pattern?",
+    "options": [
+      "`finish_task` collides with built-in tool names, and the API rejects the call at validation time.",
+      "tool_use_id cannot be assigned to no-op tools, so the call always errors with a schema mismatch.",
+      "Termination is meant to be driven by the canonical, model-controlled signal (`stop_reason`). Routing termination through a tool the model decides to call is text-matching in disguise — Claude can forget to call it, call it prematurely, or skip it on a multi-step path. `stop_reason: \"end_turn\"` is the API-level guarantee.",
+      "Custom tools cannot return without arguments, so `finish_task` always raises a schema error at decode time."
+    ],
+    "explanations": [
+      "Wrong — there is no built-in collision; the API does not reject this. The anti-pattern is conceptual, not syntactic.",
+      "Wrong — tool_use_id is assigned by the model for any tool_use block regardless of payload. Schema mismatches are not the failure mode.",
+      "Correct — `stop_reason` is the canonical signal precisely because it is model-controlled at the API level. A tool the model can forget to call gives termination the same brittleness as parsing assistant text for \"done\".",
+      "Wrong — schema-zero tools (no required args) are valid. The structural problem is that termination semantics belong on `stop_reason`, not in a tool the model elects to call."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "ac3628c7-afb9-45cd-ad24-4963a4f68802"
+  },
+  {
+    "question": "A response has content `[text(\"I will look up the order now\"), tool_use(name=lookup_order, id=tu_01)]` and `stop_reason: \"tool_use\"`. Your loop inspects only `content[0]`, sees text, treats the turn as informational, and re-sends without running `lookup_order`. What is the predicted symptom?",
+    "options": [
+      "`lookup_order` is silently dropped: the next request lacks a `tool_result` for `tu_01`, so Claude is forced to either re-emit the same tool_use or hallucinate the order data. The loop must iterate over ALL content blocks and execute every `tool_use`.",
+      "Nothing — Claude will simply repeat the request and the order is fetched on the next turn at no cost.",
+      "The loop deadlocks because Claude keeps emitting only text after seeing no tool_result.",
+      "The Anthropic API auto-runs the tool when the loop ignores it and returns the result on the next call."
+    ],
+    "explanations": [
+      "Correct — a turn can mix text and tool_use blocks; `stop_reason` is the canonical signal, not `content[0]`. Skipping content blocks past the first violates the loop's contract: execute every `tool_use` in the turn.",
+      "Wrong — re-emitting wastes iterations and tokens, and is not guaranteed: Claude can equally hallucinate the result or branch elsewhere. Either way the bug surfaces in production.",
+      "Wrong — deadlock is the wrong failure mode. Claude is not blocked waiting for anything; it just receives a malformed history and adapts unpredictably.",
+      "Wrong — the API does not execute tools for you. Tool execution is the developer's responsibility; the harness is the only entity that can run `lookup_order`."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "c403c317-893a-434f-a641-800dddde3460"
+  },
+  {
+    "question": "Your harness registers tools `[get_customer, lookup_order, process_refund]`. Claude returns a `tool_use` block for `cancel_subscription` — a tool the harness does not implement. What is the correct loop behavior?",
+    "options": [
+      "Throw an exception in the loop and abort the request; the missing tool indicates a configuration bug that should fail loudly.",
+      "Silently drop the tool_use; do not append anything for it; re-send and hope Claude picks another tool on the next turn.",
+      "Reply with a fresh user message saying \"Tool not available\" and continue.",
+      "Append a `tool_result` for the matching `tool_use_id` with `isError: true` and a description (e.g., \"Tool `cancel_subscription` is not available; pick a registered alternative or terminate\"); the loop continues. Claude can then redirect, escalate, or end the turn based on the structured failure."
+    ],
+    "explanations": [
+      "Wrong — aborting the whole request strips Claude's ability to recover (e.g., escalate, pick a registered alternative). Crash-on-mismatch is a worse user experience than surfacing the failure in the canonical channel.",
+      "Wrong — silently dropping leaves an unmatched tool_use in history, which violates the core invariant. Claude will likely re-emit the same call, or hallucinate the outcome.",
+      "Wrong — tool outcomes belong in `tool_result` blocks, not synthetic user messages. The user-message channel discards the tool_use_id correlation and undermines model-driven recovery.",
+      "Correct — this is the structured-error pattern: the loop honors the tool_use ↔ tool_result invariant and lets Claude reason about an `isError` result. Most production agents recover gracefully when given an explicit failure description."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "76816b97-3be2-427c-a24d-d60283727c01"
+  },
+  {
+    "question": "A junior engineer suggests \"renaming tools at the loop layer\": when Claude requests `process_refund`, the dev's code substitutes `manual_refund` if the amount > 500 USD. Why is this an anti-pattern?",
+    "options": [
+      "The substitution breaks model-driven decision-making — Claude requested `process_refund` based on its understanding of the available tools; running a different tool silently grounds subsequent reasoning in a false premise. The right pattern is to surface the constraint via the original tool's result (e.g., `requires_manual_review: true`) and let Claude pick the next action.",
+      "Renaming is fine if logged, since Claude does not track tool names across turns and only correlates by tool_use_id.",
+      "tool_use_id collisions will occur because the harness reuses the same id across the two tools.",
+      "The Anthropic API rejects substituted tool results with HTTP 400 because the tool name in the response does not match a registered tool."
+    ],
+    "explanations": [
+      "Correct — silent substitution is a failure of model-driven decision-making. Claude's next reasoning step assumes `process_refund` ran with refund-shaped semantics; running `manual_refund` instead invalidates that assumption silently. Surface the constraint via the tool result and let Claude branch.",
+      "Wrong — Claude absolutely tracks tool names across turns (they appear in tool_use blocks). The model's next action is conditioned on the tool it requested, not just the id.",
+      "Wrong — tool_use_id is unique per tool_use block; it does not cause cross-tool collisions. The bug is conceptual, not a name clash.",
+      "Wrong — the API does not validate `tool_name` in `tool_result` against the registered list this strictly; it correlates by `tool_use_id`. The harm is behavioral, not an API-level rejection."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "ba42bea1-ff80-49b3-9247-de9dca6b3617"
+  },
+  {
+    "question": "Inspecting a failing trace, history shows three `tool_use` blocks (ids `tu_a`, `tu_b`, `tu_c`) but `tool_result` blocks for only `tu_a` and `tu_c` — `tu_b`'s result is missing. The next assistant turn re-emits the same operation under a new id `tu_b2`. What invariant has been violated, and how do you restore it?",
+    "options": [
+      "tool_use_id values must be alphabetical; reorder them so `tu_b` sorts between `tu_a` and `tu_c`.",
+      "tool_result blocks must be combined into a single aggregate block per turn; restructure the history accordingly.",
+      "Every `tool_use` in history must have a matching `tool_result` (correlated by `tool_use_id`) appended before the next request. The fix is for the loop to append a result for every block — including `isError: true` results when a tool failed — so Claude does not re-issue the call from scratch.",
+      "stop_reason was misread as `end_turn` instead of `tool_use`; check the parsing of the response object."
+    ],
+    "explanations": [
+      "Wrong — tool_use_id is opaque; alphabetic ordering carries no semantic weight. The bug is the missing match for `tu_b`, not the order of ids.",
+      "Wrong — tool_result blocks are per-call, correlated by tool_use_id. Aggregating them into one block would itself break the correlation invariant.",
+      "Correct — the canonical invariant is one-to-one tool_use ↔ tool_result by id. Re-emitting under `tu_b2` is the textbook symptom of a missing result for `tu_b`; the fix is to always append a result (even `isError`) for every executed or attempted tool.",
+      "Wrong — the symptom (re-emitted tool_use) tells you stop_reason was `tool_use` as expected. The bug is not in stop_reason parsing; it is in tool_result emission."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "96bc50ce-5e5d-4c84-ab13-6086327fa4e2"
+  },
+  {
+    "question": "Pick the best one-sentence description of an agentic loop — the one a candidate should be able to give an interviewer.",
+    "options": [
+      "A loop where the developer hard-codes a sequence of API calls and Claude generates text for each step in the sequence.",
+      "A loop in which the model emits `tool_use` requests, the harness executes them and appends `tool_result` blocks (correlated by `tool_use_id`) to history, and iteration is driven by `stop_reason` until the model returns `end_turn`.",
+      "A loop that calls Claude exactly once and processes the response with regex matching on the assistant text to decide what to do next.",
+      "A loop where Claude is invoked across a thread pool and tool results are reduced via map-reduce into a final answer."
+    ],
+    "explanations": [
+      "Wrong — that describes a scripted pipeline, not an agentic loop. Hard-coding the sequence eliminates model-driven decision-making, the defining property of agentic execution.",
+      "Correct — captures all four essentials: model emits `tool_use`, harness executes and appends `tool_result` with id correlation, iteration is driven by `stop_reason`, and `end_turn` terminates. No anti-patterns (text matching, iteration caps, hard-coded sequences) sneak in.",
+      "Wrong — a single-call regex loop is neither agentic nor a loop in any meaningful sense. Regex matching on assistant text is a known anti-pattern (brittle, locale/version-sensitive, bypasses the canonical signal).",
+      "Wrong — concurrency and map-reduce describe a different architecture (parallel tool fan-out, batch synthesis). They are orthogonal to what makes a loop agentic."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.1"
+    ],
+    "phase": "post",
+    "qid": "078a0f36-5b1d-4c9d-95b9-b14e7b4fe717"
+  }
+]

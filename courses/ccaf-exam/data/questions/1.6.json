@@ -1,0 +1,882 @@
+[
+  {
+    "question": "In the context of agentic task decomposition, what is 'prompt chaining' (a fixed sequential pipeline)?",
+    "options": [
+      "A loop in which the agent revises subtasks each round based on intermediate findings.",
+      "A sequence of prompts whose order and structure are fixed in advance, where each step's output flows into the next.",
+      "Running multiple unrelated prompts in parallel with no coordination.",
+      "A single mega-prompt that asks the model to perform every step at once."
+    ],
+    "explanations": [
+      "Wrong — that describes dynamic adaptive decomposition, the opposite shape.",
+      "Correct — prompt chaining means a known recipe executed identically each time; the steps are decided by the architect, not by intermediate findings.",
+      "Wrong — that's parallel fan-out without sequencing, not chaining.",
+      "Wrong — a mega-prompt is the anti-pattern that decomposition is designed to replace."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "pre",
+    "qid": "815a2a87-4aa5-4e1c-b293-5855df0cf9b7"
+  },
+  {
+    "question": "An agent must investigate the root cause of a production incident with no predefined runbook. Which decomposition shape fits best?",
+    "options": [
+      "A fixed sequential pipeline with all steps locked at design time.",
+      "A single mega-prompt that contains every log, metric, and deploy.",
+      "A dynamic adaptive plan that revises the open subtasks based on what each round of findings reveals.",
+      "Parallel one-shot fan-out with no coordinator and no integration step."
+    ],
+    "explanations": [
+      "Wrong — a fixed pipeline cannot follow leads it produces; it dutifully runs predetermined steps even when the data points elsewhere.",
+      "Wrong — one giant prompt suffers attention dilution and still doesn't adapt as evidence comes in.",
+      "Correct — incident root-cause is open-ended; the next probe depends on what the prior probe surfaced. The plan must update each round.",
+      "Wrong — uncoordinated parallel probes can't revise the plan based on findings; you'll execute irrelevant probes and miss the lead."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "pre",
+    "qid": "eaefaa8d-0637-469d-94ec-98f3265e3050"
+  },
+  {
+    "question": "A reviewer agent must inspect a 40-file PR. Why decompose into a per-file local pass plus a separate cross-file integration pass instead of using one giant prompt?",
+    "options": [
+      "A single mega-prompt suffers attention dilution: when 40 files compete for the model's attention, per-file detail attention degrades and subtle local issues (typos, off-by-ones, missing null checks) drop off.",
+      "Single prompts cost more tokens than two passes; cost is the primary driver.",
+      "The model has a hard 10-file limit per prompt regardless of context size.",
+      "Decomposition reduces the model's reasoning to constant time complexity."
+    ],
+    "explanations": [
+      "Correct — the bottleneck is attention, not capacity. Two passes give the local pass full per-file attention and the integration pass focused cross-file scope.",
+      "Wrong — token cost is not the architectural reason; the issue is attention quality, and decomposition often costs more total tokens.",
+      "Wrong — there is no fixed 10-file ceiling. Models can hold many files; they just can't attend to each uniformly.",
+      "Wrong — decomposition doesn't change algorithmic complexity; it changes attention distribution."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "pre",
+    "qid": "bc70caef-bc6d-48ea-9d8a-84b0bc51b55f"
+  },
+  {
+    "question": "After per-file local-review subagents complete, what should the cross-file integration pass receive as its input?",
+    "options": [
+      "The full raw contents of every file re-concatenated into one prompt.",
+      "Only the diff hunks of each changed file.",
+      "A randomized 20% sample of the raw file contents.",
+      "Structured summaries from the local passes — file paths, exported symbols, local issues, API changes — without the raw file contents."
+    ],
+    "explanations": [
+      "Wrong — re-feeding raw files re-creates the attention-dilution problem the decomposition was designed to avoid.",
+      "Wrong — diff-only loses surrounding context (exports, public surfaces) needed to detect cross-file contract drift.",
+      "Wrong — random sampling produces inconsistent integration coverage and may miss the very files where cross-file issues live.",
+      "Correct — the integration pass should reason over structured summaries so its attention focuses on cross-file structure (contracts, naming, integration coverage), not on local detail."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "pre",
+    "qid": "d050264b-6728-4949-a107-4ba34b409e5f"
+  },
+  {
+    "question": "A team's PR review agent uses one prompt containing every changed file. They report that on larger PRs, local issues like missing null checks and small typos are being missed. What is the most likely cause and the right fix?",
+    "options": [
+      "The model is selecting wrong tools — switch to a different model.",
+      "Attention dilution from a single mega-prompt — decompose into per-file local-analysis passes plus a separate cross-file integration pass.",
+      "The system prompt needs more polite phrasing — add reassuring language.",
+      "Tool calls are missing — add more MCP tools to the agent."
+    ],
+    "explanations": [
+      "Wrong — model choice doesn't fix attention dilution; the problem is how the work is structured, not which model runs it.",
+      "Correct — packing many files into one prompt dilutes per-file attention. Per-file local pass + cross-file integration pass restores focused attention at each layer.",
+      "Wrong — phrasing has no bearing on attention distribution across many files.",
+      "Wrong — adding tools doesn't address the structural issue of asking one prompt to attend to many files at once."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "pre",
+    "qid": "0a605e94-f08c-4746-b62a-8e13d3ec339b"
+  },
+  {
+    "question": "An incident-response agent executes a fixed 5-step playbook (logs → metrics → deploys → DB → vendor) on every incident. The team complains it often misses obvious leads — e.g., logs reveal one failing service but the agent still runs the DB and vendor checks. What is the architectural fix?",
+    "options": [
+      "Lengthen the playbook to 10 steps so more is covered.",
+      "Shorten the playbook to 3 steps and accept lower coverage.",
+      "Replace the fixed playbook with a dynamic adaptive plan: after each step, revise the open subtasks based on what was just found, dropping irrelevant probes and adding lead-driven ones.",
+      "Run all 5 steps in parallel instead of serially."
+    ],
+    "explanations": [
+      "Wrong — making the script longer doesn't make it adaptive; it just executes more irrelevant steps.",
+      "Wrong — fewer steps reduce coverage but still cannot follow leads.",
+      "Correct — open-ended investigation requires the plan to revise based on findings. The fixed playbook cannot follow leads its own steps produce; an adaptive plan can.",
+      "Wrong — parallelism without adaptation still runs irrelevant probes; concurrency doesn't make a fixed plan responsive to evidence."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "pre",
+    "qid": "d7a14b3f-ad3d-4731-b756-5e9effaa113a"
+  },
+  {
+    "question": "A coordinator is asked to 'add comprehensive tests to a large legacy codebase with no test plan.' Which approach matches the canonical decomposition for open-ended tasks?",
+    "options": [
+      "Map the codebase structure and existing coverage; prioritize modules by impact (criticality × coverage gap × downstream blast radius); then write tests adaptively, revising the plan as dependencies surface during execution.",
+      "Iterate alphabetically through every file and write whatever tests come to mind for each.",
+      "Use one mega-prompt that contains the entire repository and ask 'write tests.'",
+      "Use a fixed sequential pipeline with the file list and per-file procedure both known up front."
+    ],
+    "explanations": [
+      "Correct — this is the 'map → prioritize → adapt' shape: structural mapping produces an artifact, prioritization grounds selection in impact, and adaptation lets the plan revise as real dependencies surface.",
+      "Wrong — alphabetical order ignores impact and dependency, producing tests that don't track risk or readiness.",
+      "Wrong — a giant prompt suffers attention dilution and produces shallow output for any large repo.",
+      "Wrong — the file list isn't actually known up front in a meaningful sense (which to test, in what order); the work is inherently discovery-driven."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "pre",
+    "qid": "7e09903d-8c3c-404d-bf31-b0ee8b5f99fe"
+  },
+  {
+    "question": "An architect proposes 'we'll just use a 200K-token context window so the agent sees all 40 PR files at once and won't need to decompose into local + integration passes.' What is the strongest critique?",
+    "options": [
+      "200K is overkill for 40 files; use a smaller window.",
+      "The cost of large contexts is prohibitive.",
+      "Latency at 200K is unacceptable for a code review.",
+      "Capacity isn't the bottleneck — attention is. A 200K context can hold the files but does not make per-file detail attention uniform; the only way to restore focused attention is to decompose."
+    ],
+    "explanations": [
+      "Wrong — capacity sizing is a side concern; the architectural critique is about attention.",
+      "Wrong — cost may be a factor, but it's not the principled critique. Even free, the attention problem remains.",
+      "Wrong — latency is a side effect; the architectural critique is that capacity does not equal attention.",
+      "Correct — attention degrades when many files compete in one prompt; widening capacity does not fix that. Decomposition is the architectural fix."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "pre",
+    "qid": "da5d3d55-9acd-487a-8546-27d48a2999e0"
+  },
+  {
+    "question": "A team decomposes a code review into 22 per-file local-review subagents, each producing local findings, and skips the cross-file integration pass to save time. What is the most likely consequence?",
+    "options": [
+      "Cross-file issues — API contract drift across modules, naming inconsistencies, missing integration coverage, duplicated logic — go undetected because no pass is looking at them.",
+      "Local issues such as null-check omissions will be missed.",
+      "Subagent context isolation will fail and contaminate findings.",
+      "The coordinator's context will overflow during result collection."
+    ],
+    "explanations": [
+      "Correct — the per-file passes catch local issues; cross-file issues live in the gaps between files, and only the integration pass is shaped to see them. Skipping it means those issues escape review.",
+      "Wrong — local issues are exactly what per-file passes catch; that part of review is intact.",
+      "Wrong — subagent isolation isn't broken by skipping integration; that's a Task 1.3 mechanism.",
+      "Wrong — collecting 22 structured summaries doesn't overflow context; in fact it's much smaller than re-feeding 22 raw files."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "pre",
+    "qid": "aa93c9cd-3d8e-4f4d-8a1d-c04f673b2211"
+  },
+  {
+    "question": "The workflow is 'generate API reference documentation for every endpoint in /api; the procedure for each endpoint is identical.' An architect proposes building this as a dynamic adaptive plan that re-decides each step. What is wrong with that choice?",
+    "options": [
+      "Nothing is wrong — adaptive plans always outperform chains.",
+      "Adaptive plans are too slow for any production workflow.",
+      "The work is predictable and enumerable: every endpoint goes through the same procedure. Adaptation introduces nondeterminism with no information gain. A fixed prompt chain is the correct shape.",
+      "Adaptive plans cannot produce JSON output."
+    ],
+    "explanations": [
+      "Wrong — adaptation is only a fit when intermediate findings shape the next subtask. For predictable enumerable work, it is the wrong tool.",
+      "Wrong — speed isn't the principled critique; the principled critique is shape mismatch.",
+      "Correct — a fixed chain is right when you can pre-enumerate every subtask. Adaptive plans add cost and nondeterminism for no benefit when the procedure is uniform.",
+      "Wrong — both shapes can produce JSON; output format is not what distinguishes them."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "pre",
+    "qid": "89e8a246-e8fb-4185-8512-23c917a61554"
+  },
+  {
+    "question": "Which statement most precisely captures when a fixed sequential pipeline (prompt chaining) fits versus a dynamic adaptive decomposition?",
+    "options": [
+      "Fixed pipelines fit open-ended investigation; adaptive plans fit predictable enumerable workflows.",
+      "Both shapes fit any workflow equally; the choice is essentially stylistic.",
+      "Fixed pipelines fit predictable, multi-aspect workflows where every input goes through the same known steps; adaptive plans fit open-ended investigation where the next subtask depends on what prior findings revealed.",
+      "Adaptive plans should always be preferred because they are more flexible and self-correct."
+    ],
+    "explanations": [
+      "Wrong — this inverts the rule. Fixed pipelines belong on predictable workflows, adaptive plans belong on open-ended ones.",
+      "Wrong — the choice is principled, not stylistic. Picking the wrong shape produces brittle agents (scripted playbook misses leads, adaptive plan adds noise to enumerable work).",
+      "Correct — the matching rule. The cheap mental test is: can you pre-enumerate every subtask before running the agent? Yes → chain. No → adapt.",
+      "Wrong — adaptive plans burn LLM turns on plan-regeneration for no information gain on uniform workflows, and introduce nondeterminism into processes that should be deterministic."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "999756a1-cc22-4b57-a224-399b41c39066"
+  },
+  {
+    "question": "A coordinator runs 18 per-file local-review subagents in parallel. To best preserve the decomposition's attention benefit, what should the cross-file integration pass receive as input?",
+    "options": [
+      "All 18 raw files plus a summary of each file's findings, so the integration agent has full context.",
+      "All 18 raw files only, with no summaries, to avoid biasing the integration agent.",
+      "Only the file paths, and let the integration agent re-read each file as needed.",
+      "Only the structured summaries (paths, exported symbols, issues, API changes) produced by the local passes — no raw file contents."
+    ],
+    "explanations": [
+      "Wrong — re-attaching all 18 raw files re-creates the attention-dilution problem that decomposition exists to avoid; adding summaries on top makes the prompt even larger without restoring focus.",
+      "Wrong — same problem as A without the summaries. The integration pass loses the local-analysis insights and inherits the dilution.",
+      "Wrong — re-reading files defeats the parallel decomposition; the integration pass would re-do local analysis instead of focusing on cross-file structure.",
+      "Correct — structured summaries let the integration pass attend exclusively to cross-file concerns (contract drift, naming, integration coverage) without the per-file noise."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "081ddc66-f3a1-4834-aa21-18b274556439"
+  },
+  {
+    "question": "During an adaptive investigation into a deployment latency regression, the first probe finds latency spiked on service A specifically. What should the coordinator do next?",
+    "options": [
+      "Revise the plan: drop now-irrelevant broad probes (generic database health, vendor status), and add new subtasks targeted at service A — recent deploys, upstream caller patterns, dependency timeline.",
+      "Continue executing the originally planned probes regardless of the finding, then synthesize at the end.",
+      "Run all remaining initial probes in parallel without revision, to maximize coverage.",
+      "Terminate the investigation and report 'latency spiked on service A' as the final answer."
+    ],
+    "explanations": [
+      "Correct — that's the adaptive loop: ingest findings, revise the open-subtask list (drop dead-ends, add lead-driven probes, reprioritize), then dispatch the next round.",
+      "Wrong — that turns the agent into a fixed chain again. The whole point of an adaptive plan is to follow leads as they appear.",
+      "Wrong — running irrelevant probes in parallel wastes turns and doesn't move the investigation toward root cause.",
+      "Wrong — 'service A spiked' is a symptom locator, not a root cause. The investigation should now drill into service A."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "491228da-1065-4e77-a245-0ff987178655"
+  },
+  {
+    "question": "A reviewer suggests 'for the integration pass, just re-feed all 40 files plus the local findings — that way the model has full context.' Why is this counter to the decomposition's design?",
+    "options": [
+      "The cost is too high relative to the value.",
+      "Re-feeding raw files re-creates the attention-dilution problem the per-file decomposition was designed to avoid; the integration pass is meant to focus exclusively on cross-file structure by reasoning over structured summaries, not raw content.",
+      "Models cannot accept more than 5 files at once regardless of context size.",
+      "Local findings are redundant with raw file contents and only one is needed."
+    ],
+    "explanations": [
+      "Wrong — cost is a side concern. The architectural problem is that re-feeding raw files defeats the very attention-restoration that decomposition exists to provide.",
+      "Correct — the integration pass's value comes from a focused attention profile on cross-file concerns. Re-attaching all 40 files re-introduces the dilution that motivated the split in the first place.",
+      "Wrong — there is no fixed 5-file ceiling; the issue is attention quality, not raw acceptance.",
+      "Wrong — local findings and raw files carry different information; the findings are the structured artifact the integration pass is supposed to reason over."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "0d044181-469a-431d-be7f-7811473ee31f"
+  },
+  {
+    "question": "Why does parallel per-file local review pair naturally with coordinator-subagent orchestration (Task 1.3) rather than the coordinator handling each file in sequence within its own context?",
+    "options": [
+      "Subagents are intrinsically faster than the coordinator on any task.",
+      "Subagents reduce token costs by a fixed 50% in this pattern.",
+      "Each subagent runs in isolated context (Task 1.2), so per-file attention is uncontaminated by prior files; this amplifies the local-pass attention benefit. Parallel execution also reduces wall-clock time.",
+      "Subagents share the coordinator's context, which improves cross-file reasoning during the local pass."
+    ],
+    "explanations": [
+      "Wrong — there's no inherent speed advantage; the win is attention isolation and parallelism.",
+      "Wrong — there is no fixed cost reduction. Subagents may even increase total tokens; the win is attention quality.",
+      "Correct — context isolation per subagent means each file gets the model's full focused attention, with no leakage from other files. Combined with parallel dispatch, this is why the pattern dominates large-PR review.",
+      "Wrong — subagents do *not* inherit the coordinator's context (Task 1.2 hub-and-spoke). That's the whole point — isolation is the feature."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "07296ed0-a739-474f-b330-4e3ee49491a4"
+  },
+  {
+    "question": "A security audit agent is deployed against a sprawling internal service with no pre-defined attack surface. The team is debating (a) a scripted 7-step playbook vs (b) an adaptive plan that revises subtasks each round. Which is correct, and why?",
+    "options": [
+      "The adaptive plan: the scope is open-ended, and findings (a discovered admin endpoint, an unexpected service dependency) generate new subtasks the playbook could not have pre-enumerated. The plan must revise as evidence accumulates.",
+      "The scripted playbook: it is more controllable and produces predictable results.",
+      "Neither — use a single mega-prompt with the entire codebase attached.",
+      "The scripted playbook, but with the steps run in parallel for speed."
+    ],
+    "explanations": [
+      "Correct — open-ended security audits are exactly the workflow shape that demands an adaptive plan: each finding may reveal a new surface to investigate, and a scripted playbook cannot follow those leads.",
+      "Wrong — controllability comes at the cost of relevance. A scripted playbook will execute predetermined steps even when findings point elsewhere, and will miss surfaces that weren't pre-enumerated.",
+      "Wrong — a mega-prompt suffers attention dilution and still cannot adapt to evidence as it accumulates.",
+      "Wrong — parallelism doesn't make a fixed playbook adaptive; it just runs irrelevant steps faster."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "7819c87a-8b7c-4d49-b772-08252487a5dc"
+  },
+  {
+    "question": "A coordinator is told 'add comprehensive tests to a 600-file legacy backend.' It immediately starts writing tests for the first file it encounters. What is the architectural error, and what is the correct fix?",
+    "options": [
+      "The model is too small for the task; switch to a larger model.",
+      "The coordinator skipped the mapping pass. Without first producing a structural map (modules, exports, dependency graph, current coverage) and a prioritization grounded in impact (criticality × coverage gap × downstream blast radius), file selection degenerates to whatever it sees first. The correct shape is map → prioritize → adapt.",
+      "Used too few subagents; spawn 600 parallel test-writing subagents at once instead.",
+      "Should have used a single mega-prompt with all 600 files attached and asked 'write tests.'"
+    ],
+    "explanations": [
+      "Wrong — model size doesn't fix the missing-decomposition error. A larger model will still pick a file at random if it isn't told to map and prioritize first.",
+      "Correct — open-ended legacy-codebase work has three phases: map structure and coverage, prioritize by impact, then execute adaptively. Skipping mapping turns prioritization into guessing.",
+      "Wrong — 600 parallel subagents without prioritization just amplifies the unguided selection problem.",
+      "Wrong — 600 files in one prompt produce extreme attention dilution and shallow output; the issue is shape, not capacity."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "768efa3a-05d0-4ea1-a05e-3560462c2173"
+  },
+  {
+    "question": "After a successful mapping pass on a legacy codebase, an architect proposes 'lock the prioritized list now and walk through it strictly in order — no revision during execution.' What goes wrong?",
+    "options": [
+      "Locking simplifies execution and is the correct call for any prioritized plan.",
+      "Execution will be measurably slower without parallelism.",
+      "Total token cost will exceed budget without explicit caps.",
+      "Real codebases reveal dependencies only when modules are actually touched. A locked plan can't insert prerequisite subtasks (e.g., 'clarify module B's contract before testing module A') or deprioritize subtrees whose dependencies turn out to be already-tested. The plan must remain editable through execution."
+    ],
+    "explanations": [
+      "Wrong — locking removes the adaptation that makes the shape work for open-ended tasks. The plan must respond to discoveries during execution.",
+      "Wrong — speed isn't the architectural critique. The critique is that a locked plan cannot reflect what execution reveals.",
+      "Wrong — token cost is a side concern; the principled issue is plan staleness.",
+      "Correct — the third phase is 'dependency-aware adaptation' precisely because real dependencies surface during execution. The plan must absorb those findings (insert prerequisites, deprioritize, add new high-impact items)."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "1080357f-1afc-48f0-a755-25fec56f828c"
+  },
+  {
+    "question": "Task 1.6 (decomposition) and Task 4.6 (multi-instance / multi-pass review architectures) describe overlapping ideas — per-file local + cross-file integration. How are they best understood as different lenses on the same principle?",
+    "options": [
+      "1.6 is the agent-workflow shape (chain vs adapt; per-file + integration as a coordination pattern across subagents). 4.6 is the prompt-engineering view of multi-pass review (independent reviewer instances catching what self-review misses, calibrated confidence per finding). Same underlying principle, different layer.",
+      "They contradict each other; only one applies in any given exam question.",
+      "1.6 applies to Claude Code only; 4.6 applies to the API only.",
+      "4.6 deprecates 1.6 in newer SDK versions."
+    ],
+    "explanations": [
+      "Correct — the principle (decompose into focused passes; pair local detail with integration breadth; use independent reviewer context to catch what self-review misses) shows up at both layers. 1.6 names the orchestration; 4.6 names the prompt-level review architecture.",
+      "Wrong — they reinforce each other; the exam may probe either lens.",
+      "Wrong — both apply across SDK and Claude Code surfaces; the distinction is the layer of abstraction.",
+      "Wrong — neither task deprecates the other; they are complementary."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "e3aa4c55-45bc-46e7-9bdf-d2a57f20e931"
+  },
+  {
+    "question": "A team is choosing decomposition shapes for two workflows: (W1) 'generate API reference docs for every endpoint in openapi.yaml' and (W2) 'investigate why our weekend batch job is producing duplicate rows.' Which assignment is correct?",
+    "options": [
+      "W1 → adaptive plan; W2 → fixed chain.",
+      "W1 → fixed sequential pipeline (work is enumerable, the per-endpoint procedure is uniform, no findings change the plan). W2 → dynamic adaptive plan (open-ended; the next probe depends on what the prior probe revealed about the duplicate-row source).",
+      "Both → fixed chain (predictability is always preferable).",
+      "Both → adaptive plan (flexibility is always preferable)."
+    ],
+    "explanations": [
+      "Wrong — this inverts the rule. W1 is enumerable and uniform (chain); W2 is discovery-driven (adaptive).",
+      "Correct — applying the cheap mental test: W1's subtasks are pre-enumerable (the endpoint list); W2's next subtask depends on intermediate findings (which job step inserts duplicates? which input causes them?). Different shapes for different workflow types.",
+      "Wrong — fixed chains on open-ended investigation produce scripted playbooks that can't follow leads, the canonical anti-pattern.",
+      "Wrong — adaptive plans on enumerable uniform workflows burn turns on plan-regeneration for no information gain and introduce nondeterminism into a process that should be deterministic."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "2ffc6bd2-0586-4ae9-80b2-901c05a068b7"
+  },
+  {
+    "question": "A junior engineer suggests 'Claude Sonnet 4.6 has a 1M context — let's dump all 80 files of the PR into one prompt and ask for every issue. Then we don't need to decompose.' Why is this counter to Task 1.6's framing?",
+    "options": [
+      "The 1M context window incurs a much higher per-request cost; per-file passes are cheaper.",
+      "Capacity isn't the bottleneck — attention is. A 1M window can hold the files but cannot make the model pay equal attention to each, so subtle local issues drop off (attention dilution). Decomposition into per-file local passes plus a separate cross-file integration pass is what fixes the attention problem.",
+      "Each file should be reviewed in a separate API call to bypass shared rate limits.",
+      "The model would still hit hidden internal token limits below 1M; per-file passes are needed for token fit."
+    ],
+    "explanations": [
+      "Wrong — cost is a side concern; the architectural reason is attention, not budget. The question is testing why decomposition is necessary regardless of capacity.",
+      "Correct — Task 1.6 explicitly calls out 'longer context window' as the wrong answer. The bottleneck is attention dilution: per-file detail attention degrades as more files compete for it. Decomposition (per-file local + cross-file integration) is the structural fix.",
+      "Wrong — the API has no shared per-prompt rate limit being addressed here. Decomposition is for attention, not network plumbing.",
+      "Wrong — the issue isn't a hidden token cap. The 1M window does hold the files; it's that the model can't pay even attention across them."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "6dff5589-b990-4c38-8667-95fd1fd9a6ea"
+  },
+  {
+    "question": "A coordinator is running a multi-day adaptive investigation. Findings accumulate, and its session context is approaching its budget. Where should the open-subtask list live so context turnover doesn't destroy the plan?",
+    "options": [
+      "In the coordinator's system prompt, kept current via prompt versioning each round.",
+      "Embedded inside each subagent's invocation prompt and reconstructed by parsing subagent outputs.",
+      "A scratchpad / manifest file the coordinator reads and rewrites between rounds (Task 5.4 pattern), so the plan survives context turnover and long-running investigations.",
+      "As an in-memory variable in the coordinator process, refreshed from history every few turns."
+    ],
+    "explanations": [
+      "Wrong — system prompts are static; mutating them between rounds is fragile and won't survive a fresh coordinator session. The plan needs durable external storage.",
+      "Wrong — reconstructing the plan from subagent outputs is lossy and brittle. Each subagent only sees its own slice; the plan as a whole has no canonical home there.",
+      "Correct — Task 1.6 (and Task 5.4) prescribe a scratchpad/manifest file. The coordinator owns the plan, reads it at the start of each round, and rewrites it after ingesting findings. This is what makes long-running adaptive investigations resilient to context turnover.",
+      "Wrong — in-memory state evaporates on session restart and is invisible to subagents. A file is the right primitive here precisely because it's durable and inspectable."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "f484ff5e-98ac-4421-920a-17fc147235b4"
+  },
+  {
+    "question": "An agent asked to 'harden security across this 400-file legacy service' immediately starts with 'I'll begin with auth.py since that's important-sounding.' Two days later it has thoroughly hardened auth.py and a few adjacent files but not the actual high-risk surface. What's the architectural error?",
+    "options": [
+      "The system prompt should have specified which files to harden up front.",
+      "The agent should have used a longer context window to load all 400 files at once.",
+      "The agent skipped the mapping pass. Without first producing a structural map (dependency graph, exposed surface area, current security posture per module) and then prioritising by impact (criticality × gap × blast radius), prioritisation degenerates to guessing — the agent picked a file by its name. Map → prioritise → adapt is the prescribed shape for open-ended legacy work.",
+      "The agent needs few-shot examples of 'how to harden a file.'"
+    ],
+    "explanations": [
+      "Wrong — pushing the prioritisation onto the user defeats the agent's purpose. The agent itself should perform the mapping pass and produce a grounded plan.",
+      "Wrong — capacity is not the issue. Even with 400 files in context, picking auth.py first because of its name is the same mistake as picking it via context — both skip the structural impact analysis.",
+      "Correct — Task 1.6 names this exact failure: skipping the mapping pass means prioritisation has nothing structural to score over, so the agent name-guesses. Mapping → prioritisation → adaptive execution is the prescribed shape.",
+      "Wrong — few-shot examples shape the *how* of hardening one file, not the *which* of selecting files. The selection problem is what mapping + prioritisation solves."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "d90340c5-14c9-43c1-8289-4a1fb120b079"
+  },
+  {
+    "question": "For a workflow that generates API reference docs for every endpoint defined in `openapi.yaml` (predictable, uniform per-endpoint procedure), which decomposition shape fits Task 1.6 best?",
+    "options": [
+      "A fixed prompt-chain: enumerate endpoints, run the same per-endpoint doc-generation prompt for each, then a single concatenation / cross-link pass. Every input goes through the same known steps in the same order.",
+      "An adaptive plan that re-evaluates after each endpoint to decide what to do next.",
+      "A single mega-prompt with the entire `openapi.yaml` asking for 'all the docs.'",
+      "One subagent per endpoint with no concatenation/cross-link step."
+    ],
+    "explanations": [
+      "Correct — endpoints are enumerable and the per-endpoint procedure is uniform. This is the textbook prompt-chain workflow class. Adaptation here would add non-determinism with no information gain.",
+      "Wrong — adaptive plans suit open-ended investigation; for an enumerable, uniform workflow they introduce non-determinism into a process that should be the same every run.",
+      "Wrong — the mega-prompt is the canonical attention-dilution pitfall. Endpoints would compete for attention and quality would degrade.",
+      "Wrong — without a concatenation/cross-link pass, references between endpoints (shared schemas, related operations) won't be wired up. The integration step is what makes per-endpoint output cohere."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "3febc970-d9e8-4d46-b7e5-2d3d3281f4a7"
+  },
+  {
+    "question": "A team's PR review pipeline runs per-file local subagents successfully, but the integration pass receives the raw file contents of all 22 files PLUS the local findings. Cross-file inconsistencies are still missed. What's the diagnosis?",
+    "options": [
+      "The integration model's temperature is too low, so it anchors on local findings.",
+      "22 files isn't enough — the integration pass needs more parallel evidence sources to triangulate.",
+      "Re-feeding raw files dilutes the integration pass's attention exactly the way a single mega-prompt would. The integration pass must reason over the *structured summaries* the local passes produced (paths, exports, API changes, signatures, severity-tagged issues) — not the raw files. Decomposition's benefit comes from never re-introducing raw bulk to the cross-file step.",
+      "The local passes are too detailed; trim them aggressively before passing to integration."
+    ],
+    "explanations": [
+      "Wrong — temperature doesn't fix structural attention dilution. The issue is that the integration pass is now drowning in raw content.",
+      "Wrong — adding more files to the integration pass makes it worse, not better. The fix is removing raw bulk, not adding more.",
+      "Correct — Task 1.6 explicitly names re-feeding raw files into the integration pass as defeating the decomposition. The integration pass operates on structured summaries; that's what keeps its attention focused on cross-file structure.",
+      "Wrong — trimming the local findings is the wrong end. The local findings are the right input; the raw files are the wrong addition."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "37d01b0b-73a8-45a1-b85a-0798ef35f9e3"
+  },
+  {
+    "question": "After a successful mapping + prioritisation pass for 'add tests to legacy codebase,' two execution designs are debated: (a) strict descending-priority walk with no deviation, vs (b) dependency-aware adaptation that re-orders the queue when a discovered dependency means another module must be tested first. Which is correct, and why?",
+    "options": [
+      "(a) — strict order avoids non-determinism and is auditable.",
+      "(a) when paired with a thorough mapping pass; (b) only when the mapping was incomplete.",
+      "They are equivalent; pick whichever the team prefers.",
+      "(b) — real codebases reveal dependencies only when you start writing tests for a module. The plan must update during execution: insert prerequisite subtasks, deprioritise subtrees whose dependencies are already covered, surface newly-discovered high-impact modules. Locking the plan after mapping is an anti-pattern Task 1.6 specifically calls out."
+    ],
+    "explanations": [
+      "Wrong — strict locking is the named anti-pattern. Even thorough mapping can't preempt dependencies that surface only when you start touching modules.",
+      "Wrong — this misframes the role of mapping. Mapping is broad and shallow; some dependencies surface only during execution regardless of how thorough the mapping was.",
+      "Wrong — they have very different outcomes. Strict-order execution can write tests in the wrong sequence (testing a module whose contract isn't yet locked); adaptive execution catches this.",
+      "Correct — Task 1.6 prescribes dependency-aware adaptive execution. The plan stays editable; new prerequisites get inserted, already-covered subtrees get deprioritised, and high-impact modules surfaced during execution get promoted."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "11af1d07-322b-4d69-b59f-3206b1ae2859"
+  },
+  {
+    "question": "An on-call team uses a scripted Claude agent for incident response with steps 'check logs → check metrics → check deploys → check dependencies → write postmortem stub.' On an incident where step 1 logs already pointed to a single misbehaving service, the agent ignored that lead and dutifully ran every remaining step before returning. What's the right fix?",
+    "options": [
+      "Replace the chain with an adaptive investigation plan: the coordinator runs an initial probe, ingests findings, and revises the open-subtask list (promoting promising leads, dropping dead-ends, adding newly-surfaced scopes). Root-cause work is the workflow class for which adaptive decomposition is correct.",
+      "Move the scripted steps into a single mega-prompt so the agent sees them all at once.",
+      "Remove step 1 (logs) from the script so the agent can't get distracted by it.",
+      "Add a 'skip step' instruction to the system prompt and let the model decide when to skip."
+    ],
+    "explanations": [
+      "Correct — root-cause investigation is the textbook adaptive-plan workflow. The coordinator generates an initial plan, examines findings, then revises the plan each round (promote leads, drop dead-ends, add new scopes). This is what lets the agent follow leads its own findings produce.",
+      "Wrong — collapsing the steps into a mega-prompt doesn't add adaptability; it adds attention dilution on top of the existing rigidity.",
+      "Wrong — removing the step that produced the lead is exactly backwards. The lead is what the agent needed to follow; the bug is the chain's inability to act on it.",
+      "Wrong — 'skip step' is a probabilistic patch that still uses a fixed chain underneath. The correct architectural change is to drop the chain entirely in favour of an adaptive plan."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "468a46d1-ce81-4aef-9707-19e01d7fa6b2"
+  },
+  {
+    "question": "The mapping pass for an open-ended legacy task tends to produce verbose discovery output (directory trees, dependency graphs, coverage tables). Where should this verbose output live so it doesn't bloat the coordinator's context?",
+    "options": [
+      "Inline it in the coordinator's system prompt so all later phases can reference it.",
+      "Inline it directly in the coordinator's running conversation so later steps can read it back.",
+      "Delegate the mapping pass to an exploration subagent (Task 5.4 pattern). The subagent's verbose discovery output stays in the subagent's isolated context; the coordinator receives a structured summary suitable for prioritisation. The coordinator's context stays focused on the plan, not the discovery noise.",
+      "Compress the discovery output into a single line; verbosity is the only issue."
+    ],
+    "explanations": [
+      "Wrong — system prompts are static. Stuffing dynamic mapping output into a system prompt is a misuse of that channel and doesn't keep the coordinator's running context clean.",
+      "Wrong — that's exactly the bloat Task 1.6 (and 5.4) warn against. Verbose discovery noise crowds out the plan and degrades attention on the prioritisation phase.",
+      "Correct — pairing the mapping pass with an exploration subagent isolates the verbose output. The coordinator receives only what it needs (a structured summary), which keeps its context focused on the plan and prioritisation.",
+      "Wrong — over-compression destroys the structural information that prioritisation needs to score over. Isolation in a subagent is the right move, not lossy compression."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "3ab04b8f-2495-49f7-ae3f-2c73e570ca52"
+  },
+  {
+    "question": "Which formula for module prioritisation in the 'add comprehensive tests to legacy codebase' task best matches Task 1.6's 'rank by impact' guidance?",
+    "options": [
+      "A score combining business criticality, current coverage gap, and downstream blast radius (e.g., `criticality × gap × blast_radius`), with explicit per-module reasoning. Modules that are critical, currently uncovered, and depended upon by many others rank highest.",
+      "Alphabetical order — low-effort, deterministic, and fair across modules.",
+      "Whichever modules the agent encounters first while traversing the directory tree in BFS order.",
+      "Module size in lines of code — bigger files are riskier so test them first."
+    ],
+    "explanations": [
+      "Correct — Task 1.6 names this exact formulation. The score grounds prioritisation in actual structural impact (criticality, current coverage gap, downstream blast radius) and the per-module reasoning makes the plan auditable.",
+      "Wrong — alphabetical order has no relationship to impact. It's deterministic but useless; the agent ends up testing modules in name order rather than risk order.",
+      "Wrong — directory traversal order reflects filesystem layout, not structural risk. Two refactors apart and the priority shuffles for no good reason.",
+      "Wrong — file size is a noisy proxy. A small auth/session.py is far more critical than a 2000-line generated stub. The right axes are criticality, coverage gap, and blast radius."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "0cf2055f-0b51-4ce9-a3f2-17bb719dbf29"
+  },
+  {
+    "question": "A team uses a Claude agent to publish a daily compliance report by fetching from the same five MCP sources, normalising each, and emitting a templated Markdown report. They've built it with 'adaptive plan revision' — the coordinator generates a fresh plan each run and decides next steps. Reports are inconsistent day-to-day; some days fields are missing because the agent 'decided' they weren't relevant. What's the diagnosis?",
+    "options": [
+      "The MCP sources are returning inconsistent data; fix them first.",
+      "Adaptive decomposition is wrong for this workflow class. The work is enumerable, uniform, and predictable — five known sources, a known normalisation per source, a known template. A fixed prompt-chain (or a deterministic non-LLM script for the structural parts) is correct. Adaptation introduces non-determinism into a process that should be uniform across runs.",
+      "The system prompt isn't strict enough about which fields must be included.",
+      "The team should switch to a more capable model; smaller models drift on adaptive plans."
+    ],
+    "explanations": [
+      "Wrong — even if the MCP sources were perfectly consistent, adaptation would still cause the agent to skip fields it 'decided' weren't relevant. The diagnosis is upstream of source data.",
+      "Correct — Task 1.6 calls this out explicitly: adaptive decomposition for predictable, enumerable workflows wastes turns on plan-regeneration and introduces non-determinism. A fixed chain is the right shape; adaptation is for open-ended investigation.",
+      "Wrong — patching with a stricter prompt is a probabilistic fix on top of a structural problem. The structural fix is to drop adaptive plan revision entirely.",
+      "Wrong — model capability doesn't change the workflow class. A more capable model would still 'adapt' a workflow that should be uniform."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "2b0a92a4-0ff3-4fbb-ab0f-47b4e59053e1"
+  },
+  {
+    "question": "An adaptive incident investigation has produced findings that surface THREE plausible leads simultaneously: (a) a recent deploy on service A, (b) an unusual spike in cache evictions, and (c) a vendor status-page incident. The coordinator has limited turns left. Which next-round behaviour best matches Task 1.6's adaptive-plan guidance?",
+    "options": [
+      "Pick lead (a) only because it was discovered first, and drop (b) and (c) to conserve turns.",
+      "Re-prioritise all three leads against the original question's relevance, dispatch the top-ranked one (or top two in parallel as independent subagents) with isolated context, and keep (b) and (c) on the open-subtask list to be re-evaluated after the new findings come in.",
+      "Spawn 3 deep-dive subagents in parallel for (a), (b), and (c) simultaneously and treat the investigation as a fixed chain from this point.",
+      "Drop all three and regenerate a brand-new plan from scratch to avoid bias from prior findings."
+    ],
+    "explanations": [
+      "Wrong — discovery order is not a relevance signal. The plan must be re-prioritised against the original question; arbitrarily abandoning leads (b) and (c) loses information the agent paid to collect.",
+      "Correct — that's the adaptive loop in its mature form: re-prioritise the open-subtask list using the latest findings, dispatch the highest-ranked work (optionally a small fan-out for top-N independent leads), and keep the rest on the list for re-evaluation after the next round. The plan stays editable; nothing gets dropped without evidence.",
+      "Wrong — committing to all three leads in parallel and freezing the structure abandons adaptation. The point of the adaptive loop is that each round's findings can deprioritise or expand other leads; locking a fan-out throws that away.",
+      "Wrong — regenerating from scratch discards accumulated evidence. The plan is meant to be revised incrementally, not rebuilt; fresh-from-scratch regeneration both wastes turns and re-introduces randomness."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "3a798b72-938d-4386-98c9-eb37221265c5"
+  },
+  {
+    "question": "A team's per-file local-review subagents return free-form prose describing each file ('this file looks mostly fine, the function on line 42 has a small issue, the imports could be cleaner'). The integration pass struggles to find cross-file API drift. What is the underlying decomposition error?",
+    "options": [
+      "The local-pass subagents are using the wrong model and should switch to a stronger reasoning model.",
+      "The local pass should produce a STRUCTURED summary per file (path, exported symbols, signature changes, severity-tagged issues, API changes) — not free-form prose. The integration pass reasons over that structured payload to detect cross-file contract drift; prose loses the structure the integration pass needs.",
+      "The integration pass should be replaced with another local pass per file to double-check.",
+      "The team should drop the integration pass; cross-file drift is the local pass's responsibility."
+    ],
+    "explanations": [
+      "Wrong — model choice doesn't fix the missing structure. Even a stronger model can't extract API contracts reliably from free-form prose at scale.",
+      "Correct — Task 1.6 specifies that the integration pass operates on structured summaries (file paths, exported symbols, issues, API changes). Prose strips those fields out, so cross-file reasoning has nothing to compare. The fix is at the local-pass output schema, not at the integration pass's prompt.",
+      "Wrong — re-running local passes doesn't introduce cross-file structure; it just produces more prose. The architectural fix is upstream: enforce a structured payload from the local pass.",
+      "Wrong — cross-file drift is precisely what the integration pass exists for. Asking each local pass to also catch cross-file issues re-introduces the attention-dilution problem the decomposition was designed to solve."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "65a513a4-822f-4766-852a-0b592d3d82ab"
+  },
+  {
+    "question": "A request arrives: 'review this 30-file PR AND, while you're at it, figure out why our CI flake rate doubled this week.' What is the correct decomposition shape?",
+    "options": [
+      "Combine both into a single adaptive plan; flexibility covers both kinds of work.",
+      "Combine both into a single fixed chain; predictability is preferable.",
+      "Treat them as TWO separate workflows with different shapes: the PR review uses a fixed prompt-chain (per-file local + cross-file integration), and the CI-flake investigation uses a dynamic adaptive plan (open-ended, lead-driven). Do not collapse them into one shape just because they arrived together.",
+      "Refuse the request and ask the user to split it into two tickets."
+    ],
+    "explanations": [
+      "Wrong — applying adaptive decomposition to the PR review introduces non-determinism into a workflow that should be uniform across files; it also wastes turns on plan regeneration when the per-file procedure is already known.",
+      "Wrong — applying a fixed chain to the open-ended CI-flake investigation produces a scripted playbook that cannot follow leads its own findings produce — the canonical anti-pattern.",
+      "Correct — Task 1.6's principle is that the SHAPE of decomposition must match the workflow class. Two workflows arriving in the same request can require different shapes: one is enumerable and uniform, the other is discovery-driven. Keep them separate; pick the right shape for each.",
+      "Wrong — the agent can absolutely handle both; refusing is unnecessary. The right move is recognising the shape mismatch and applying each shape to its appropriate workflow."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "b5585cca-9641-41d2-99ba-90c96a77b560"
+  },
+  {
+    "question": "Which of the following is the cleanest 'cheap mental test' for choosing between a fixed prompt-chain and a dynamic adaptive plan, per Task 1.6?",
+    "options": [
+      "Is the workflow user-facing or internal? User-facing → chain; internal → adapt.",
+      "Is the input small or large? Small → chain; large → adapt.",
+      "Will it run more than once a day? Yes → chain; no → adapt.",
+      "Can you write down the complete list of subtasks BEFORE running the agent? Yes → fixed prompt-chain. If the next subtask depends on what step N produced and you cannot pre-enumerate, → adaptive plan."
+    ],
+    "explanations": [
+      "Wrong — user-facing vs internal has no bearing on workflow shape. Plenty of internal workflows (incident investigation) are open-ended; plenty of user-facing ones (doc generation per endpoint) are predictable.",
+      "Wrong — input size is irrelevant to shape choice. Both shapes scale across input sizes; the determinant is whether subtasks are pre-enumerable.",
+      "Wrong — execution frequency doesn't determine shape. A daily compliance report is a fixed-chain workflow; a once-in-a-blue-moon predictable migration is also a chain.",
+      "Correct — this is exactly the test Task 1.6 prescribes. Pre-enumerable subtasks → chain. Subtasks that only exist after step N's output → adaptive plan. It is the single decisive criterion."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "3a5c1218-cf98-4619-a748-1a88aa443661"
+  },
+  {
+    "question": "An adaptive investigation has been running for several rounds. The team asks: 'when should the loop terminate?' Which condition matches Task 1.6's framing best?",
+    "options": [
+      "Always after a fixed number of rounds (e.g., 5) — adaptive plans need a hard cap to prevent runaway costs.",
+      "When the very first round's findings produce any plausible explanation — early termination is preferable.",
+      "When the open-subtask list contains no subtasks above a relevance threshold OR a sufficient answer has converged from accumulated findings. The loop is evidence-driven, not turn-counted.",
+      "When the plan has revised itself the same way twice in a row — convergence on identical revisions signals completion."
+    ],
+    "explanations": [
+      "Wrong — fixed-round caps are an emergency budget rail at most; they don't reflect the architectural termination condition. A 4-round investigation that has converged should not run a 5th round just because the cap allows it.",
+      "Wrong — early termination on the first round forfeits the adaptive plan's purpose. 'Plausible' is not the same as 'sufficient'; root-cause work usually requires multiple rounds before convergence.",
+      "Correct — Task 1.6 prescribes evidence-driven termination: the loop ends when no remaining subtask is above the relevance threshold (dead-ends closed, no new leads worth pursuing) or the accumulated findings have converged on a sufficient answer. Either condition can fire first.",
+      "Wrong — identical revisions twice in a row is a thin proxy at best and easily fooled by oscillation. The principled test is relevance threshold OR convergence on a sufficient answer — both grounded in the findings, not the plan's edit history."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "ae356855-5c0a-4b8d-9784-9bedece3edb1"
+  },
+  {
+    "question": "In the open-ended legacy-codebase shape, why does Task 1.6 prescribe MAPPING and PRIORITISATION as two separate phases rather than fusing them into a single 'map-and-rank' pass?",
+    "options": [
+      "Two passes are always better than one for any task involving more than 50 files.",
+      "Mapping and prioritisation use different models; the split is a model-routing optimisation.",
+      "Fusing them violates Anthropic's API rate limits.",
+      "Mapping is broad-and-shallow exploration that produces a structural artifact (modules, exports, dependency graph, current coverage). Prioritisation reasons OVER that artifact to score modules by impact (criticality × gap × blast radius). Mixing them dilutes both: the mapping pass starts ranking before it has the full structure, and the prioritisation pass starts exploring instead of scoring."
+    ],
+    "explanations": [
+      "Wrong — file count is not the principled reason. The principled reason is the different attention profiles of the two phases.",
+      "Wrong — the same model can run both phases. The split is architectural, not about model routing.",
+      "Wrong — there is no rate-limit constraint that motivates this split. The reason is purely about attention quality and phase clarity.",
+      "Correct — Task 1.6 explicitly notes that mapping is broad-and-shallow exploration producing an artifact, while prioritisation reasons over that artifact to score by impact. Combining them dilutes both; separating them keeps each phase's attention focused on its own goal."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "cbb688ec-4402-4479-b764-676824ba06fe"
+  },
+  {
+    "question": "An architect proposes spawning ONE subagent per FUNCTION (rather than per file) for code review of a 25-file PR with ~400 functions, arguing that finer granularity gives even better attention. What is the strongest critique?",
+    "options": [
+      "Per-function granularity is strictly better than per-file; the architect is correct and should proceed.",
+      "Per-function granularity wastes subagent overhead AND fragments the natural review unit. A single function rarely contains enough context for meaningful local review (callers, helpers, related types in the same file are often essential), and the integration pass would now have to reconstruct file-level context from 400 fragments. Task 1.6's per-file granularity sits at the natural review boundary; finer is not better.",
+      "Per-function granularity is fine; just skip the integration pass to save time.",
+      "Per-function granularity should be paired with a per-line-range integration pass for symmetry."
+    ],
+    "explanations": [
+      "Wrong — finer is not automatically better. Granularity should match the natural unit of analysis; for code review, the file is the unit because functions need their file-local context to be reviewable in isolation.",
+      "Correct — per-file is the natural unit because a file groups callers, helpers, types, and tests of the related functionality. Per-function fragments lose that context, force the integration pass to reassemble it, and multiply subagent overhead with no commensurate attention gain.",
+      "Wrong — skipping the integration pass is the named anti-pattern; it leaves cross-file (or cross-function) drift undetected. The granularity question is independent of whether the integration pass is needed.",
+      "Wrong — symmetry is not an architectural principle here. There is no benefit to a per-line-range integration pass; integration is meant to span files (or, if you've fragmented to functions, to span functions reassembled into files), not to mirror local granularity."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "5cff766a-58eb-4da6-85af-c6cdde72f027"
+  },
+  {
+    "question": "The workflow is 'generate API reference docs for every endpoint in /api,' BUT the team notes that ~10% of endpoints are flagged as deprecated and should produce a slightly different doc shape. An architect argues this introduces enough variation that an adaptive plan is now warranted. Is this correct?",
+    "options": [
+      "Yes — any per-input variation justifies an adaptive plan over a fixed chain.",
+      "Yes — deprecation handling is inherently open-ended.",
+      "No — the variation is a known, enumerable conditional ('if endpoint is deprecated, use template B; else template A'). Conditionals inside a fixed chain do not turn it into an adaptive plan. Adaptive plans are for workflows where the next subtask cannot be pre-enumerated based on findings; here every endpoint's procedure (including the conditional) is fully specifiable up front. Fixed chain is still correct.",
+      "No — but the fix is to drop deprecated endpoints from the workflow entirely."
+    ],
+    "explanations": [
+      "Wrong — known per-input variation is what conditionals (if/else) inside a fixed chain are for. The chain remains a chain even when steps branch on input type, as long as the branches are pre-enumerable.",
+      "Wrong — deprecation handling is just a different template, not an open-ended investigation. The next subtask after 'check deprecation flag' is fully determined by the flag; nothing about that requires adaptation.",
+      "Correct — adaptive plans apply when the next subtask is unknown until findings reveal it. Pre-enumerable conditional branches inside a chain (if-deprecated-then-template-B) do NOT count; the chain shape still applies because every subtask can be written down in advance. Adaptation introduces non-determinism with no information gain.",
+      "Wrong — dropping deprecated endpoints is a scope change, not an architectural fix. The architectural answer is that the chain handles per-input branching just fine."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "95a53e34-135d-4d42-8e0d-0bd69948f6b9"
+  },
+  {
+    "question": "During the prioritisation phase for 'add tests to legacy codebase,' two modules score high on coverage gap (both 0% covered) but differ sharply on the OTHER axes: module X is critical to login and depended on by 12 other modules; module Y is a leaf utility with zero downstream callers and modest criticality. Which prioritisation logic best reflects Task 1.6's `criticality × gap × blast_radius`?",
+    "options": [
+      "Tie — both are 0% covered, so the coverage gap is the dominant factor.",
+      "Y first — leaf modules are easier to test and produce quick wins.",
+      "Determined alphabetically; the formula is too noisy to use literally.",
+      "X first — criticality and downstream blast radius multiply with the (equal) coverage gap, giving X a much higher score. Y's leaf status (low blast radius) and lower criticality drag its product score down even though its coverage gap matches X's. The formula is multiplicative precisely so high-blast-radius critical modules dominate."
+    ],
+    "explanations": [
+      "Wrong — coverage gap alone isn't the score. The formula multiplies criticality × gap × blast radius; equal gap doesn't equate to equal priority when the other factors differ sharply.",
+      "Wrong — 'easy wins' is not in the formula. Optimising for ease over impact is precisely what the formula is designed to prevent; you'd end up with thorough leaf coverage and untested critical paths.",
+      "Wrong — the formula is the named guidance. Replacing it with alphabetical order discards the structural impact analysis that justifies the prioritisation phase in the first place.",
+      "Correct — the multiplicative formula amplifies modules that are critical AND uncovered AND widely depended-on. X (critical login, 0% covered, 12 downstream) dominates Y (low criticality, 0% covered, 0 downstream) even though both share the gap factor. That's the formula's whole point: surface high-leverage work."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "c3c4cec6-25e8-4766-b162-14dad5c62232"
+  },
+  {
+    "question": "An architect proposes that the cross-file integration pass should re-invoke each per-file subagent to FETCH any extra detail it needs ('if I'm checking whether file A's API change broke file B, I'll just call the file-A subagent again with a follow-up question'). What is wrong with this design?",
+    "options": [
+      "Re-invoking per-file subagents from the integration pass blurs the decomposition's two-phase shape: the local pass is supposed to produce a complete structured summary in one shot, and the integration pass is supposed to reason over that artifact alone. Allowing the integration pass to issue ad-hoc callbacks turns the integration pass into a coordinator that re-runs local analysis on demand, re-introducing the per-file detail attention into the cross-file reasoning step. The fix is to enrich the local pass's structured payload (e.g., always include the full exported-API surface and changed signatures) so the integration pass has everything it needs without callbacks.",
+      "Nothing is wrong; this is the textbook pattern.",
+      "The integration pass cannot invoke subagents at all due to API constraints.",
+      "Re-invoking subagents is fine, but only if their context is reset between calls."
+    ],
+    "explanations": [
+      "Correct — the decomposition's two-phase shape relies on each phase having a clean attention profile. Letting the integration pass call back into local agents collapses that separation and forces cross-file reasoning to share its attention budget with on-demand local detail. The architectural fix is to make the local pass's payload complete enough to support cross-file reasoning standalone (full exported-API surface, signatures, severity-tagged issues), not to chain callbacks.",
+      "Wrong — Task 1.6's two-phase shape explicitly avoids this. The integration pass operates on structured summaries; ad-hoc callbacks defeat the purpose.",
+      "Wrong — there is no API constraint preventing re-invocation; any framework allows it. The critique is architectural (attention/separation), not a platform restriction.",
+      "Wrong — context reset between calls doesn't fix the structural problem. The integration pass is still doing local detail work via proxy, which dilutes its cross-file attention. The fix is at the local pass's output schema."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1",
+      "1.6"
+    ],
+    "phase": "post",
+    "qid": "155ddc1f-cb13-40d3-98b7-ab0a6de10166"
+  }
+]

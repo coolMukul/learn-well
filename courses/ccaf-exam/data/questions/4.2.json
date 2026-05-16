@@ -1,0 +1,882 @@
+[
+  {
+    "question": "A support-routing agent's prose system prompt details the rules for choosing between lookup_order and process_refund, but production logs show inconsistent tool selection on ambiguous user phrasing. Which technique does the exam guide name as the most effective remedy?",
+    "options": [
+      "Lengthen the prose instructions with more edge-case wording",
+      "Add 2-4 targeted few-shot examples covering the ambiguity",
+      "Switch the agent to a smaller, faster model",
+      "Replace the system prompt with a JSON schema description"
+    ],
+    "explanations": [
+      "Lengthening prose tends to add words without resolving the ambiguity the model already failed on; the guide does not list this as the primary fix.",
+      "Few-shot prompting is the single most effective technique called out for consistent, actionable output when prose alone produces drift; 2-4 examples covering the ambiguity is the canonical shape.",
+      "Model size affects raw capability, not formatting consistency, and is unrelated to prompt-engineering remedies for inconsistent output.",
+      "A JSON schema describes shape but not the decision principle; the guide treats schemas as complementary to, not a substitute for, few-shot examples."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "pre",
+    "qid": "46707497-3cb4-47bb-89e7-7f0799e43d0c"
+  },
+  {
+    "question": "How many few-shot examples does the exam guide recommend for ambiguous-decision tasks?",
+    "options": [
+      "Exactly 1, to keep the prompt short",
+      "2 to 4, chosen to span the ambiguity",
+      "10 or more, for maximum coverage",
+      "As many as the context window allows"
+    ],
+    "explanations": [
+      "One example tends to be treated as a template; the model matches surface features instead of inferring the rule.",
+      "The guide explicitly recommends 2-4 targeted examples, chosen so they span the ambiguity rather than pile on similar cases.",
+      "Beyond 4 examples returns diminish quickly while context cost grows and overfitting to incidental shared features increases.",
+      "Filling the context with examples wastes tokens, risks overfitting, and is not the recommended pattern."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "pre",
+    "qid": "91a12443-ba1e-44ff-b1a1-6af212895b49"
+  },
+  {
+    "question": "An extraction agent produces an output that omits a field whenever the source document doesn't follow the lab's own template. The few-shot block contains five examples, all from that one template. Best fix?",
+    "options": [
+      "Add five more examples from the same template to reinforce the format",
+      "Remove all examples and rely on the prose schema description",
+      "Replace several examples with samples drawn from different document layouts",
+      "Increase the temperature so the model is more flexible"
+    ],
+    "explanations": [
+      "More examples of the same template reinforce the wrong rule (\"match this layout\") and worsen generalisation.",
+      "Dropping examples removes the high-signal context the model conditions on; prose schemas are weaker than worked examples.",
+      "Spanning structural variants teaches the underlying rule (find the field wherever it appears) rather than the template, which is the canonical fix.",
+      "Temperature affects sampling randomness, not the model's understanding of which layouts count as valid inputs."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "pre",
+    "qid": "39f03de1-1c1c-4cab-99f1-6235e9bc9c43"
+  },
+  {
+    "question": "A code-review agent should output entries with location, issue, severity, suggested fix. What's the most reliable way to lock that format in?",
+    "options": [
+      "Describe the four fields in prose at the top of the system prompt",
+      "List the field names in a Markdown table after the user message",
+      "Add a regex post-processor to validate the output and retry on failure",
+      "Provide 2-3 filled-in examples in the exact field-name format, including one no-issue case"
+    ],
+    "explanations": [
+      "Prose schema descriptions are easy to misread or under-specify and tend to drift across responses.",
+      "Markdown tables in the prompt don't bind the output format reliably; the model still treats the format description as advisory.",
+      "Post-processing catches failures after the fact; it doesn't address the consistency problem at its source.",
+      "Demonstrating the exact field names in worked examples — plus one empty/no-issue example — is the canonical shape that produces stable structured output."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "pre",
+    "qid": "3a80362e-eb59-4eb7-9745-9f4c9af694aa"
+  },
+  {
+    "question": "Why is including a short reasoning trace inside a few-shot example more effective than showing only the chosen output?",
+    "options": [
+      "Because the model copies the reasoning verbatim into every response",
+      "Because reasoning surfaces the decision principle, which generalises to novel inputs sharing the principle",
+      "Because reasoning increases the temperature of subsequent samples",
+      "Because reasoning lets the model skip tool calls entirely"
+    ],
+    "explanations": [
+      "The model does not copy the reasoning verbatim; reasoning shapes the inference, not the literal output.",
+      "Showing why one action was picked over a plausible alternative teaches the underlying principle, which generalises better than the chosen output alone.",
+      "Reasoning text in examples does not change sampling temperature.",
+      "Reasoning in examples doesn't suppress tool calls; it shapes the model's choice of which action to take."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "pre",
+    "qid": "7ed18e14-e94c-471c-b8b4-40e1126fe68d"
+  },
+  {
+    "question": "A research-paper extraction agent works on inline-citation papers but confidently fabricates author names on footnote-bibliography papers. Which adjustment best reduces the hallucination?",
+    "options": [
+      "Add a few-shot example with footnote-bibliography layout, including a legitimate-empty case",
+      "Lower the model's temperature to near zero",
+      "Add a regex that rejects any output without a year",
+      "Tell the model in prose to 'never make up author names'"
+    ],
+    "explanations": [
+      "Examples spanning structural variants — and one demonstrating a legitimate empty/null result — directly teach the model that not every paper has the same layout, sharply reducing extraction hallucination.",
+      "Low temperature reduces randomness but does not teach the model to recognise an unfamiliar layout.",
+      "A regex catches some malformed outputs but does not address the underlying confusion about layout.",
+      "Prose prohibitions are weak compared to demonstrations; the model needs to see what to do, not just what not to do."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "pre",
+    "qid": "a6ec2b68-6a61-473c-953c-f1ed521473d2"
+  },
+  {
+    "question": "Which statement best describes the difference between a few-shot block that teaches a rule and one that teaches a template?",
+    "options": [
+      "Rule-teaching blocks have more examples; template-teaching blocks have fewer",
+      "Template-teaching blocks always use JSON; rule-teaching blocks always use Markdown",
+      "Rule-teaching blocks span the dimensions of variation; template-teaching blocks cluster around one surface form",
+      "There is no functional difference; both behave identically"
+    ],
+    "explanations": [
+      "Count alone doesn't determine generalisation; coverage of the input space does.",
+      "Format choice (JSON vs Markdown) is independent of whether the examples teach a rule or a template.",
+      "Examples that span the input space's dimensions of variation teach the rule; examples that cluster around a single surface form teach a template the model matches against.",
+      "There is a measurable functional difference: template-style blocks fail on novel inputs, rule-style blocks generalise."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "pre",
+    "qid": "c37fda08-0115-476e-ae65-8e3787af3a68"
+  },
+  {
+    "question": "A team's CI review agent has been failing on a specific class of false-positive (flagging bounded loops as infinite). They add one more few-shot example showing the exact failing case being correctly handled. Why might this fix underperform?",
+    "options": [
+      "Because the example wasn't placed at the start of the system prompt",
+      "Because copying the failing case teaches the model to recognise that case but doesn't teach the underlying principle of boundedness",
+      "Because few-shot examples must always be exactly 4",
+      "Because the model ignores examples that resemble production data"
+    ],
+    "explanations": [
+      "Position within the system prompt has at most a marginal effect; it does not explain the failure to generalise.",
+      "An example that mirrors the failing case narrows the model's notion of the rule to that case; better is an example that demonstrates the principle (boundedness) generalisably.",
+      "There is no rule that examples must be exactly 4; 2-4 is the recommended range.",
+      "The model does not selectively ignore production-resembling examples; if anything it over-weights them."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "pre",
+    "qid": "98f81803-93e9-47da-8468-2739c9a00f11"
+  },
+  {
+    "question": "A few-shot block for a triage agent shows only the chosen action in each example, without explaining why. Which symptom is most likely to appear in production?",
+    "options": [
+      "The model produces output far longer than the examples",
+      "The model generalises perfectly to novel inputs",
+      "The model matches surface features and fails on inputs that share the principle but not the surface form",
+      "The model refuses to act unless reasoning is present in the user message"
+    ],
+    "explanations": [
+      "Output length tracks the example length, not whether reasoning was included.",
+      "Examples without reasoning generalise less well, not more, because the model can't see the decision principle.",
+      "Without a reasoning trace, the model has to guess which surface feature mattered; novel inputs that share the principle but not the surface form get the wrong action.",
+      "The model does not refuse to act based on reasoning being absent in user input."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "pre",
+    "qid": "c93bd887-b19c-4635-9280-6a169830c18f"
+  },
+  {
+    "question": "Which of the following is the canonical four-field shape demonstrated by few-shot examples for code review output?",
+    "options": [
+      "title / abstract / body / conclusion",
+      "input / output / expected / actual",
+      "location / issue / severity / suggested fix",
+      "id / timestamp / user / payload"
+    ],
+    "explanations": [
+      "title/abstract/body/conclusion is a paper structure, not a code-review entry shape.",
+      "input/output/expected/actual is a unit-test diff shape, not the review-entry shape called out in the guide.",
+      "Location, issue, severity, suggested fix is the canonical four-field shape demonstrated by few-shot examples for review output.",
+      "id/timestamp/user/payload is a generic event shape, not the review shape."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "pre",
+    "qid": "e6f219c5-4a71-4b35-ad7a-8a1463b6d332"
+  },
+  {
+    "question": "A Scenario 1 support agent inconsistently picks process_refund vs lookup_order on ambiguous phrasing. The prompt has one few-shot example showing a correct refund. What's the most disciplined first improvement?",
+    "options": [
+      "Add a second example covering the lookup_order side of the ambiguity, with a brief reasoning trace",
+      "Duplicate the existing refund example so the model sees the right answer twice",
+      "Remove the example and replace it with a longer prose policy",
+      "Add ten more refund examples to dominate the prompt"
+    ],
+    "explanations": [
+      "Adding a contrasting example with reasoning brings the example count into the recommended 2-4 range and covers the ambiguity dimension, which is the principle the model needs to learn.",
+      "Duplication does not span the ambiguity; the model already saw that side.",
+      "Removing the example and writing more prose moves away from the most effective technique called out by the guide.",
+      "Volume on one side of the decision teaches the model to pick that side rather than to disambiguate."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "485b9c3a-3ee9-475f-811f-18ed4c5b2b02"
+  },
+  {
+    "question": "An extraction prompt has three examples, all from a single invoice vendor. Production data includes invoices from twenty vendors. Symptom most consistent with this setup?",
+    "options": [
+      "High accuracy across all vendors but slow latency",
+      "High accuracy on the demonstrated vendor and degraded accuracy on the other nineteen",
+      "Refusal to extract anything until temperature is lowered",
+      "Random reordering of fields in every output"
+    ],
+    "explanations": [
+      "Latency is unrelated to example diversity; this is an accuracy-distribution issue.",
+      "Examples that all share one layout teach the model to match that layout, so accuracy concentrates on the demonstrated vendor and falls off on others.",
+      "The model does not refuse based on temperature; this is not a typical refusal trigger.",
+      "Field ordering is governed by the example shape, not example diversity."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "791f61d8-54f5-4403-b357-0d31fe5f0888"
+  },
+  {
+    "question": "A code-review agent's few-shot examples show severities high, medium, low — but never the case where no issue is found. What additional example most improves output consistency?",
+    "options": [
+      "A fourth example showing severity 'critical'",
+      "A fourth example explicitly demonstrating the no-issue / empty case",
+      "A fourth example with severity in a foreign language",
+      "A fourth example showing the same content as the high-severity example"
+    ],
+    "explanations": [
+      "Adding another non-empty severity widens the severity ladder but doesn't teach the empty case the model is currently missing.",
+      "An empty/no-issue example teaches the model that 'no findings' is a legitimate output, reducing confidently-fabricated low-severity entries on clean code.",
+      "Foreign-language severity teaches an unrelated axis of variation and likely confuses parsing.",
+      "Duplicating high-severity content reinforces a shape the model already has."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "a1d71c7a-bddc-4b36-8d03-e9627374c8a8"
+  },
+  {
+    "question": "An agent's few-shot block currently has 3 examples. The team is debating whether to expand to 12 examples. Which trade-off should they weigh first?",
+    "options": [
+      "12 examples will always be more accurate than 3",
+      "12 examples cost more context and risk overfitting to incidental shared features without commensurate accuracy gain",
+      "12 examples will speed up the model's response",
+      "12 examples are required by the certification's prompt-engineering policy"
+    ],
+    "explanations": [
+      "Accuracy does not increase monotonically with example count; the guide warns about diminishing returns.",
+      "Beyond ~4 examples, additional examples cost context and tend to overfit to surface features common to the set, often without measurable accuracy improvement.",
+      "More examples increase prompt size and don't speed up generation.",
+      "There is no certification-mandated example count; the recommended range is 2-4."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "ea2c8554-e0df-48b0-a8cb-aa053e62e3ff"
+  },
+  {
+    "question": "Which of the following is the strongest signal that a few-shot block is teaching a template rather than a rule?",
+    "options": [
+      "The block contains exactly four examples",
+      "The block contains JSON-formatted output",
+      "All examples share the same surface structure and the model fails on inputs that deviate from that structure",
+      "The block has been in the system prompt for more than 30 days"
+    ],
+    "explanations": [
+      "Four examples is well within the recommended range; example count is not the diagnostic.",
+      "JSON formatting is orthogonal to whether the examples teach a rule.",
+      "When all examples share a surface form and production failures cluster on inputs that deviate from that form, the block has taught the template, not the rule.",
+      "Time in the prompt is not a signal of template-vs-rule failure."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "905ea5eb-6b53-4581-af92-df58d487bce4"
+  },
+  {
+    "question": "A CI agent's prompt currently uses prose to describe its output schema. The team adds two worked examples in the desired location/issue/severity/fix format and removes the prose schema. Which outcome is most likely?",
+    "options": [
+      "Output drifts more because the prose was load-bearing",
+      "Output becomes more consistent because demonstrations are stronger than prose schemas",
+      "Output stops including any structured fields at all",
+      "The model begins refusing to respond"
+    ],
+    "explanations": [
+      "Prose schemas are weaker than examples; replacing them with examples does not introduce new drift.",
+      "Demonstrating the format in worked examples is the canonical, more reliable approach than describing it in prose; consistency improves.",
+      "The examples explicitly include the structured fields, so the model continues to emit them.",
+      "There is no refusal trigger introduced by switching from prose to examples."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "0ee0bb99-3604-4dde-80b7-a81afffcd030"
+  },
+  {
+    "question": "An agent is choosing between escalate_to_human and process_refund. Which few-shot example is most useful for sharpening that decision boundary?",
+    "options": [
+      "An example showing process_refund being called with no narration",
+      "An example showing escalate_to_human being called with no narration",
+      "An example showing one path chosen with a brief reasoning trace that names the rejected alternative",
+      "An example showing both paths called in parallel"
+    ],
+    "explanations": [
+      "Output without reasoning teaches what to produce but not why; the boundary doesn't sharpen.",
+      "Same critique as the previous option: the chosen action without rationale leaves the decision principle implicit.",
+      "An example that names the plausible alternative and explains the rejection sharpens the boundary by teaching the discriminating feature.",
+      "Calling both in parallel is a different problem and doesn't help the model decide between them."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "ca9915ac-38b0-4dff-91e9-3566db050051"
+  },
+  {
+    "question": "Which scenario benefits MOST from adding a 'legitimate empty / null' example to its few-shot block?",
+    "options": [
+      "A greeting agent that always responds",
+      "An extraction agent that confidently fills in fields even when the source document lacks the data",
+      "A summarisation agent producing fixed-length summaries",
+      "A translation agent operating between two well-supported languages"
+    ],
+    "explanations": [
+      "A greeting agent has no extraction-style empty case; null is not a meaningful output.",
+      "Extraction agents are the canonical case where an empty/null example teaches the model that absence is a valid output, reducing confident fabrications.",
+      "Fixed-length summarisation does not have a null-output mode and isn't the targeted failure here.",
+      "Translation between supported languages typically has a value to return; the empty-case fix is mismatched."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "ac989b9e-5952-4ecd-896c-81542e0671bc"
+  },
+  {
+    "question": "A prompt currently has zero few-shot examples and uses a long prose system prompt. Output format is inconsistent. Which incremental change is most aligned with the guide?",
+    "options": [
+      "Add 2-3 worked examples in the desired output format and trim redundant prose",
+      "Double the length of the prose with extra edge-case wording",
+      "Switch the model and re-run the same prompt",
+      "Add a regex-based output validator only"
+    ],
+    "explanations": [
+      "The guide recommends 2-4 worked examples as the most effective lever for consistency; trimming redundant prose preserves context budget.",
+      "More prose rarely fixes consistency issues that worked examples would resolve.",
+      "Model swaps don't address prompt-engineering gaps and can mask, not fix, the inconsistency.",
+      "Validators catch failures after generation; they don't make outputs more consistent at the source."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "7206e288-b73c-4501-a47e-b991cbcf7d26"
+  },
+  {
+    "question": "An agent's few-shot block contains four examples, each showing the chosen action and a one-line rationale. Production logs show high accuracy on familiar inputs and reasonable generalisation to novel inputs. Which property of the block most explains the generalisation?",
+    "options": [
+      "The example count is exactly 4",
+      "Every example uses the same vocabulary",
+      "The block appears at the very end of the system prompt",
+      "The examples include reasoning that names the decision principle"
+    ],
+    "explanations": [
+      "Count within the recommended range helps but does not by itself produce generalisation.",
+      "Shared vocabulary risks teaching a template rather than a rule; that doesn't explain generalisation.",
+      "Position in the prompt has marginal effect compared to the content of the examples.",
+      "Reasoning that surfaces the decision principle is what allows the model to apply the rule to novel inputs that share the principle but not the surface form."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "594770d7-d355-4d04-9fd5-6a573a5bb821"
+  },
+  {
+    "question": "Tier 2. A document-extraction prompt has 3 examples drawn from 3 different layouts and is otherwise well-tuned. Production accuracy is 88% overall but 62% on a newly-introduced layout (a scanned-image OCR with noisy whitespace). Which next step is most aligned with the guide before more invasive changes?",
+    "options": [
+      "Remove all examples and rely on the prose schema",
+      "Keep all 3 existing examples and add a 10th, 11th, and 12th example from the noisy-OCR layout to dominate the prompt",
+      "Replace one of the existing 3 examples with one drawn from the noisy-OCR layout, keeping the count at 3",
+      "Switch to a different model immediately"
+    ],
+    "explanations": [
+      "Removing examples and relying on prose moves away from the most effective technique.",
+      "Inflating the example count past 4 hits diminishing returns and risks overfitting to the noisy-OCR layout.",
+      "Swapping in a layout the agent fails on, while keeping the count in the recommended 2-4 range, teaches the missing layout dimension without inflating context — the canonical extension of 'span the variants'.",
+      "Model swaps are an invasive change and skip the cheaper prompt-engineering fix."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "ad78dde4-f89f-4c29-8caa-171893ac8985"
+  },
+  {
+    "question": "Tier 2. Two prompt drafts are being A/B tested. Draft A: 4 examples, all showing only chosen output. Draft B: 4 examples, each with chosen output plus a one-sentence reasoning trace naming the rejected alternative. Both are otherwise identical. Which result is most aligned with the guide's principles?",
+    "options": [
+      "Draft A wins because shorter examples reduce context cost",
+      "Draft B wins because longer prompts always produce better output",
+      "Both perform identically because the chosen output is what matters",
+      "Draft B wins on novel inputs because reasoning surfaces the decision principle"
+    ],
+    "explanations": [
+      "Token savings rarely outweigh the generalisation cost of dropping reasoning; the guide explicitly recommends including reasoning.",
+      "Length alone does not predict quality; reasoning content does.",
+      "The chosen output without rationale leaves the discriminating feature implicit; behaviour on novel inputs differs.",
+      "Reasoning teaches the principle behind the choice, which generalises better to novel inputs that share the principle but not the surface form."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "b901e106-fe9c-4dbb-8522-7464a1901fe9"
+  },
+  {
+    "question": "Tier 2. A team's CI agent emits inconsistent severity values (sometimes 'high', sometimes 'High', sometimes 'critical' where they meant high). Their 3 examples each use a different capitalisation. Which fix is most aligned with the guide?",
+    "options": [
+      "Standardise the casing across examples so each one uses the same severity vocabulary",
+      "Add a fourth example with yet another casing to teach the model 'be flexible'",
+      "Remove all examples and rely on a regex post-processor",
+      "Set temperature to 1.5 to encourage variation"
+    ],
+    "explanations": [
+      "Examples are high-signal context; using a single, consistent severity vocabulary across examples teaches the model the canonical form to emit.",
+      "Adding more variants reinforces the inconsistency rather than collapsing it.",
+      "Post-processing patches symptoms but does not fix the prompt-level cause.",
+      "High temperature compounds the inconsistency rather than reducing it."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "10970e44-3af7-49cd-9b5f-ddbd148ee3f5"
+  },
+  {
+    "question": "Tier 2. An extraction agent's prompt has 3 examples, each spanning a different document layout, with reasoning. Accuracy is consistently high. The team wants to add a fourth example. Which choice yields the largest expected lift?",
+    "options": [
+      "A fourth example identical to one of the existing three",
+      "A fourth example demonstrating a legitimate empty / null result for the field",
+      "A fourth example with the same layout as example 1 but a longer body",
+      "A fourth example written in a different language than the others"
+    ],
+    "explanations": [
+      "An identical example wastes the slot; the model already has that signal.",
+      "The empty/null case is a distinct dimension currently missing from the block; covering it directly reduces confidently-wrong fill-ins, which is a separate failure mode from layout coverage.",
+      "Restating an existing layout teaches the template more strongly without adding new signal.",
+      "A language switch introduces an unrelated axis of variation and is unlikely to fix any current failure."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "544a70e0-3705-4ecd-95c8-af6dff8380ad"
+  },
+  {
+    "question": "Tier 2. A reviewer notes that a few-shot block has 2 examples (within the recommended range) but generalises poorly. Which diagnostic question best identifies the root cause?",
+    "options": [
+      "Did we reach the maximum example count?",
+      "Do the 2 examples span the dimensions of variation the production inputs exhibit?",
+      "Are the examples sorted alphabetically?",
+      "Is the prompt under 1000 tokens?"
+    ],
+    "explanations": [
+      "Count is within range; this is not the gating factor.",
+      "Generalisation depends on whether the examples cover the input space's dimensions of variation; clustering in one corner of the space is the typical failure mode.",
+      "Alphabetic sorting has no effect on inference quality.",
+      "Token length is a budget concern, not a generalisation predictor."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "01062ae3-7bba-4fdb-9f71-81c242479686"
+  },
+  {
+    "question": "Tier 2. The team has correctly added 3 layout-spanning examples and the agent now generalises well across layouts. A new failure appears: the agent occasionally returns the wrong field name (e.g., 'methods' instead of 'methodology'). Which fix targets the root cause?",
+    "options": [
+      "Add a fourth example with yet another layout",
+      "Standardise the field names across all 3 existing examples to the canonical form ('methodology')",
+      "Switch to a regex post-processor that maps synonyms to the canonical name",
+      "Lower the temperature to 0"
+    ],
+    "explanations": [
+      "Layout coverage is already adequate; the failure is about field naming, not layout.",
+      "The field names used in the examples are the field names the model will use; ensuring all examples spell 'methodology' the same way directly fixes the inconsistency at the source.",
+      "Synonym mapping patches the symptom; the prompt itself can be fixed more cheaply.",
+      "Temperature does not cause the model to invent alternative field names that are present in the examples; standardising the examples is the targeted fix."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "6051c9b2-7f86-41c8-b6e7-3624b2509881"
+  },
+  {
+    "question": "Tier 2. A few-shot block contains 4 examples for a tool-selection task, but each example uses heavy prose narration around the chosen tool. Symptom: in production, the agent emits long natural-language preambles before tool calls. What's the cleanest prompt-level fix?",
+    "options": [
+      "Remove all examples to discourage narration",
+      "Trim the narration in the examples so they show only the brief reasoning + tool selection the team wants",
+      "Add a system-level instruction prohibiting natural-language output",
+      "Increase the example count to 10"
+    ],
+    "explanations": [
+      "Removing examples loses high-signal context and is an over-correction.",
+      "The model mirrors the shape of the examples; tightening the example narration directly tightens production output.",
+      "A blanket prohibition fights the demonstrations; demonstrations almost always win, so the demonstrations themselves should be tightened.",
+      "Inflating the count without tightening shape compounds the narration problem."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "a5fb57f5-e9d8-4485-9215-207802175dcc"
+  },
+  {
+    "question": "Tier 2. A team is choosing between (A) 2 examples that span the ambiguity and (B) 5 examples that all show the same correct path. Production has roughly even traffic across both sides of the ambiguity. Which is more aligned with the guide?",
+    "options": [
+      "A — fewer examples but spanning the ambiguity dimension",
+      "B — more examples even if they cluster on one side",
+      "Either choice performs identically",
+      "Neither — fall back to prose only"
+    ],
+    "explanations": [
+      "Coverage of the ambiguity dimension matters more than raw count; 2 well-placed examples beat 5 clustered ones for this distribution.",
+      "Clustering on one side teaches the model to pick that side rather than to disambiguate; bad fit for even-split production traffic.",
+      "Performance is not identical; the spanning block generalises across the production distribution.",
+      "Prose-only is weaker than worked examples and is not the recommendation."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "00bd920f-fa37-47bf-87db-dd15e89c59dd"
+  },
+  {
+    "question": "Tier 2. An agent's prompt has 3 examples — each with chosen output, reasoning, and the field-name format. Production accuracy is good but occasionally the model swaps the order of fields in the output. Most aligned fix?",
+    "options": [
+      "Verify all 3 examples present the fields in the same order; standardise if they don't",
+      "Add a regex post-processor to reorder fields after generation",
+      "Tell the model in prose 'always emit fields in this order'",
+      "Add a fourth example with a deliberately scrambled field order to teach flexibility"
+    ],
+    "explanations": [
+      "Order in the output mirrors order in the examples; ensuring all examples use the same order is the cheapest source-level fix.",
+      "Post-processing patches symptoms; the prompt cause persists.",
+      "Prose ordering instructions are weaker than demonstrations and tend to drift.",
+      "Scrambled examples teach inconsistency, the opposite of the goal."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "ff017cdc-023b-4090-b2ef-a5b2e8b03fe7"
+  },
+  {
+    "question": "Tier 2. A code-review agent flags genuine bugs reliably but produces too many false positives on style-only differences. The few-shot block has 3 examples — each one a real bug. Most effective addition?",
+    "options": [
+      "An example showing a style-only pattern correctly NOT flagged, with a reasoning trace explaining why",
+      "Three more examples of real bugs to reinforce 'flag bugs'",
+      "A prose instruction at the bottom: 'do not flag style-only issues'",
+      "A regex filter that suppresses all style-related output post-hoc"
+    ],
+    "explanations": [
+      "Examples that distinguish acceptable patterns from genuine issues — with reasoning — are explicitly called out as the technique for reducing false positives while preserving real-issue detection.",
+      "More bug examples reinforce 'flag bugs' but don't teach the model where the negative class lies.",
+      "Prose prohibitions are weaker than demonstrations of the negative class.",
+      "Suppression filters lose information and are brittle to phrasing changes."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "8a5d14c3-8181-4066-a1b8-3a7907b2b092"
+  },
+  {
+    "question": "Tier 3. An extraction prompt has 3 layout-spanning examples and continues to fail on a specific edge case: documents that contain the target field but in a section labelled differently than any example. Two engineers propose: (X) add a 4th example matching the failing label exactly; (Y) revise example 2 so its reasoning trace names the principle ('the field can appear under any heading whose semantics match X') without adding a new example. Which is more aligned with the guide?",
+    "options": [
+      "X — adding the failing case as a new example is the canonical fix",
+      "Y — revising the reasoning to surface the underlying principle generalises better than copying the failing case",
+      "Both produce identical results because the model treats them equivalently",
+      "Neither — the only correct fix is to switch models"
+    ],
+    "explanations": [
+      "Adding the failing case verbatim teaches that case but doesn't generalise to the next unfamiliar heading.",
+      "Surfacing the principle in reasoning ('any heading whose semantics match X') teaches a rule the model can apply to unfamiliar headings, which is the higher-leverage move per the guide.",
+      "The two approaches are not equivalent: principle-based reasoning generalises; verbatim copies localise.",
+      "Model swaps are not the recommended remediation when prompt engineering hasn't been exhausted."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "ebddd169-5682-4620-940b-0ed81c7d196e"
+  },
+  {
+    "question": "Tier 3. A team has a prompt with 4 well-chosen examples. They're discussing whether the 'right' technique for a new ambiguity is to add a 5th example or to rewrite one of the 4. Which framing best captures the guide's preference?",
+    "options": [
+      "Always add — more examples are strictly better up to context limits",
+      "Always rewrite — count is fixed at 4 by the guide",
+      "Prefer to keep total count in the 2-4 range; replace or revise an existing example so the set continues to span the relevant ambiguities, only growing past 4 when no existing example can be sacrificed",
+      "Either is fine; the model is insensitive to the choice"
+    ],
+    "explanations": [
+      "The guide warns about diminishing returns and overfitting past 4; 'always add' is wrong.",
+      "Count is not strictly fixed at 4; the recommendation is a 2-4 range with examples chosen for coverage.",
+      "Maintaining coverage with a tight set — replacing or revising rather than padding — preserves context efficiency and matches the guide's emphasis on targeted, ambiguity-spanning examples.",
+      "Behaviour is sensitive to whether the set spans the ambiguity; the choice matters."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "5a98edb1-2250-41be-81b5-fb1fcd8bd2ac"
+  },
+  {
+    "question": "Tier 3. A reviewer claims: 'Our extraction agent has 8 examples, all from different layouts, so we have layout coverage and the agent should generalise well.' Production data shows confidently-wrong fills on a layout the examples DO span. What is the most likely issue?",
+    "options": [
+      "8 is fewer than the guide's required minimum (which is 10)",
+      "Layout coverage alone doesn't address other failure dimensions — e.g., the absence of a legitimate-empty example or the absence of reasoning traces",
+      "The model is ignoring all examples because there are too many",
+      "Layouts alone determine generalisation completely; the issue must be a model bug"
+    ],
+    "explanations": [
+      "There is no required minimum of 10; the recommended range is 2-4.",
+      "Spanning layouts is one dimension of coverage; if the failure is confidently-wrong fills, the missing piece may be a legitimate-empty example or reasoning that names when null is correct.",
+      "The model does not categorically ignore example sets at 8.",
+      "Layouts are one dimension of variation; reasoning, empty cases, and decision principles are others. Attributing remaining failures to a 'model bug' skips the diagnosable prompt-level cause."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "a2c954ec-5755-49cc-a8b0-b10788af605d"
+  },
+  {
+    "question": "Tier 3. An agent's prompt has 4 examples covering the ambiguity well, with reasoning. A new failure type emerges: the agent is correctly choosing actions but its outputs are now LONGER than desired, with extra commentary. The team adds a 5th example showing a tightly-formatted output. Will this likely fix the verbosity?",
+    "options": [
+      "No — verbosity is unrelated to example shape",
+      "No — verbosity can only be fixed via the temperature setting",
+      "Yes, but only if the 5th example is placed first in the block",
+      "Yes — the model mirrors the shape of the examples, so a tighter exemplar shifts the average shape, though tightening ALL existing examples is more reliable"
+    ],
+    "explanations": [
+      "Verbosity tracks the demonstrated shape closely; ignoring it misdiagnoses the cause.",
+      "Temperature affects sampling randomness, not the demonstrated output shape.",
+      "Position has at most marginal effect; the content of the examples drives the model's output shape.",
+      "The model averages the demonstrated shape; one tight example helps, but tightening every example is more reliable because the model sees fewer competing shapes."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "53ccd619-21ac-41d3-a847-6562a0ed3a5c"
+  },
+  {
+    "question": "Tier 3. A junior engineer argues: 'Our few-shot block should include an example for every observed production failure case so the model never fails again.' What's the most precise correction?",
+    "options": [
+      "Agree — exhaustive case coverage is the canonical pattern",
+      "Disagree — failures can only be fixed by switching models",
+      "Disagree — failures should be addressed by examples that cover the underlying principle, not by piling on case-by-case copies, because the latter overfits and inflates context",
+      "Agree, but only if the cases are sorted by frequency"
+    ],
+    "explanations": [
+      "Case-by-case coverage is the lookup-table failure mode; the guide warns against it.",
+      "Model swaps are unrelated to the prompt-engineering decision being made here.",
+      "The principled approach is to cover the principle (often via reasoning + ambiguity-spanning examples), not to enumerate failures; case-by-case copies overfit, hit diminishing returns, and consume context.",
+      "Sorting by frequency does not change the overfitting behaviour of case-by-case enumeration."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "375d30ef-ce4d-4883-9d3d-0c21766bf8bb"
+  },
+  {
+    "question": "Tier 3. A team's prompt has 3 examples that all (a) demonstrate the format, (b) include reasoning, and (c) span layouts. A failure type appears where the model picks the wrong field name when the document uses a synonym ('approach' for 'methodology'). Which adjustment most directly targets the failure without breaking the existing strengths?",
+    "options": [
+      "Replace one example with a layout that also explicitly maps a synonymous heading ('approach') to the canonical field name 'methodology' in its reasoning trace",
+      "Drop reasoning from all examples to simplify the prompt",
+      "Switch all examples to JSON-only output",
+      "Add 7 more examples with various synonyms"
+    ],
+    "explanations": [
+      "Showing the synonym-to-canonical mapping explicitly in one example's reasoning teaches the model the discriminating principle (semantic match maps to canonical name) while preserving format, reasoning, and layout coverage.",
+      "Dropping reasoning would weaken the existing strength that's already producing good generalisation.",
+      "Format change is unrelated to the synonym-mapping failure.",
+      "Padding the count past 4 inflates context and risks overfitting; the targeted reasoning-level fix is sufficient."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "308c38ea-66f3-4157-81ba-f42cb2f6b03d"
+  },
+  {
+    "question": "Tier 3. Two prompts produce roughly equal accuracy on a development set. Prompt P has 4 examples each ~50 tokens with no reasoning. Prompt Q has 3 examples each ~150 tokens including reasoning that names rejected alternatives. Production traffic is dominated by inputs that look quite different from the dev set. Which prompt is more likely to hold up?",
+    "options": [
+      "P, because it has more examples",
+      "P, because it uses fewer tokens per example",
+      "Q, because reasoning surfaces the decision principle, which generalises better to inputs that differ from the dev distribution",
+      "Both will degrade equally; example count and reasoning content don't affect generalisation"
+    ],
+    "explanations": [
+      "Higher count alone doesn't predict generalisation when examples don't surface the principle.",
+      "Token economy doesn't compensate for missing reasoning when distribution shift is in play.",
+      "Reasoning that names rejected alternatives teaches the discriminating feature; this is the property the guide associates with generalisation to novel inputs.",
+      "Generalisation is not invariant to reasoning content; the difference is observable in production."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "458a6107-4545-48aa-9963-d2e63b4a49f9"
+  },
+  {
+    "question": "Tier 3. A prompt has 3 examples that each demonstrate severity tagging. The team adds a fourth example specifically because a particular customer keeps reporting a class of issue and they want the model to handle that customer's reports correctly. The added example mirrors the customer's exact phrasing and target tag. What is the predicted side-effect?",
+    "options": [
+      "Better generalisation across all customers",
+      "The model may overfit to the customer's surface phrasing, improving on that customer's reports while degrading subtly on others whose phrasing differs",
+      "No effect, because the fourth example is within the recommended count",
+      "The model will refuse to tag any input that doesn't match the new example exactly"
+    ],
+    "explanations": [
+      "Adding a customer-specific example doesn't broaden generalisation; it narrows the rule toward that customer's surface form.",
+      "When a new example mirrors one customer's exact phrasing, the model may treat the surface form as load-bearing, helping that customer's distribution while hurting others — the canonical 'add the failing case' overfitting pattern.",
+      "Count within range is necessary, not sufficient; content shapes outcomes more than count.",
+      "The model does not categorically refuse; the predicted effect is subtle degradation on out-of-pattern inputs."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "c8a28f89-4932-46b1-809c-2ce05ce13db0"
+  },
+  {
+    "question": "Tier 3. A team is evaluating two ways to reduce extraction hallucination. Approach 1: add 4 examples drawn from 4 different layouts. Approach 2: add 2 layout-spanning examples PLUS 1 explicit legitimate-empty example. Both keep total count <=4. Which is most aligned with the guide for reducing CONFIDENT FABRICATIONS specifically?",
+    "options": [
+      "Approach 1, because it has more examples",
+      "Approach 2, because the explicit empty case directly teaches that null is a valid output, which is the lever for reducing confident fabrications",
+      "Either, because they're equivalent",
+      "Neither — confident fabrications can only be addressed by lower temperature"
+    ],
+    "explanations": [
+      "Layout coverage helps with empty-on-novel-layout failures, but not specifically with confident fabrications when data is genuinely absent.",
+      "Confident fabrications occur when the model assumes a value must exist; a legitimate-empty example explicitly teaches that null is a valid output, which is the targeted lever per the guide.",
+      "The two are not equivalent for this failure mode; one targets layout coverage, the other targets empty-case modelling.",
+      "Temperature reduces randomness but doesn't teach the model that absence is a valid output."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "6bdf3f20-84d1-43db-b267-ac3ca854284c"
+  },
+  {
+    "question": "Tier 3. A reviewer claims 'few-shot examples are just documentation comments — the model treats them as advisory, similar to prose'. Which response best captures the guide's view?",
+    "options": [
+      "Agree — examples and prose are functionally equivalent",
+      "Disagree — examples are high-signal context the model conditions on heavily; demonstrations consistently outperform prose for shaping format and decisions",
+      "Disagree — examples are completely ignored unless tagged with a special role",
+      "Agree, but only when the prose is short"
+    ],
+    "explanations": [
+      "The guide explicitly identifies few-shot examples as the most effective technique; treating them as equivalent to prose contradicts the recommendation.",
+      "Examples are demonstrations the model conditions on heavily; the guide treats them as the strongest single lever for consistent, actionable output, well above prose alone.",
+      "There is no special-role requirement; standard few-shot blocks in the system prompt are conditioned on.",
+      "Prose length doesn't change the relative weighting; demonstrations dominate."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 4",
+      "4.2"
+    ],
+    "phase": "post",
+    "qid": "725c43bb-6d1d-45e4-a2ba-dc10edaf563f"
+  }
+]

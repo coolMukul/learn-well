@@ -1,0 +1,882 @@
+[
+  {
+    "question": "An engineer asks the agent to find every place a function called processPayment is invoked across a TypeScript monorepo. Which built-in tool should the agent reach for first?",
+    "options": [
+      "Grep with the literal pattern 'processPayment'",
+      "Glob with pattern '**/*.ts'",
+      "Read on the entry-point file, then follow imports manually",
+      "Bash running 'grep -r processPayment .'"
+    ],
+    "explanations": [
+      "Grep searches file contents across the workspace in a single call and is the correct primitive for 'find usages of this string' tasks.",
+      "Glob only returns file paths matching a name pattern; it does not look inside files and would return every TypeScript file regardless of whether they reference processPayment.",
+      "Reading and following imports manually is wasteful and slow when a single content search will surface every call site at once.",
+      "Shelling out to grep via Bash duplicates the built-in Grep tool, is slower, and may trigger extra permission prompts when the harness already exposes a structured Grep."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "pre",
+    "qid": "507a4035-4681-4676-a011-404093477483"
+  },
+  {
+    "question": "Which task is Glob designed for?",
+    "options": [
+      "Searching for a regex pattern inside source files",
+      "Listing files whose paths match a name pattern such as '**/*.test.tsx'",
+      "Reading and editing a file in one combined operation",
+      "Running shell commands like ls or find"
+    ],
+    "explanations": [
+      "Searching inside files for patterns is Grep's job, not Glob's — Glob never opens file contents.",
+      "Glob's purpose is path-matching: it returns the list of files whose paths fit the supplied glob, sorted by modification time.",
+      "Glob does not read or edit files; it only enumerates paths.",
+      "Running shell commands is Bash territory; Glob is a structured built-in for path enumeration only."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "pre",
+    "qid": "64cee757-5c0f-419b-9c97-e367652da340"
+  },
+  {
+    "question": "An Edit call fails because the supplied old_string appears five times in the target file. What is the correct first remediation?",
+    "options": [
+      "Retry Edit with the same old_string and hope a race condition resolves it",
+      "Delete the file and recreate it with Write",
+      "Switch immediately to running 'sed' through Bash to do an in-place replace",
+      "Expand old_string with surrounding context (preceding line, function signature) until it is unique"
+    ],
+    "explanations": [
+      "Edit's uniqueness check is deterministic, not racy; identical retries will always fail the same way.",
+      "Deleting and recreating loses all the unmodified content unless you reconstruct it; that is what Read+Write is for, but only after expanding context fails.",
+      "Reaching for Bash bypasses the structured built-in and risks unintended substitutions across the file.",
+      "Edit requires old_string to match exactly once. Adding surrounding context to disambiguate is the standard, cheapest fix before falling back to Read+Write."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "pre",
+    "qid": "8d0c79f9-98d8-4c3c-a998-9f4ba024023a"
+  },
+  {
+    "question": "An agent is asked to investigate why the /checkout endpoint sometimes returns a 500. Which opening move best preserves context?",
+    "options": [
+      "Read every file under src/ to build a mental model of the codebase",
+      "Glob '**/*.ts' to enumerate every TypeScript file, then Read all of them",
+      "Run Bash 'ls -R src/' to map the directory layout before doing anything else",
+      "Grep for the literal '/checkout' to locate the route handler, then Read only that file"
+    ],
+    "explanations": [
+      "Reading the whole src/ tree floods context with files the agent never needs and is the canonical anti-pattern for codebase exploration.",
+      "Globbing then reading every TypeScript file is the same anti-pattern: it loads many irrelevant files into context.",
+      "Listing the directory tells you nothing about where /checkout is handled and adds noise without progress.",
+      "Grep narrows the search to the actual entry point with a single call; Read is then targeted at the one file that matters. This is the incremental discovery pattern."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "pre",
+    "qid": "2b0d434b-4ab0-4a4b-ad9c-81c660d3c4db"
+  },
+  {
+    "question": "A developer asks the productivity agent to find every test file that imports the 'axios' library. What is the most efficient single-call pattern?",
+    "options": [
+      "Glob '**/*.test.*' first, then Read each result and scan for 'axios'",
+      "Grep with pattern 'axios' and a glob filter '**/*.test.*'",
+      "Bash 'find . -name *.test.* -exec grep axios {} +'",
+      "Read the package.json to confirm axios is a dependency, then assume every test file uses it"
+    ],
+    "explanations": [
+      "This works but takes N+1 calls and burns context Reading files that may not reference axios; the combined Grep call does it in one.",
+      "Grep accepts a glob filter, so a single call narrows to test files and searches their contents simultaneously — the cheapest correct shape.",
+      "Shelling out duplicates a built-in tool, is slower, and may hit permission prompts.",
+      "Package-level dependency presence does not mean every test file imports the package; this skips the actual question."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "pre",
+    "qid": "8c27e59e-77b3-4d44-9d31-29ae000fe3e3"
+  },
+  {
+    "question": "Which statement about Grep's output_mode is true?",
+    "options": [
+      "'files_with_matches' shows the matching lines and is the default",
+      "'content' returns only file paths and is the cheapest mode",
+      "'files_with_matches' returns paths only and is best when you just need to know where something appears",
+      "Grep has no output mode option; it always returns full file contents"
+    ],
+    "explanations": [
+      "files_with_matches returns paths only, not lines; the description is reversed.",
+      "content returns matching lines (optionally with context), not paths only; this is also reversed.",
+      "files_with_matches is the lightweight 'where does this appear?' mode and is appropriate when you don't need the surrounding text.",
+      "Grep does have output modes and never returns full file contents; that is what Read is for."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "pre",
+    "qid": "72f6f480-55a1-4c29-8500-154a710d4f7d"
+  },
+  {
+    "question": "An agent is asked to rename a local variable 'cfg' to 'config' across a 200-line file where 'cfg' appears 14 times — and where unrelated identifiers like 'cfgPath' and 'parseCfgLine' should NOT be touched. What approach is most reliable?",
+    "options": [
+      "Edit with replace_all on 'cfg' → 'config'",
+      "Run Bash 'sed -i s/cfg/config/g file.ts'",
+      "Read the file in full, reconstruct it with proper word-boundary substitutions, then Write it back",
+      "Call Edit 14 times with different anchors and hope they all succeed"
+    ],
+    "explanations": [
+      "replace_all on a substring would also clobber 'cfgPath' → 'configPath' and 'parseCfgLine' → 'parseConfigLine', breaking unrelated code.",
+      "sed without word boundaries has the same substring problem; even with word-boundary regex, this bypasses the safer built-in fallback.",
+      "When Edit cannot target individual sites without collateral damage, the standard fallback is Read → reconstruct → Write, which lets you apply word-boundary aware substitutions deterministically.",
+      "Each Edit call burns a turn, and many of the 14 anchors will not be unique without large surrounding context — slow and unreliable."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "pre",
+    "qid": "16b0d776-f04a-4917-950a-cd3981c1c74e"
+  },
+  {
+    "question": "Which of the following is an anti-pattern when working with the built-in tools?",
+    "options": [
+      "Using Grep with a 'glob' filter to scope a content search to test files",
+      "Using Read with offset/limit to load only a specific range of a large file",
+      "Reading every file under src/ upfront 'to get oriented' before responding",
+      "Switching from Edit to Read+Write after surrounding-context expansion still doesn't disambiguate"
+    ],
+    "explanations": [
+      "Combining Grep with a glob filter is the recommended efficient pattern.",
+      "Range-limited Read is exactly what offset/limit is for — a reasonable pattern for huge files.",
+      "Bulk-reading a directory for orientation is the canonical context-burning anti-pattern; targeted Grep gives orientation cheaply.",
+      "This is the documented Edit fallback path — the right move, not an anti-pattern."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "pre",
+    "qid": "b056f040-538e-44fc-8971-aa0d1d9cbb9b"
+  },
+  {
+    "question": "A function 'formatCurrency' lives in lib/format.ts but is re-exported by lib/index.ts as 'currency'. Consumers import it as 'currency'. The agent runs Grep for 'formatCurrency' across the repo and finds zero matches outside lib/. What should it conclude?",
+    "options": [
+      "The Grep was incomplete: it must also search for the re-exported alias 'currency' to find real call sites",
+      "The function is only used in lib/, so any change is local",
+      "The function has no callers and can be safely deleted",
+      "Grep is broken — it should re-run with case-insensitive matching to find more"
+    ],
+    "explanations": [
+      "The two-phase trace requires building the alias set first (find all exports/re-exports), then Grepping each alias. Without that, callers using the alias are invisible.",
+      "Same flaw — the assumption that source-file name == public name is false when re-exports rename the symbol.",
+      "Concluding 'no callers' from a single-name Grep is the classic dead-code-deletion bug in codebases with barrel files.",
+      "Case-insensitivity wouldn't help — the alias 'currency' is a different word, not a different case of 'formatCurrency'."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "pre",
+    "qid": "7bfc1355-c3da-4eaf-8124-b55499da36f4"
+  },
+  {
+    "question": "Which built-in tool is best suited for reliably applying a single-line code change when the target line text is unique within the file?",
+    "options": [
+      "Read followed by Write",
+      "Edit",
+      "Bash with sed",
+      "Glob followed by Grep"
+    ],
+    "explanations": [
+      "Read+Write works but rewrites the whole file unnecessarily and burns more tokens than needed for a one-line change.",
+      "Edit is the cheapest, cleanest primitive when old_string is unique: it diffs in place and leaves the rest of the file untouched.",
+      "Shelling out to sed bypasses the structured built-in and risks substitution surprises with unescaped characters.",
+      "Glob and Grep are discovery tools; neither modifies files."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "pre",
+    "qid": "29c7694e-0a2e-4ea9-ae27-f75be452d121"
+  },
+  {
+    "question": "A developer-productivity agent built on the Agent SDK is asked to find every React component file in a monorepo that re-exports 'Button' from a shared design-system package. The codebase has approximately 4,000 .tsx files spread across 12 workspaces. Which sequence is most efficient?",
+    "options": [
+      "Glob '**/*.tsx' to list every TSX file, then Read each one and look for the re-export",
+      "Grep with pattern 'export.*Button' and glob filter '**/*.tsx' in a single call",
+      "Bash 'grep -rE export.*Button --include=*.tsx .'",
+      "Read every workspace's index.tsx upfront, then Grep only those files"
+    ],
+    "explanations": [
+      "Reading 4,000 files individually to scan for a pattern is the worst-case context burn; it would exhaust the window long before completing.",
+      "A single Grep call with a glob filter is the canonical efficient pattern: it scopes by file type and searches contents in one round-trip.",
+      "Shelling out duplicates the built-in Grep, is slower, and the harness's structured Grep is the preferred path.",
+      "Re-exports may live anywhere, not just in index.tsx files; this misses re-exports in other module entry points and still requires a follow-up Grep."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "8ab52c31-29f2-42df-b079-62f9dfa1ed1f"
+  },
+  {
+    "question": "An agent attempts to rename a constant in a 30-line config file using Edit with old_string='timeout: 5000'. The Edit fails because that exact string appears in three sibling sections (one per environment). What is the next best step?",
+    "options": [
+      "Switch to Bash and use sed to do an in-place replace on the first match",
+      "Delete the file and rewrite it from scratch with Write",
+      "Expand old_string to include the surrounding context (e.g., the 'production:' header above the line) so the snippet is unique",
+      "Call Edit again with the same old_string and replace_all set to true"
+    ],
+    "explanations": [
+      "Bash sed bypasses the documented Edit-failure remediation path and adds risk with no benefit when expanding context would resolve it.",
+      "Recreating the file from scratch loses unmodified content unless you reconstruct it carefully; this is the heavyweight path you save for genuine rewrites.",
+      "Expanding old_string with surrounding context (the section header) is the documented first remediation when Edit fails on uniqueness — cheapest fix and preserves the targeted-edit semantics.",
+      "replace_all would change all three environments, not just the one targeted — the opposite of what is wanted."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "3b9303b0-1adf-4a4c-9b93-04c5be1a5d7b"
+  },
+  {
+    "question": "When should an architect prefer Glob over Grep?",
+    "options": [
+      "When you want to find files by name pattern and do not care about contents",
+      "When you need to search file contents for a regex",
+      "When you want to atomically modify many files at once",
+      "When you need to follow imports between modules"
+    ],
+    "explanations": [
+      "Glob's job is path-matching by name pattern; this is exactly when to choose it.",
+      "Content search is Grep's job — Glob never opens file contents.",
+      "Neither Glob nor Grep modifies files; that's Edit or Write.",
+      "Following imports requires reading files; Glob doesn't open files."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "845dae9b-7c63-4c9a-90d7-48b2df706d9f"
+  },
+  {
+    "question": "A coordinator agent in a developer-productivity setup repeatedly bulk-Reads entire directories at the start of each session 'to build context.' Sessions exhaust the context window before users ask their second question. What is the most likely root cause and the right correction?",
+    "options": [
+      "The model is too small; upgrade to a larger model and continue bulk-reading",
+      "The harness should disable Read entirely so the agent only Greps",
+      "The agent should switch to Bash 'cat' which uses fewer tokens than Read",
+      "The agent is using the wrong primitive — bulk Read for orientation is an anti-pattern. Switch to incremental discovery: Grep for the symptom, then Read only the surfaced files"
+    ],
+    "explanations": [
+      "Larger models still have finite context; the underlying behaviour is wasteful regardless of model size.",
+      "Disabling Read entirely would prevent the agent from reading files at all — overcorrection that breaks legitimate workflows.",
+      "cat returns the same bytes as Read; token count is determined by content, not which tool retrieved it.",
+      "This is the documented incremental-discovery pattern: start with Grep on the relevant symptom, then Read only the files Grep surfaces. It is the standard fix for context-burning agents."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "848969c1-8a75-4b75-bd5d-938410fd9806"
+  },
+  {
+    "question": "An MCP-integrated coding agent has both a custom 'codebase_search' MCP tool and the built-in Grep available. For a simple 'find all callers of X across this repo' task, which is generally preferable, and why?",
+    "options": [
+      "Prefer the built-in Grep for standard code-content searches because it is permissioned, structured, and avoids unnecessary indirection through MCP",
+      "Always prefer the custom MCP tool because custom tools are higher-priority by default",
+      "Always prefer Bash 'grep -r' because it is the lowest-level option",
+      "It does not matter — both will return identical results, so pick at random"
+    ],
+    "explanations": [
+      "For standard code searches the built-in Grep is the default: it is a first-class harness primitive, fast, structured, and avoids the latency and packaging overhead of a custom MCP call.",
+      "There is no automatic priority for custom tools over built-ins; tool selection is description-driven and the right primitive depends on the task shape.",
+      "Bash grep duplicates the built-in, is slower, and risks permission prompts.",
+      "They are not interchangeable; tool choice affects latency, output shape, and context cost."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "ace3ca8b-10c4-46d7-9106-4a6196c49180"
+  },
+  {
+    "question": "An agent is asked: 'show me the implementation of the function that handles webhook signature verification, and only that function — the file is 2,500 lines.' What sequence minimizes context use?",
+    "options": [
+      "Read the entire 2,500-line file in one call",
+      "Grep with output_mode 'content' for the likely function name (or signature-verification keywords) to locate the function and its line range, then Read with offset/limit narrowed to just that range",
+      "Glob '**/*.ts' to find candidate files, then Read all matches",
+      "Bash 'grep -n verifyWebhook file.ts' followed by Bash 'sed -n 100,200p file.ts'"
+    ],
+    "explanations": [
+      "Pulling 2,500 lines into context is wasteful when only a small range is needed — defeats the point of incremental discovery.",
+      "Grep in content mode locates the function definition and its line number, after which a range-limited Read pulls only the relevant slice. Two calls, minimal tokens.",
+      "Glob and bulk Read does not solve the size problem and adds extra unrelated files.",
+      "Using Bash for both steps duplicates the structured built-ins and may need extra permission prompts; the Grep+Read path is the documented pattern."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "4939b1a0-d0e8-41f7-9c4f-93bd30df437a"
+  },
+  {
+    "question": "Which of the following is an anti-pattern unique to Edit failures?",
+    "options": [
+      "Falling back to Read + Write when Edit cannot disambiguate",
+      "Expanding old_string with one or two surrounding lines to make it unique",
+      "Looping on Edit with slightly different anchors after each uniqueness failure, burning turns without making progress",
+      "Using replace_all when you genuinely want every occurrence changed"
+    ],
+    "explanations": [
+      "Read+Write is the documented fallback when Edit cannot be made unique — the correct path.",
+      "Adding surrounding context is the standard first remediation; fully appropriate.",
+      "Iterating Edit with guess-anchors is the anti-pattern: each failed attempt costs a turn, and the deterministic remediation is to expand context once or switch to Read+Write.",
+      "replace_all is the right choice when the intent is global replacement; not an anti-pattern."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "7bd06951-bf6a-49fe-b14d-9593e75de09d"
+  },
+  {
+    "question": "A developer-productivity agent must trace every real call site of a logical helper function exposed through a barrel file. The helper is named 'computeTotal' in lib/totals.ts but the public API in lib/index.ts re-exports it as 'total'. What is the correct strategy?",
+    "options": [
+      "Grep only for 'computeTotal' and report the results",
+      "Read every file under src/ and visually inspect for any reference to totals",
+      "Glob '**/totals*' and assume that captures every consumer",
+      "Phase 1: identify all exported names by Grepping the source plus reading barrel files to enumerate aliases ('total'). Phase 2: Grep each alias across the codebase and merge the results"
+    ],
+    "explanations": [
+      "Searching only the implementation name misses every consumer that imports via the alias — the standard barrel-file blind spot.",
+      "Bulk reading is wasteful and unreliable for completeness; missing one consumer corrupts the trace.",
+      "Globbing on filename patterns finds files named after totals but misses arbitrary consumer files that just import the function.",
+      "The two-phase trace pattern (build alias set → search each alias) is the documented technique for tracing functions across wrapper modules."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "860fe207-79ae-499f-a5ad-6f660202d1b8"
+  },
+  {
+    "question": "When choosing between using the built-in Grep tool and shelling out to 'grep -r' via Bash, which trade-off most justifies preferring the built-in?",
+    "options": [
+      "The built-in Grep can write to files and Bash grep cannot",
+      "The built-in Grep is structured, permissioned by the harness, and avoids the extra permission prompts and shell-quoting hazards of native grep",
+      "Bash grep is unsupported in Claude Code and will error",
+      "The built-in Grep automatically modifies files in place to fix the matches"
+    ],
+    "explanations": [
+      "Neither Grep variant writes to files; that's Edit/Write territory.",
+      "Built-in Grep is the right choice precisely because it integrates with the harness's permission model, returns structured output, and avoids shell-escaping and permission-prompt friction.",
+      "Bash grep is supported via the Bash tool; the issue is not support but appropriateness.",
+      "Grep does not modify files in any variant; only Edit/Write does."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "0aedd07c-17aa-48b5-b3da-e3fc06495860"
+  },
+  {
+    "question": "An architect is choosing between (a) one Glob call followed by per-file Read calls, and (b) a single Grep call with a glob filter, for the task 'find every test file containing the string DEPRECATED.' Which choice is correct and why?",
+    "options": [
+      "(b) — because a single Grep call with a glob filter scopes the search by file type and searches contents in one round-trip, minimizing both latency and context",
+      "(a) — because Glob is more accurate than Grep for test files",
+      "Both are equivalent; pick whichever you remember first",
+      "Neither — only Bash should be used for cross-file searches"
+    ],
+    "explanations": [
+      "The combined Grep call with a glob filter is the documented efficient pattern: one call, content + path scoping together.",
+      "Glob does not look inside files; option (a) requires N additional Reads, which is strictly more expensive.",
+      "They are not equivalent — (a) costs O(N) Reads and (b) costs one call.",
+      "Bash duplicates the built-ins and is the less appropriate primitive for standard code searches."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "caf95716-7854-4e74-9517-c8445e4150e7"
+  },
+  {
+    "question": "A coordinator agent is at 60% context capacity and the user asks for every TODO and FIXME comment in the repo's Python source. Which pattern minimizes additional context burn?",
+    "options": [
+      "Glob '**/*.py' to enumerate files, then Read each result and scan for the markers",
+      "Run Bash 'find . -name *.py -exec cat {} +' and pipe through grep",
+      "Read the single most-recently-modified Python file and assume it represents the full set",
+      "Grep with pattern 'TODO|FIXME', glob '**/*.py', and output_mode 'content'"
+    ],
+    "explanations": [
+      "Globbing then reading every file individually loads full file contents per result; even a few mid-sized files dwarf the matching lines you actually need.",
+      "Shelling out duplicates the built-in Grep, is slower, and produces messier output than the structured tool.",
+      "The most-recently-modified file is not a representative sample of repo-wide TODOs; this answers a different question.",
+      "Grep with content mode returns only the matching lines across the whole tree in a single call — the cheapest tool/output combination for repo-wide pattern hits."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "4a00ca56-44c8-47b1-b0b9-90ad5922b4cb"
+  },
+  {
+    "question": "Glob's results are sorted by which property, making it natural for which kind of question?",
+    "options": [
+      "Last modification time — natural for 'what changed recently in this project?'",
+      "Alphabetical path order — natural for stable enumeration",
+      "File size descending — natural for 'find the largest files'",
+      "Total match count — natural for 'which files have the most occurrences?'"
+    ],
+    "explanations": [
+      "Glob returns paths sorted by mtime, which is exactly the property that makes it convenient for recency sweeps without invoking Bash.",
+      "Glob does not sort alphabetically by default; relying on alphabetical order would lose the recency signal that mtime ordering provides.",
+      "Size-descending isn't Glob's ordering; computing it would require additional stat calls outside Glob's contract.",
+      "Match counts are a Grep concept (output_mode 'count'), not a Glob property — Glob never opens file contents."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "3630548d-ae7a-421a-b41e-206f7652c2d6"
+  },
+  {
+    "question": "A Python repo has both implementation files (*.py) and type-stub files (*.pyi). The agent must find call sites of process_payment in implementation code only. Which Grep call shape is correct?",
+    "options": [
+      "Grep pattern 'process_payment' with glob '**/*.py*' to capture both implementations and stubs",
+      "Grep pattern 'process_payment' with glob '**/*.py' (which does not match .pyi)",
+      "Grep pattern 'process_payment' with no filter, accepting stub matches as noise to triage later",
+      "Glob '**/*.py' first, then Read each result and visually inspect for the symbol"
+    ],
+    "explanations": [
+      "The wildcard '*.py*' explicitly includes .pyi — the opposite of what the question requires.",
+      "The glob '**/*.py' matches files ending exactly in .py; .pyi has a different suffix and is excluded. One Grep call delivers the correct scope.",
+      "Skipping the filter pulls in the stub matches and forces manual triage; the right primitive is to scope at the Grep call.",
+      "Bulk-reading every implementation file is the canonical context-burning anti-pattern; Grep with the right glob does the work in one call."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "8491f226-94c3-420b-b6a0-e5431972c6df"
+  },
+  {
+    "question": "An agent wants the file paths of every match for the regex import .* from '@app/legacy' so it can iterate and apply fixes — but it does NOT need to see the matching lines themselves. Which Grep configuration is the cheapest?",
+    "options": [
+      "output_mode 'content' so the agent has the full lines available for context",
+      "output_mode 'count' to get the per-file count of matches",
+      "output_mode 'files_with_matches' to get just the paths of files containing the pattern",
+      "No output_mode argument — Grep returns full file contents by default"
+    ],
+    "explanations": [
+      "Content mode returns matching lines too; that's extra tokens the iterate-and-fix workflow doesn't need.",
+      "Count mode returns per-file match counts — useful for ranking, but the agent here only needs the paths.",
+      "files_with_matches returns paths only — exactly the data the iterate-and-fix workflow needs, with no surplus tokens.",
+      "Grep never returns full file contents in any mode; that is what Read is for."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "269d9c2b-ba1e-438b-86a5-31e1e34e94fd"
+  },
+  {
+    "question": "Grep's default mode matches patterns within a single line. An agent searches for a Go interface definition that spans multiple lines (type X interface { ... }) and gets zero matches even though the interface exists. What is the fix?",
+    "options": [
+      "Enable Grep's multiline option so the pattern can span line boundaries",
+      "Switch from Grep to Glob, since Glob handles multi-line patterns",
+      "Read every Go file in the repo and scan visually for the interface definition",
+      "Shell out to Bash with awk to handle multi-line patterns"
+    ],
+    "explanations": [
+      "Grep supports a multiline mode that lets the pattern span line boundaries — exactly the capability the search needed.",
+      "Glob never opens file contents; it cannot match anything inside a file, single-line or multi-line.",
+      "Bulk-reading the entire Go tree to find one interface is the textbook bulk-Read anti-pattern.",
+      "awk would work but duplicates Grep's own multiline capability and adds permission friction; reach for the structured built-in first."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "e94ff699-08f4-49a9-a324-69e3adb15679"
+  },
+  {
+    "question": "A coding agent must rename a public exported helper compute to calculate across roughly 30 files in a small monorepo. Which top-level sequence is correct?",
+    "options": [
+      "Bash 'grep -lr compute . | xargs sed -i s/compute/calculate/g' to do it all at once",
+      "Glob '**/*.ts' to list every TypeScript file, then Edit each one with old_string='compute'",
+      "Run Edit with replace_all on 'compute' globally across the workspace, since it's a global rename",
+      "Grep for 'compute' to enumerate the call sites and files; then for each file, Read and either Edit with disambiguating context or fall back to Read+Write — verifying that unrelated tokens like 'computeTotal' aren't being touched"
+    ],
+    "explanations": [
+      "Substring sed will also clobber computeTotal, computeAll, etc., and bypasses every per-file safety check the structured tools provide.",
+      "Globbing every TS file blindly tries to Edit files that don't even contain the symbol; many anchor matches won't be unique without large surrounding context.",
+      "Edit operates on a single file at a time; replace_all is a per-file flag, not a workspace-wide rename — and inside the chosen file it would still hit substring collisions.",
+      "The documented sequence: Grep first to know exactly which files contain the symbol, then per-file targeted modification with whichever primitive disambiguates correctly, with explicit verification against substring collisions."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "20d7b007-8588-4ebf-ac70-aeb9c190eb07"
+  },
+  {
+    "question": "Which of the following is a legitimate signal — before the first Edit attempt — that Read + Write is the right primitive from the start, rather than trying Edit and falling back?",
+    "options": [
+      "The change applies to fewer than three lines and the anchor text is unique within the file",
+      "The agent has Read access to the file but not Write access",
+      "The change is scattered across many separate sites in the same file, or the file is being effectively rewritten",
+      "The file lives in a different workspace from the agent's primary one"
+    ],
+    "explanations": [
+      "That description is the textbook case where Edit is the cheapest, cleanest primitive — not a reason to skip it.",
+      "A permissions issue prevents both Edit and Write; it doesn't change which primitive is conceptually appropriate.",
+      "Scattered changes and effective rewrites are exactly when Edit's 'single unique anchor' model breaks down — going to Read+Write upfront avoids the wasted attempts.",
+      "Workspace location is irrelevant to primitive selection; Edit and Write resolve paths the same way."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "c4a410f7-fdc2-425d-9073-c184cc97fbbd"
+  },
+  {
+    "question": "A user asks: 'what changed in the API integration tests in the last few days, and which of those reference the v2 endpoint?' Which composition uses the built-in tools' strengths most cleanly?",
+    "options": [
+      "Bash 'find tests/api -mtime -3 -name *.test.*' piped through Bash grep 'v2'",
+      "Glob 'tests/api/**/*.test.*' (results sorted by mtime so recent files appear first), then Grep on those paths with pattern 'v2'",
+      "Read the entire tests/api/ tree and visually skim for both the recency and the content signal",
+      "Grep for 'v2' across the whole repo first, then ask the user which of the matches were modified recently"
+    ],
+    "explanations": [
+      "This duplicates two built-ins (Glob and Grep), risks permission prompts, and loses the structured output the harness provides.",
+      "Glob's mtime ordering surfaces recency; Grep applies the content filter on top — each tool used for the strength it has, no Bash needed.",
+      "Bulk Read of a tests directory is precisely the context-burning anti-pattern the discipline is designed to avoid.",
+      "Asking the user to filter by recency offloads work the agent can do in one Glob call; the wrong shift of responsibility."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "a1f1f7de-f3e4-4105-b773-42ed6f714350"
+  },
+  {
+    "question": "A junior agent picks Glob with pattern '**/*processPayment*' to find every caller of the processPayment function in a TypeScript repo, and reports zero results. What went wrong?",
+    "options": [
+      "The agent conflated Glob (which matches file paths by name) with Grep (which searches file contents); callers reference the function name inside files, not in filenames",
+      "Glob is broken in this repo; switch to a different Glob implementation or run it again",
+      "The function doesn't exist — Glob is correct, the codebase has no callers",
+      "Glob results are paginated and the agent only saw the first page; re-run with explicit pagination flags"
+    ],
+    "explanations": [
+      "The classic Glob/Grep conflation: file paths almost never contain the function name, so Glob returns nothing even when the function has many callers. The right primitive is Grep.",
+      "Glob isn't broken; the wrong primitive was selected for the question's actual shape.",
+      "'No matches in a path search' cannot be used to conclude 'no callers' — that conflates path search with content search and is a dead-code-deletion bug waiting to happen.",
+      "Glob doesn't behave that way; there is no hidden pagination silently swallowing matches."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "8f37541b-a48e-4521-944e-df83fca0bcb8"
+  },
+  {
+    "question": "Bash is also a built-in tool. When IS Bash the right choice over Read / Write / Edit / Grep / Glob?",
+    "options": [
+      "Doing a recursive content search for a function name across the codebase",
+      "Performing a structured edit to a unique line in a single file",
+      "Listing all files matching a glob pattern like '**/*.test.tsx'",
+      "Running a project-specific build, test, install, or formatter command (for example npm test, pip install -r requirements.txt, cargo build)"
+    ],
+    "explanations": [
+      "Recursive content search is Grep's job; Bash duplicates it and adds permission friction.",
+      "A targeted text replacement on a unique anchor is Edit's job; Bash sed is the substring-collision-prone alternative.",
+      "Listing files by name pattern is Glob's job; Bash find is slower and is not sorted by mtime.",
+      "Build, test, install, and similar shell processes have no structured built-in equivalent — Bash is the appropriate primitive precisely for these workflows."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "7b595d03-89f1-4593-9382-66bec4b22e52"
+  },
+  {
+    "question": "It's Monday morning and a user pings: 'the build is broken on master, can you take a look?' The agent has just opened the repo for the first time this session. Which opening move best minimizes wasted work?",
+    "options": [
+      "Glob '**/*.config.*' to enumerate every config file, then Read each to understand the build setup before running anything",
+      "Grep for likely error-message keywords ('Cannot find module', 'Type error') across the repo to pre-empt where the failure might be",
+      "Run `npm run build` (or the project's build command) via Bash to surface the actual error, then Grep what the error references",
+      "Read package.json and tsconfig.json first to model the build pipeline, then run the build"
+    ],
+    "explanations": [
+      "Speculative orientation — you don't know which configs are relevant until you see the failure; this loads context the agent likely won't need.",
+      "Premature search: the right error keywords are unknown before the failure surfaces. Greps for common substrings flood context with false-positive matches.",
+      "Build/test/install commands are exactly the workflow Bash exists for; running the build first surfaces a specific, actionable error string that immediately points the next Grep or Read. This is the cheapest path to signal.",
+      "Reading config to model the pipeline is reasonable but answers a different question — you need the failure first; configs are useful when interpreting the failure, not before it."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "df15baf6-c122-4f4f-b960-7bbf2255ea97"
+  },
+  {
+    "question": "Edit fails because old_string matches twice. The agent expands old_string with one preceding line — the new attempt also fails because the preceding line is repeated, yielding three matches. What is the BEST next move?",
+    "options": [
+      "Expand again — add one more preceding line, and one following line, repeating until unique",
+      "Use Bash sed with line-number anchoring to bypass uniqueness entirely",
+      "Run Edit with replace_all set to true so all occurrences change uniformly",
+      "Switch to Read + Write: read the file, reconstruct it with the change at the precise location, write it back"
+    ],
+    "explanations": [
+      "The lesson explicitly says: 'If two attempts fail because of non-uniqueness, switch to Read+Write rather than guessing.' Each further expansion is a wasted turn with diminishing returns.",
+      "Bypassing the structured built-in introduces substring-collision risk and adds permission friction; not the default path the lesson endorses.",
+      "replace_all changes every occurrence — the wrong semantics when the agent wants to edit one specific occurrence; it would corrupt the other locations.",
+      "Documented fallback after two uniqueness failures: Read+Write deterministically targets the right occurrence by reasoning about the whole file rather than guessing at unique anchors."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "e0a2df7e-de24-408c-a22c-ced70d94f07f"
+  },
+  {
+    "question": "A 600-line config file uses the literal string 'region: us-east-1' in 14 places, all referring to the same AWS region. The agent must change all 14 to 'region: us-west-2'. The literal string does not appear anywhere else in the file (no near-matches, no substring collisions). Which is the BEST primitive?",
+    "options": [
+      "Edit with old_string='region: us-east-1', new_string='region: us-west-2', replace_all=true",
+      "Read the whole file, reconstruct with the substitution, Write back",
+      "Loop Edit 14 times with disambiguating context for each occurrence",
+      "Bash `sed -i 's/region: us-east-1/region: us-west-2/g' config.yaml`"
+    ],
+    "explanations": [
+      "replace_all is the documented correct choice when the intent is global replacement and the substring is unique enough to not collide. Cheapest path: one structured Edit call, no full-file round-trip.",
+      "Read+Write works but transmits the whole 600-line file twice for what could be a single replace_all; reserve Read+Write for cases where the substring isn't safe for replace_all.",
+      "Fourteen Edit calls burn fourteen turns; they also fail uniqueness without large surrounding context. Wasteful.",
+      "Bash sed bypasses the structured built-in — the substring is safe here, but reaching for sed when Edit handles the case is a habit the lesson discourages."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "612edeb5-96b8-493f-bb5d-7388bd0d800e"
+  },
+  {
+    "question": "The agent must add a new helper function at the END of a 1,000-line TypeScript file. The existing last 8 lines (a small unique export block) won't be reused for any other change in this session. Which is the BEST primitive?",
+    "options": [
+      "Read the whole file, append the helper to the read content, Write the full result back",
+      "Bash `echo '<function body>' >> file.ts` to append directly",
+      "Edit with old_string set to the unique trailing block (the last 8 lines), new_string set to that same block plus the new helper appended",
+      "Edit with old_string='' (empty) so it is treated as 'append at end'"
+    ],
+    "explanations": [
+      "Round-trips 1,000 lines of content for what is structurally an append; works, but is more expensive than necessary when a unique tail anchor exists.",
+      "Bash redirection appends but bypasses structured tooling; for a single targeted insertion in a tracked file, Edit is the cleaner primitive.",
+      "Edit anchored on a unique trailing block leverages the tool's own append idiom — it transmits only the 8-line anchor and the small delta. Cheap, structured, atomic.",
+      "The Edit tool requires a non-empty old_string and will reject empty input; this is not a supported shape."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "82c72cc7-1919-4b5b-b730-820a4d7ddc5b"
+  },
+  {
+    "question": "A Go agent searches for occurrences of the literal 'interface{}' (the empty interface). It runs Grep with pattern 'interface{}' and gets unexpected, unrelated matches — the curly braces are being interpreted as regex metacharacters. What is the BEST fix?",
+    "options": [
+      "Switch primitives entirely and use Glob for 'interface{}'",
+      "Read every Go file in the project and visually scan for 'interface{}'",
+      "Re-run Grep with case-insensitive matching enabled",
+      "Escape the curly braces in the pattern (e.g. 'interface\\{\\}') so the literal characters are matched"
+    ],
+    "explanations": [
+      "Glob never inspects file contents; it cannot search for a code-level construct.",
+      "Bulk-reading every Go file to find a tiny token is the bulk-Read anti-pattern.",
+      "Case-insensitivity has nothing to do with the metacharacter problem; '{}' would still be regex-interpreted.",
+      "Grep here uses regex semantics where '{}' are quantifiers; escaping them makes the pattern match the literal characters — the intended behaviour, documented in the Grep tool's pattern-syntax notes."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "7546fad5-6211-4c0b-8731-57e6f457b055"
+  },
+  {
+    "question": "A user pastes a stack trace whose top frame says `at processPayment (src/services/payment.ts:147)`. The agent's task is to understand and fix the bug. The file is 400 lines. Which is the BEST opening move?",
+    "options": [
+      "Read src/services/payment.ts with offset 140 and limit 30 to see the failing function and its immediate context",
+      "Read src/services/payment.ts with no offset/limit so the agent has the full file in context",
+      "Grep for 'processPayment' to find the function definition, then Read its surrounding lines",
+      "Glob 'src/services/**/*.ts' to enumerate sibling files first, then Read all of them for context"
+    ],
+    "explanations": [
+      "The stack trace already gives a precise line; offset/limit pulls only the relevant slice. Cheapest token cost, and you can always Read more if the bug requires upstream context.",
+      "Loads 400 lines when the bug is anchored at line 147; wasteful unless the rest is needed.",
+      "Indirect — you already have the file:line, so re-locating the function via Grep is unnecessary.",
+      "Bulk reading sibling files before even seeing the failing line is the bulk-Read anti-pattern."
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "fb4223d5-bc0d-4fdf-a103-3db082d53ff8"
+  },
+  {
+    "question": "An architect needs a list of all migration files in 'migrations/' to understand which migrations exist and their order — they do NOT need to see the file contents. Which is the BEST primitive?",
+    "options": [
+      "Grep with pattern '.' (any character) and glob 'migrations/*.sql', output_mode 'files_with_matches' — yields the file list",
+      "Glob 'migrations/*.sql' — directly returns the list of migration paths",
+      "Bash 'ls migrations/'",
+      "Read each file in 'migrations/' to enumerate them"
+    ],
+    "explanations": [
+      "Technically returns paths but spins up a content-scanning tool to do a path-listing job; wasteful and indirect.",
+      "Path listing is exactly Glob's purpose. One call, sorted by mtime (handy for migration ordering investigations), no file contents loaded.",
+      "Bash duplicates a built-in; ls is slower in tooling terms and isn't sorted by mtime by default.",
+      "Loads migration contents the architect explicitly didn't ask for; bulk-Read of a directory is the canonical anti-pattern."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "581fc445-6fe8-4637-adf5-d74a94855642"
+  },
+  {
+    "question": "A release-readiness check needs every '.test.ts' file under 'services/' that contains the disabled-test marker 'xit(', with the additional constraint that the agent cares most about files modified within the last 7 days. The Grep built-in has no native 'modified-within' filter. What is the BEST tool composition?",
+    "options": [
+      "Bash `find services -mtime -7 -name '*.test.ts' | xargs grep 'xit('` — one shell call covers both filters",
+      "Read every '.test.ts' file under 'services/', scan for 'xit(', then check each match's mtime via stat",
+      "Glob 'services/**/*.test.ts', take the top-N most recently modified entries by mtime ordering, then Read each one to look for 'xit('",
+      "Grep with pattern 'xit(', glob 'services/**/*.test.ts', output_mode 'files_with_matches'; then for the returned paths, run Glob (or stat) to check mtime and filter to within 7 days"
+    ],
+    "explanations": [
+      "Functional, but bypasses two structured built-ins (Grep, mtime via Glob/stat). The lesson's preference is to compose built-ins unless they genuinely cannot do the job.",
+      "Bulk-Read of the entire test directory is wasteful when Grep can filter by content first; the recency check on the smaller filtered set is far cheaper.",
+      "Inverts the cost order — you load file contents (potentially many) before knowing which contain 'xit('; Grep first is much cheaper.",
+      "Preferred composition: Grep does the content scope-and-filter in one call, then Glob (or stat) handles recency on the much smaller candidate set. Built-ins compose to do what neither can do alone, with minimal overhead."
+    ],
+    "answer": 3,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "611dac1e-742c-4d80-9d79-1e3c8902713c"
+  },
+  {
+    "question": "A user asks: 'show me three lines of context around each TODO comment in src/.' Which is the BEST single approach?",
+    "options": [
+      "Grep with pattern 'TODO', glob 'src/**', output_mode 'files_with_matches' — then Read each matching file fully and show the user the relevant lines",
+      "Grep with pattern 'TODO', glob 'src/**', output_mode 'content', and the context option set to 3 (returns 3 lines before and 3 lines after each match)",
+      "Glob 'src/**' to list every file, Read each, and visually pick out TODO comments and their context",
+      "Bash `grep -A 3 -B 3 'TODO' src/**`"
+    ],
+    "explanations": [
+      "Two-stage when one stage will do; full Reads are wasteful when only the surrounding lines are wanted.",
+      "Grep's content output_mode supports a context option that returns the surrounding N lines for each match in one call — exactly the user's request, with minimum tokens.",
+      "Bulk-reading the entire src/ tree to find TODO comments is the canonical context-burning anti-pattern.",
+      "Bash grep duplicates the built-in's context capability and risks shell-quoting issues with the glob expansion."
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "c8a7521d-d22c-4402-953e-cc6d0e3f5b23"
+  },
+  {
+    "question": "An agent must refactor a 50-line utility function inside a 200-line file: extract a helper, rename two local variables (one used three times, one used five times), and add a JSDoc block above the function. All changes are within the same function. Which is the BEST approach?",
+    "options": [
+      "Read the file, then perform six Edit calls — one per change point — each with sufficient surrounding-line context to disambiguate",
+      "Edit with replace_all=true on each variable name, then a separate Edit for the JSDoc and for the helper extraction",
+      "Read the file, reason about the final refactored shape, then Write the full updated file back in one operation",
+      "Bash sed with multiple substitutions, scoped via line-number ranges to the function"
+    ],
+    "explanations": [
+      "Six sequential Edits are fragile: each may fail uniqueness independently, leaving the file half-refactored if one fails mid-sequence; high turn cost; coordination across the changes is harder.",
+      "replace_all on a local variable name can clobber unrelated identifiers elsewhere in the file (e.g., a class field with the same name); narrowing replace_all to a function body isn't supported by the Edit tool.",
+      "The lesson explicitly lists 'scattered changes in the same file' AND 'effectively rewriting' as signals for Read+Write upfront. A coordinated multi-change refactor reasoned about as a final state, applied once, is both safer and cheaper than chaining brittle Edits.",
+      "Bypasses the structured built-ins; sed line-range scoping is brittle when line numbers shift between substitutions."
+    ],
+    "answer": 2,
+    "topics": [
+      "Chapter 2",
+      "2.5"
+    ],
+    "phase": "post",
+    "qid": "f7536f39-6930-4f54-a9ce-a581a6fed7e2"
+  }
+]

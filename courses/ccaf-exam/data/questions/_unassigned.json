@@ -1,0 +1,170 @@
+[
+  {
+    "question": "Production data shows the agent skips get_customer and calls lookup_order using only the customer's stated name, causing misidentified accounts. What change most effectively addresses this?",
+    "options": [
+      "Add a programmatic prerequisite blocking lookup_order/process_refund until get_customer returns a verified customer ID",
+      "Enhance the system prompt to state get_customer is mandatory",
+      "Add few-shot examples showing the agent always calls get_customer first",
+      "Implement a routing classifier to enable only appropriate tools per request type"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1"
+    ],
+    "qid": "f1408e94-45a3-4ef3-bfdc-4782cad8ddb4"
+  },
+  {
+    "question": "Agent frequently calls get_customer instead of lookup_order because both tools have minimal descriptions. What is the most effective first step?",
+    "options": [
+      "Add few-shot examples demonstrating correct tool selection",
+      "Expand each tool's description to include input formats, example queries, edge cases, and boundaries",
+      "Implement a routing layer that parses input and pre-selects tools",
+      "Consolidate both tools into a single lookup_entity tool"
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 2"
+    ],
+    "qid": "f308056d-7bbc-4da9-9f1e-be3e8c871d05"
+  },
+  {
+    "question": "Agent achieves 55% first-contact resolution and escalates straightforward cases. What's the most effective way to improve escalation calibration?",
+    "options": [
+      "Add explicit escalation criteria to the system prompt with few-shot examples",
+      "Have the agent self-report confidence and route low scores to humans",
+      "Deploy a separate classifier model trained on historical tickets",
+      "Use sentiment analysis to escalate on negative sentiment"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1"
+    ],
+    "qid": "077dfedd-2f1f-4a1d-aab0-b735b5578170"
+  },
+  {
+    "question": "Where should a project-scoped custom /review slash command be stored so it's available to every developer who clones the repo?",
+    "options": [
+      "In the .claude/commands/ directory in the project repository",
+      "In ~/.claude/commands/ in each developer's home directory",
+      "In the CLAUDE.md file at the project root",
+      "In a .claude/config.json file with a commands array"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3"
+    ],
+    "qid": "37f01d37-c116-4820-a88a-1842b7794636"
+  },
+  {
+    "question": "Restructuring a monolith into microservices requires exploring dependencies and service boundaries. Which approach should you take?",
+    "options": [
+      "Enter plan mode to explore the codebase and design an implementation approach before making changes",
+      "Start with direct execution and make changes incrementally",
+      "Use direct execution with comprehensive upfront instructions",
+      "Begin in direct execution and switch to plan mode if complexity appears"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3"
+    ],
+    "qid": "96ffda10-e2ec-4381-8b56-a509f832b28b"
+  },
+  {
+    "question": "Test files are spread across the codebase and you want Claude to apply conventions automatically. What's the most maintainable way?",
+    "options": [
+      "Create rule files in .claude/rules/ with YAML frontmatter specifying glob patterns",
+      "Consolidate all conventions in the root CLAUDE.md file",
+      "Create skills in .claude/skills/ for each code type",
+      "Place separate CLAUDE.md in each subdirectory"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3"
+    ],
+    "qid": "01ba0cf4-86c6-4b2e-b87c-e73ac4807ada"
+  },
+  {
+    "question": "A coordinator decomposed \"creative industries\" too narrowly into only visual arts, missing music and film. What is the most likely root cause?",
+    "options": [
+      "Synthesis agent lacks instructions for identifying coverage gaps",
+      "Coordinator's task decomposition is too narrow, omitting relevant domains",
+      "Web search agent's queries are not comprehensive",
+      "Document analysis agent filters out non-visual sources"
+    ],
+    "answer": 1,
+    "topics": [
+      "Chapter 1"
+    ],
+    "qid": "3106950d-8ffb-437e-8d0a-2f9af82b1340"
+  },
+  {
+    "question": "A web search subagent times out. Which error propagation approach best enables intelligent recovery?",
+    "options": [
+      "Return structured error context including failure type, attempted query, partial results, and alternatives",
+      "Implement automatic retry with exponential backoff and return a generic status after retries",
+      "Catch the timeout and return an empty result set marked as successful",
+      "Propagate the timeout to a top-level handler that terminates the workflow"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 2"
+    ],
+    "qid": "59a9d54d-89e3-41b0-933b-73acdfc0527b"
+  },
+  {
+    "question": "Synthesis agent requires frequent simple verifications adding latency. How reduce overhead while maintaining reliability?",
+    "options": [
+      "Give the synthesis agent a scoped verify_fact tool for simple lookups and keep coordinator for complex cases",
+      "Have the synthesis agent batch verification needs and send them at the end",
+      "Give synthesis agent access to all web search tools to handle verifications directly",
+      "Have web search agent proactively cache extra context anticipating synthesis needs"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 1"
+    ],
+    "qid": "8343c6c9-51c2-472c-b0c3-afd4c0448678"
+  },
+  {
+    "question": "Claude Code hangs in CI waiting for interactive input. What's the correct way to run Claude Code non-interactively?",
+    "options": [
+      "Add the -p flag (claude -p \"Analyze this pull request\")",
+      "Set CLAUDE_HEADLESS=true before running",
+      "Redirect stdin from /dev/null",
+      "Add a --batch flag"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 3"
+    ],
+    "qid": "5a26a8f5-571e-4826-8824-296f4e88b2e9"
+  },
+  {
+    "question": "You want to save costs: should you switch both a blocking pre-merge check and an overnight report to the Message Batches API?",
+    "options": [
+      "Use batch processing for the overnight report only; keep real-time calls for pre-merge checks",
+      "Switch both workflows to batch processing with polling",
+      "Keep real-time calls for both workflows",
+      "Switch both to batch with timeout fallback to real-time"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4"
+    ],
+    "qid": "7a6a2d63-be53-4b27-a8d5-82a62b1da3c1"
+  },
+  {
+    "question": "A single-pass review of a 14-file PR yields inconsistent results. How should you restructure the review?",
+    "options": [
+      "Split into focused per-file passes, then a separate integration pass for cross-file issues",
+      "Require developers to split large PRs into smaller submissions",
+      "Switch to a higher-tier model with a larger context window",
+      "Run three independent review passes and flag issues found in at least two runs"
+    ],
+    "answer": 0,
+    "topics": [
+      "Chapter 4"
+    ],
+    "qid": "b38d1618-cd4a-43e7-8e3a-1ab7889438c9"
+  }
+]
