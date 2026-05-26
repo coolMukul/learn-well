@@ -28,7 +28,7 @@ Before reading any reference material, check the course's existing state. `COURS
 | File | Expected stub state | What you'll do |
 |---|---|---|
 | `data/topics.json` | `{"chapters": []}` | **Overwrite** with the agreed structure (Step 4). |
-| `data/tracker.json` | `{"topics": {}, "lastTopicId": null, "lastUpdated": null}` | **Update** by adding an entry per topic (Step 6). Existing entries preserved. |
+| `data/tracker.json` | `{"topics": {}, "lastUpdated": null}` | **Update** by adding an entry per topic (Step 6). Existing entries preserved. |
 | `data/progress.json` | `[]` | Don't touch. UI manages this. |
 | `reference/sections/` | empty directory | Populate with one `topic-<id>.md` per topic (Step 5). |
 
@@ -231,7 +231,7 @@ These are optional — only write what the source provides.
 
 ## Step 6 — Initialize the tracker
 
-`data/tracker.json` **already exists** as the empty stub `{"topics": {}, "lastTopicId": null, "lastUpdated": null}` from `COURSE_SETUP.md`. This step **overwrites** it (or, on a re-decompose, merges into it preserving any existing per-topic progress).
+`data/tracker.json` **already exists** as the empty stub `{"topics": {}, "lastUpdated": null}` from `COURSE_SETUP.md`. This step **overwrites** it (or, on a re-decompose, merges into it preserving any existing per-topic progress).
 
 Preferred: run the deterministic CLI helper:
 
@@ -257,7 +257,6 @@ If you have no shell access (some assistant environments), write `data/tracker.j
     "1.2": { ...same... },
     ...
   },
-  "lastTopicId": null,
   "lastUpdated": "<current ISO 8601>"
 }
 ```

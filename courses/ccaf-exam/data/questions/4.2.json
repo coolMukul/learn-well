@@ -440,7 +440,7 @@
     "qid": "594770d7-d355-4d04-9fd5-6a573a5bb821"
   },
   {
-    "question": "Tier 2. A document-extraction prompt has 3 examples drawn from 3 different layouts and is otherwise well-tuned. Production accuracy is 88% overall but 62% on a newly-introduced layout (a scanned-image OCR with noisy whitespace). Which next step is most aligned with the guide before more invasive changes?",
+    "question": "A document-extraction prompt has 3 examples drawn from 3 different layouts and is otherwise well-tuned. Production accuracy is 88% overall but 62% on a newly-introduced layout (a scanned-image OCR with noisy whitespace). Which next step is most aligned with the guide before more invasive changes?",
     "options": [
       "Remove all examples and rely on the prose schema",
       "Keep all 3 existing examples and add a 10th, 11th, and 12th example from the noisy-OCR layout to dominate the prompt",
@@ -462,7 +462,7 @@
     "qid": "ad78dde4-f89f-4c29-8caa-171893ac8985"
   },
   {
-    "question": "Tier 2. Two prompt drafts are being A/B tested. Draft A: 4 examples, all showing only chosen output. Draft B: 4 examples, each with chosen output plus a one-sentence reasoning trace naming the rejected alternative. Both are otherwise identical. Which result is most aligned with the guide's principles?",
+    "question": "Two prompt drafts are being A/B tested. Draft A: 4 examples, all showing only chosen output. Draft B: 4 examples, each with chosen output plus a one-sentence reasoning trace naming the rejected alternative. Both are otherwise identical. Which result is most aligned with the guide's principles?",
     "options": [
       "Draft A wins because shorter examples reduce context cost",
       "Draft B wins because longer prompts always produce better output",
@@ -484,7 +484,7 @@
     "qid": "b901e106-fe9c-4dbb-8522-7464a1901fe9"
   },
   {
-    "question": "Tier 2. A team's CI agent emits inconsistent severity values (sometimes 'high', sometimes 'High', sometimes 'critical' where they meant high). Their 3 examples each use a different capitalisation. Which fix is most aligned with the guide?",
+    "question": "A team's CI agent emits inconsistent severity values (sometimes 'high', sometimes 'High', sometimes 'critical' where they meant high). Their 3 examples each use a different capitalisation. Which fix is most aligned with the guide?",
     "options": [
       "Standardise the casing across examples so each one uses the same severity vocabulary",
       "Add a fourth example with yet another casing to teach the model 'be flexible'",
@@ -506,7 +506,7 @@
     "qid": "10970e44-3af7-49cd-9b5f-ddbd148ee3f5"
   },
   {
-    "question": "Tier 2. An extraction agent's prompt has 3 examples, each spanning a different document layout, with reasoning. Accuracy is consistently high. The team wants to add a fourth example. Which choice yields the largest expected lift?",
+    "question": "An extraction agent's prompt has 3 examples, each spanning a different document layout, with reasoning. Accuracy is consistently high. The team wants to add a fourth example. Which choice yields the largest expected lift?",
     "options": [
       "A fourth example identical to one of the existing three",
       "A fourth example demonstrating a legitimate empty / null result for the field",
@@ -528,7 +528,7 @@
     "qid": "544a70e0-3705-4ecd-95c8-af6dff8380ad"
   },
   {
-    "question": "Tier 2. A reviewer notes that a few-shot block has 2 examples (within the recommended range) but generalises poorly. Which diagnostic question best identifies the root cause?",
+    "question": "A reviewer notes that a few-shot block has 2 examples (within the recommended range) but generalises poorly. Which diagnostic question best identifies the root cause?",
     "options": [
       "Did we reach the maximum example count?",
       "Do the 2 examples span the dimensions of variation the production inputs exhibit?",
@@ -550,7 +550,7 @@
     "qid": "01062ae3-7bba-4fdb-9f71-81c242479686"
   },
   {
-    "question": "Tier 2. The team has correctly added 3 layout-spanning examples and the agent now generalises well across layouts. A new failure appears: the agent occasionally returns the wrong field name (e.g., 'methods' instead of 'methodology'). Which fix targets the root cause?",
+    "question": "The team has correctly added 3 layout-spanning examples and the agent now generalises well across layouts. A new failure appears: the agent occasionally returns the wrong field name (e.g., 'methods' instead of 'methodology'). Which fix targets the root cause?",
     "options": [
       "Add a fourth example with yet another layout",
       "Standardise the field names across all 3 existing examples to the canonical form ('methodology')",
@@ -572,7 +572,7 @@
     "qid": "6051c9b2-7f86-41c8-b6e7-3624b2509881"
   },
   {
-    "question": "Tier 2. A few-shot block contains 4 examples for a tool-selection task, but each example uses heavy prose narration around the chosen tool. Symptom: in production, the agent emits long natural-language preambles before tool calls. What's the cleanest prompt-level fix?",
+    "question": "A few-shot block contains 4 examples for a tool-selection task, but each example uses heavy prose narration around the chosen tool. Symptom: in production, the agent emits long natural-language preambles before tool calls. What's the cleanest prompt-level fix?",
     "options": [
       "Remove all examples to discourage narration",
       "Trim the narration in the examples so they show only the brief reasoning + tool selection the team wants",
@@ -594,7 +594,7 @@
     "qid": "a5fb57f5-e9d8-4485-9215-207802175dcc"
   },
   {
-    "question": "Tier 2. A team is choosing between (A) 2 examples that span the ambiguity and (B) 5 examples that all show the same correct path. Production has roughly even traffic across both sides of the ambiguity. Which is more aligned with the guide?",
+    "question": "A team is choosing between (A) 2 examples that span the ambiguity and (B) 5 examples that all show the same correct path. Production has roughly even traffic across both sides of the ambiguity. Which is more aligned with the guide?",
     "options": [
       "A — fewer examples but spanning the ambiguity dimension",
       "B — more examples even if they cluster on one side",
@@ -616,7 +616,7 @@
     "qid": "00bd920f-fa37-47bf-87db-dd15e89c59dd"
   },
   {
-    "question": "Tier 2. An agent's prompt has 3 examples — each with chosen output, reasoning, and the field-name format. Production accuracy is good but occasionally the model swaps the order of fields in the output. Most aligned fix?",
+    "question": "An agent's prompt has 3 examples — each with chosen output, reasoning, and the field-name format. Production accuracy is good but occasionally the model swaps the order of fields in the output. Most aligned fix?",
     "options": [
       "Verify all 3 examples present the fields in the same order; standardise if they don't",
       "Add a regex post-processor to reorder fields after generation",
@@ -638,7 +638,7 @@
     "qid": "ff017cdc-023b-4090-b2ef-a5b2e8b03fe7"
   },
   {
-    "question": "Tier 2. A code-review agent flags genuine bugs reliably but produces too many false positives on style-only differences. The few-shot block has 3 examples — each one a real bug. Most effective addition?",
+    "question": "A code-review agent flags genuine bugs reliably but produces too many false positives on style-only differences. The few-shot block has 3 examples — each one a real bug. Most effective addition?",
     "options": [
       "An example showing a style-only pattern correctly NOT flagged, with a reasoning trace explaining why",
       "Three more examples of real bugs to reinforce 'flag bugs'",
@@ -660,7 +660,7 @@
     "qid": "8a5d14c3-8181-4066-a1b8-3a7907b2b092"
   },
   {
-    "question": "Tier 3. An extraction prompt has 3 layout-spanning examples and continues to fail on a specific edge case: documents that contain the target field but in a section labelled differently than any example. Two engineers propose: (X) add a 4th example matching the failing label exactly; (Y) revise example 2 so its reasoning trace names the principle ('the field can appear under any heading whose semantics match X') without adding a new example. Which is more aligned with the guide?",
+    "question": "An extraction prompt has 3 layout-spanning examples and continues to fail on a specific edge case: documents that contain the target field but in a section labelled differently than any example. Two engineers propose: (X) add a 4th example matching the failing label exactly; (Y) revise example 2 so its reasoning trace names the principle ('the field can appear under any heading whose semantics match X') without adding a new example. Which is more aligned with the guide?",
     "options": [
       "X — adding the failing case as a new example is the canonical fix",
       "Y — revising the reasoning to surface the underlying principle generalises better than copying the failing case",
@@ -682,7 +682,7 @@
     "qid": "ebddd169-5682-4620-940b-0ed81c7d196e"
   },
   {
-    "question": "Tier 3. A team has a prompt with 4 well-chosen examples. They're discussing whether the 'right' technique for a new ambiguity is to add a 5th example or to rewrite one of the 4. Which framing best captures the guide's preference?",
+    "question": "A team has a prompt with 4 well-chosen examples. They're discussing whether the 'right' technique for a new ambiguity is to add a 5th example or to rewrite one of the 4. Which framing best captures the guide's preference?",
     "options": [
       "Always add — more examples are strictly better up to context limits",
       "Always rewrite — count is fixed at 4 by the guide",
@@ -704,7 +704,7 @@
     "qid": "5a98edb1-2250-41be-81b5-fb1fcd8bd2ac"
   },
   {
-    "question": "Tier 3. A reviewer claims: 'Our extraction agent has 8 examples, all from different layouts, so we have layout coverage and the agent should generalise well.' Production data shows confidently-wrong fills on a layout the examples DO span. What is the most likely issue?",
+    "question": "A reviewer claims: 'Our extraction agent has 8 examples, all from different layouts, so we have layout coverage and the agent should generalise well.' Production data shows confidently-wrong fills on a layout the examples DO span. What is the most likely issue?",
     "options": [
       "8 is fewer than the guide's required minimum (which is 10)",
       "Layout coverage alone doesn't address other failure dimensions — e.g., the absence of a legitimate-empty example or the absence of reasoning traces",
@@ -726,7 +726,7 @@
     "qid": "a2c954ec-5755-49cc-a8b0-b10788af605d"
   },
   {
-    "question": "Tier 3. An agent's prompt has 4 examples covering the ambiguity well, with reasoning. A new failure type emerges: the agent is correctly choosing actions but its outputs are now LONGER than desired, with extra commentary. The team adds a 5th example showing a tightly-formatted output. Will this likely fix the verbosity?",
+    "question": "An agent's prompt has 4 examples covering the ambiguity well, with reasoning. A new failure type emerges: the agent is correctly choosing actions but its outputs are now LONGER than desired, with extra commentary. The team adds a 5th example showing a tightly-formatted output. Will this likely fix the verbosity?",
     "options": [
       "No — verbosity is unrelated to example shape",
       "No — verbosity can only be fixed via the temperature setting",
@@ -748,7 +748,7 @@
     "qid": "53ccd619-21ac-41d3-a847-6562a0ed3a5c"
   },
   {
-    "question": "Tier 3. A junior engineer argues: 'Our few-shot block should include an example for every observed production failure case so the model never fails again.' What's the most precise correction?",
+    "question": "A junior engineer argues: 'Our few-shot block should include an example for every observed production failure case so the model never fails again.' What's the most precise correction?",
     "options": [
       "Agree — exhaustive case coverage is the canonical pattern",
       "Disagree — failures can only be fixed by switching models",
@@ -770,7 +770,7 @@
     "qid": "375d30ef-ce4d-4883-9d3d-0c21766bf8bb"
   },
   {
-    "question": "Tier 3. A team's prompt has 3 examples that all (a) demonstrate the format, (b) include reasoning, and (c) span layouts. A failure type appears where the model picks the wrong field name when the document uses a synonym ('approach' for 'methodology'). Which adjustment most directly targets the failure without breaking the existing strengths?",
+    "question": "A team's prompt has 3 examples that all (a) demonstrate the format, (b) include reasoning, and (c) span layouts. A failure type appears where the model picks the wrong field name when the document uses a synonym ('approach' for 'methodology'). Which adjustment most directly targets the failure without breaking the existing strengths?",
     "options": [
       "Replace one example with a layout that also explicitly maps a synonymous heading ('approach') to the canonical field name 'methodology' in its reasoning trace",
       "Drop reasoning from all examples to simplify the prompt",
@@ -792,7 +792,7 @@
     "qid": "308c38ea-66f3-4157-81ba-f42cb2f6b03d"
   },
   {
-    "question": "Tier 3. Two prompts produce roughly equal accuracy on a development set. Prompt P has 4 examples each ~50 tokens with no reasoning. Prompt Q has 3 examples each ~150 tokens including reasoning that names rejected alternatives. Production traffic is dominated by inputs that look quite different from the dev set. Which prompt is more likely to hold up?",
+    "question": "Two prompts produce roughly equal accuracy on a development set. Prompt P has 4 examples each ~50 tokens with no reasoning. Prompt Q has 3 examples each ~150 tokens including reasoning that names rejected alternatives. Production traffic is dominated by inputs that look quite different from the dev set. Which prompt is more likely to hold up?",
     "options": [
       "P, because it has more examples",
       "P, because it uses fewer tokens per example",
@@ -814,7 +814,7 @@
     "qid": "458a6107-4545-48aa-9963-d2e63b4a49f9"
   },
   {
-    "question": "Tier 3. A prompt has 3 examples that each demonstrate severity tagging. The team adds a fourth example specifically because a particular customer keeps reporting a class of issue and they want the model to handle that customer's reports correctly. The added example mirrors the customer's exact phrasing and target tag. What is the predicted side-effect?",
+    "question": "A prompt has 3 examples that each demonstrate severity tagging. The team adds a fourth example specifically because a particular customer keeps reporting a class of issue and they want the model to handle that customer's reports correctly. The added example mirrors the customer's exact phrasing and target tag. What is the predicted side-effect?",
     "options": [
       "Better generalisation across all customers",
       "The model may overfit to the customer's surface phrasing, improving on that customer's reports while degrading subtly on others whose phrasing differs",
@@ -836,7 +836,7 @@
     "qid": "c8a28f89-4932-46b1-809c-2ce05ce13db0"
   },
   {
-    "question": "Tier 3. A team is evaluating two ways to reduce extraction hallucination. Approach 1: add 4 examples drawn from 4 different layouts. Approach 2: add 2 layout-spanning examples PLUS 1 explicit legitimate-empty example. Both keep total count <=4. Which is most aligned with the guide for reducing CONFIDENT FABRICATIONS specifically?",
+    "question": "A team is evaluating two ways to reduce extraction hallucination. Approach 1: add 4 examples drawn from 4 different layouts. Approach 2: add 2 layout-spanning examples PLUS 1 explicit legitimate-empty example. Both keep total count <=4. Which is most aligned with the guide for reducing CONFIDENT FABRICATIONS specifically?",
     "options": [
       "Approach 1, because it has more examples",
       "Approach 2, because the explicit empty case directly teaches that null is a valid output, which is the lever for reducing confident fabrications",
@@ -858,7 +858,7 @@
     "qid": "6bdf3f20-84d1-43db-b267-ac3ca854284c"
   },
   {
-    "question": "Tier 3. A reviewer claims 'few-shot examples are just documentation comments — the model treats them as advisory, similar to prose'. Which response best captures the guide's view?",
+    "question": "A reviewer claims 'few-shot examples are just documentation comments — the model treats them as advisory, similar to prose'. Which response best captures the guide's view?",
     "options": [
       "Agree — examples and prose are functionally equivalent",
       "Disagree — examples are high-signal context the model conditions on heavily; demonstrations consistently outperform prose for shaping format and decisions",

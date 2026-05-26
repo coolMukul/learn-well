@@ -1080,5 +1080,504 @@
       8,
       9
     ]
+  },
+  {
+    "timestamp": 1778986685969,
+    "topics": [
+      "4.2",
+      "D4"
+    ],
+    "phase": "post",
+    "score": 9,
+    "total": 10,
+    "duration_seconds": 596,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779063703799,
+    "topics": [
+      "4.3",
+      "D4"
+    ],
+    "phase": "post",
+    "score": 9,
+    "total": 10,
+    "duration_seconds": 1295,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779065985403,
+    "topics": [
+      "4.4",
+      "D4"
+    ],
+    "phase": "pre",
+    "score": 8,
+    "total": 10,
+    "duration_seconds": 1987,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779071352661,
+    "topics": [
+      "4.4",
+      "D4"
+    ],
+    "phase": "post",
+    "score": 9,
+    "total": 10,
+    "duration_seconds": 1817,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779094970987,
+    "topics": [
+      "4.5",
+      "D4"
+    ],
+    "phase": "pre",
+    "score": 8,
+    "total": 10,
+    "duration_seconds": 1658,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779096099793,
+    "topics": [
+      "4.5",
+      "D4"
+    ],
+    "phase": "post",
+    "score": 10,
+    "total": 10,
+    "duration_seconds": 307,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779098413793,
+    "topics": [
+      "4.6",
+      "D4"
+    ],
+    "phase": "pre",
+    "score": 10,
+    "total": 10,
+    "duration_seconds": 2290,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779099397141,
+    "topics": [
+      "4.6",
+      "D4"
+    ],
+    "phase": "post",
+    "score": 10,
+    "total": 10,
+    "duration_seconds": 509,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779273938449,
+    "topics": [
+      "5.1",
+      "D5"
+    ],
+    "phase": "pre",
+    "score": 8,
+    "total": 10,
+    "duration_seconds": 2415,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779280302751,
+    "topics": [
+      "5.1",
+      "D5"
+    ],
+    "phase": "post",
+    "score": 10,
+    "total": 10,
+    "duration_seconds": 451,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779359236413,
+    "topics": [
+      "5.2",
+      "D5"
+    ],
+    "phase": "pre",
+    "score": 9,
+    "total": 10,
+    "duration_seconds": 828,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779359890181,
+    "topics": [
+      "5.2",
+      "D5"
+    ],
+    "phase": "post",
+    "score": 8,
+    "total": 10,
+    "duration_seconds": 286,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779360288124,
+    "topics": [
+      "5.2",
+      "D5"
+    ],
+    "phase": "post",
+    "score": 9,
+    "total": 10,
+    "duration_seconds": 395,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779590553952,
+    "topics": [
+      "5.3",
+      "D5"
+    ],
+    "phase": "pre",
+    "score": 9,
+    "total": 10,
+    "duration_seconds": 657,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779591679411,
+    "topics": [
+      "5.3",
+      "D5"
+    ],
+    "phase": "post",
+    "score": 10,
+    "total": 10,
+    "duration_seconds": 499,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779597339999,
+    "topics": [
+      "5.4",
+      "D5"
+    ],
+    "phase": "pre",
+    "score": 8,
+    "total": 10,
+    "duration_seconds": 368,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779598558778,
+    "topics": [
+      "5.4",
+      "D5"
+    ],
+    "phase": "post",
+    "score": 10,
+    "total": 10,
+    "duration_seconds": 391,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779599139005,
+    "topics": [
+      "5.5",
+      "D5"
+    ],
+    "phase": "pre",
+    "score": 9,
+    "total": 10,
+    "duration_seconds": 569,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779633446467,
+    "topics": [
+      "5.5",
+      "D5"
+    ],
+    "phase": "post",
+    "score": 10,
+    "total": 10,
+    "duration_seconds": 617,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779678611497,
+    "topics": [
+      "5.6",
+      "D5"
+    ],
+    "phase": "pre",
+    "score": 9,
+    "total": 10,
+    "duration_seconds": 629,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779680373675,
+    "topics": [
+      "5.6",
+      "D5"
+    ],
+    "phase": "post",
+    "score": 10,
+    "total": 10,
+    "duration_seconds": 840,
+    "question_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ]
+  },
+  {
+    "timestamp": 1779681928618,
+    "chapterId": "D5",
+    "phase": "chapter-test",
+    "score": 15,
+    "total": 18,
+    "duration_seconds": 1534
+  },
+  {
+    "timestamp": 1779788664021,
+    "chapterId": "D4",
+    "phase": "chapter-test",
+    "score": 17,
+    "total": 18,
+    "duration_seconds": 2170
   }
 ]

@@ -29,7 +29,7 @@
 
         <div class="sidebar-footer">
           <button id="starredBtn" class="btn btn-ghost" type="button" title="Practice the questions you've starred across all topics">⭐ Starred practice</button>
-          <button id="resumeBtn" class="btn btn-ghost" type="button">Resume last topic</button>
+          <button id="reviseBtn" class="btn btn-ghost" type="button" title="Quick notes to revise later" hidden>📝 Revise later</button>
         </div>
       </aside>
 
@@ -53,7 +53,6 @@
         <p class="card-lead" id="dashLead">Pick a topic from the sidebar to begin. Each topic walks you through a pre-check, the study lesson, then a final test.</p>
         <div class="stats" id="dashStats"></div>
         <div class="cta-row">
-          <button class="btn btn-primary" id="dashResume" type="button">Resume last topic</button>
           <button class="btn btn-ghost" id="dashOverview" type="button">View topic overview</button>
         </div>
       </div>
@@ -277,16 +276,18 @@
       </div>
     </div>
 
-    <div id="todoWidget" class="todo-widget" hidden>
-      <button type="button" class="todo-head" id="todoHead" aria-expanded="false">
-        <span class="todo-head-title">📝 Revise later <span class="todo-count" id="todoCount" hidden></span></span>
-        <span class="todo-chev" id="todoChev" aria-hidden="true">▾</span>
-      </button>
-      <div class="todo-body" id="todoBody" hidden>
+    <div id="todoModal" class="modal" hidden>
+      <div class="modal-backdrop" data-modal-close></div>
+      <div class="modal-card todo-modal-card" role="dialog" aria-modal="true" aria-labelledby="todoModalTitle">
+        <h2 id="todoModalTitle" class="modal-title">📝 Revise later <span class="todo-count" id="todoCount" hidden></span></h2>
+        <p class="modal-lead">Quick notes for things you want to come back to. Check them off when done.</p>
         <ul class="todo-list" id="todoList"></ul>
         <form class="todo-form" id="todoForm">
           <input type="text" id="todoInput" placeholder="Add a reminder…" autocomplete="off" />
         </form>
+        <div class="cta-row modal-actions">
+          <button class="btn btn-ghost" type="button" data-modal-close>Close</button>
+        </div>
       </div>
     </div>
 

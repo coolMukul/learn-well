@@ -220,7 +220,7 @@
     "qid": "6476c0b8-f0bd-4694-9267-34cebac92474"
   },
   {
-    "question": "Tier 1. An extraction returns `total: '$1,234.56'` but the schema demands a number. Best retry payload?",
+    "question": "An extraction returns `total: '$1,234.56'` but the schema demands a number. Best retry payload?",
     "options": [
       "Just the prompt template with a higher temperature.",
       "The original document + the failed extraction + the error `total: expected number, got string \"$1,234.56\"`.",
@@ -242,7 +242,7 @@
     "qid": "86a166c0-ac36-4092-9016-bbdd092b374e"
   },
   {
-    "question": "Tier 1. Schema validation passes but the validator detects `calculated_total: 105` ≠ `stated_total: 110`. What kind of error is this?",
+    "question": "Schema validation passes but the validator detects `calculated_total: 105` ≠ `stated_total: 110`. What kind of error is this?",
     "options": [
       "A schema/syntax error — the values are the wrong type.",
       "A network error caused by tool use.",
@@ -264,7 +264,7 @@
     "qid": "73e01db2-bc28-4990-a6e6-0be416c001eb"
   },
   {
-    "question": "Tier 1. Why include the *failed extraction* in the retry payload — isn't the validator's error enough?",
+    "question": "Why include the *failed extraction* in the retry payload — isn't the validator's error enough?",
     "options": [
       "So the model can diff its own prior attempt against the source and the error, instead of starting cold.",
       "Because the API requires the failed JSON to be re-sent for accounting.",
@@ -286,7 +286,7 @@
     "qid": "89a002f1-360f-4d7e-8d2c-f6fb4f0e5960"
   },
   {
-    "question": "Tier 1. A code-review agent flags 200 findings; developers dismiss 40 of them and all 40 carry `detected_pattern: 'string_concatenation_in_query_builder'`. What's the right next move?",
+    "question": "A code-review agent flags 200 findings; developers dismiss 40 of them and all 40 carry `detected_pattern: 'string_concatenation_in_query_builder'`. What's the right next move?",
     "options": [
       "Lower the global confidence threshold so fewer findings are surfaced overall.",
       "Switch to a stronger model and re-run the entire batch.",
@@ -308,7 +308,7 @@
     "qid": "ff9b4b6d-2a4e-465d-83c8-26afba2aa3c4"
   },
   {
-    "question": "Tier 1. Which failure type is *not* recoverable by retry-with-error-feedback?",
+    "question": "Which failure type is *not* recoverable by retry-with-error-feedback?",
     "options": [
       "A date in `04/15/2026` format when the schema requires `YYYY-MM-DD`.",
       "A required field whose value is genuinely absent from the source document.",
@@ -330,7 +330,7 @@
     "qid": "12ae4650-383f-4c63-ae6c-a395ea9681e4"
   },
   {
-    "question": "Tier 1. Where does the *cross-check* between `calculated_total` and `stated_total` happen?",
+    "question": "Where does the *cross-check* between `calculated_total` and `stated_total` happen?",
     "options": [
       "Inside the JSON Schema definition, via a custom keyword.",
       "Inside the model's tool-use call, before the response is returned.",
@@ -352,7 +352,7 @@
     "qid": "70e57ed6-6e49-4815-97dd-66f650560047"
   },
   {
-    "question": "Tier 1. What does the `conflict_detected: true` boolean buy you over silently picking one of two contradictory source values?",
+    "question": "What does the `conflict_detected: true` boolean buy you over silently picking one of two contradictory source values?",
     "options": [
       "Auditability — downstream consumers can see and triage the conflict instead of inheriting a hidden choice.",
       "A faster extraction, since the model skips one of the values.",
@@ -374,7 +374,7 @@
     "qid": "0dc0534d-34f4-4753-8218-345c2d0977ed"
   },
   {
-    "question": "Tier 1. A team caps retries at 10 'because tokens are cheap'. What's the most likely outcome?",
+    "question": "A team caps retries at 10 'because tokens are cheap'. What's the most likely outcome?",
     "options": [
       "Higher accuracy across the board, since more attempts means more chances to get it right.",
       "Slightly slower extraction with no other downsides.",
@@ -396,7 +396,7 @@
     "qid": "2eea20c8-03fd-407c-9559-b02374631dc9"
   },
   {
-    "question": "Tier 1. Which question is the right *first* diagnostic when a validation failure occurs?",
+    "question": "Which question is the right *first* diagnostic when a validation failure occurs?",
     "options": [
       "Is the information present in the source document?",
       "How many tokens did the failed call consume?",
@@ -418,7 +418,7 @@
     "qid": "97199939-414b-493c-8e4b-609759934e07"
   },
   {
-    "question": "Tier 1. A schema-bound extraction returns valid JSON in which `start_date: '2026-05-10'` is *after* `end_date: '2026-05-01'`. Which check would catch this?",
+    "question": "A schema-bound extraction returns valid JSON in which `start_date: '2026-05-10'` is *after* `end_date: '2026-05-01'`. Which check would catch this?",
     "options": [
       "JSON Schema syntax validation alone.",
       "A regex on the date strings.",
@@ -440,7 +440,7 @@
     "qid": "1a5979dc-03bb-4a9d-9ed3-7fc47a912aef"
   },
   {
-    "question": "Tier 2. After a failed extraction, you have three choices: (a) retry with the validator's error message and the failed JSON, (b) retry with raised temperature, (c) retry with a fresh prompt that *removes* the document to keep tokens low. Rank from best to worst.",
+    "question": "After a failed extraction, you have three choices: (a) retry with the validator's error message and the failed JSON, (b) retry with raised temperature, (c) retry with a fresh prompt that *removes* the document to keep tokens low. Rank from best to worst.",
     "options": [
       "c, b, a — minimising tokens preserves context budget.",
       "b, a, c — temperature variance is the cheapest unblocker.",
@@ -462,7 +462,7 @@
     "qid": "4bde0c74-40c2-4358-8a68-7027f065e8f4"
   },
   {
-    "question": "Tier 2. Your retry loop appends *only the error message* (no document, no failed extraction) on each retry. What's the most likely failure mode?",
+    "question": "Your retry loop appends *only the error message* (no document, no failed extraction) on each retry. What's the most likely failure mode?",
     "options": [
       "The model often regenerates a similar wrong answer because it lacks the diff signal and the source to verify against.",
       "Schema validation always succeeds because the error is verbose enough.",
@@ -484,7 +484,7 @@
     "qid": "3579635f-ae6e-46d1-bab7-3963219a22bb"
   },
   {
-    "question": "Tier 2. Two designs for `detected_pattern`: (X) free-form natural-language note, (Y) closed enum of ~20 stable labels. Which scales for FP analysis and why?",
+    "question": "Two designs for `detected_pattern`: (X) free-form natural-language note, (Y) closed enum of ~20 stable labels. Which scales for FP analysis and why?",
     "options": [
       "(X) free-form, because analysts can search keywords across runs.",
       "(X) free-form, because it carries more information per finding.",
@@ -506,7 +506,7 @@
     "qid": "84a334c4-3e8f-4540-81a1-3bfc324b1a06"
   },
   {
-    "question": "Tier 2. Your validator runs *both* schema checks (via tool use) and semantic checks (math, conflicts). Which kinds of errors would only be caught by the semantic layer?",
+    "question": "Your validator runs *both* schema checks (via tool use) and semantic checks (math, conflicts). Which kinds of errors would only be caught by the semantic layer?",
     "options": [
       "An extra unexpected field that wasn't declared in the schema.",
       "`stated_total` and `calculated_total` disagreeing, despite both being valid numbers.",
@@ -528,7 +528,7 @@
     "qid": "7039f0f8-5a3e-4dd7-b381-bb23d89609bf"
   },
   {
-    "question": "Tier 2. A teammate says: 'On format failures, just keep retrying until validation passes — the cap is for missing-info cases only.' What's wrong with this framing?",
+    "question": "A teammate says: 'On format failures, just keep retrying until validation passes — the cap is for missing-info cases only.' What's wrong with this framing?",
     "options": [
       "Nothing — that's exactly the right policy.",
       "The cap is the primary decision-maker; classification is a fallback.",
@@ -550,7 +550,7 @@
     "qid": "4c859aa1-7c46-492c-991e-dd58d568ef42"
   },
   {
-    "question": "Tier 2. An extraction call returns `{ total: 110, calculated_total: 110, conflict_detected: true, conflict_description: 'Tax line item not summed' }`. Schema passes; semantic validator passes. Should the system accept this output?",
+    "question": "An extraction call returns `{ total: 110, calculated_total: 110, conflict_detected: true, conflict_description: 'Tax line item not summed' }`. Schema passes; semantic validator passes. Should the system accept this output?",
     "options": [
       "Yes — schema and semantic checks both pass; downstream consumers can use the data and the conflict flag together.",
       "No — `conflict_detected: true` should always trigger a hard rejection.",
@@ -572,7 +572,7 @@
     "qid": "878789c0-084d-4113-b35d-eccd6954c8a7"
   },
   {
-    "question": "Tier 2. You instrument every extraction with `detected_pattern`. After a sprint, 10% of dismissed findings share pattern `shipping_listed_as_line_item`. What does this *most directly* tell you?",
+    "question": "You instrument every extraction with `detected_pattern`. After a sprint, 10% of dismissed findings share pattern `shipping_listed_as_line_item`. What does this *most directly* tell you?",
     "options": [
       "The model needs a smaller context window.",
       "Switch to JSON-mode output instead of tool use.",
@@ -594,7 +594,7 @@
     "qid": "f8efde7c-ef39-4369-9b60-9e6ceb64face"
   },
   {
-    "question": "Tier 2. A self-correction flow has a *classification step* between validation failure and retry. What does removing this step cost you?",
+    "question": "A self-correction flow has a *classification step* between validation failure and retry. What does removing this step cost you?",
     "options": [
       "Nothing important — classification is an optional optimisation.",
       "The ability to skip futile retries on missing-info failures, which both wastes tokens and pressures the model toward hallucination.",
@@ -616,7 +616,7 @@
     "qid": "11e98a80-5d98-472a-9d71-ae76126c9edd"
   },
   {
-    "question": "Tier 2. Which of these is the *strongest* sign that a validation failure should NOT be retried?",
+    "question": "Which of these is the *strongest* sign that a validation failure should NOT be retried?",
     "options": [
       "The schema returned a regex mismatch on a date field.",
       "A re-read of the source document confirms the required field never appears in the input.",
@@ -638,7 +638,7 @@
     "qid": "a0863da3-dd1c-475b-8723-eb69840975fc"
   },
   {
-    "question": "Tier 2. You see a retry loop that does: extract → validate → if fail, *raise temperature by 0.1 and retry the same prompt*. Why is this design weak?",
+    "question": "You see a retry loop that does: extract → validate → if fail, *raise temperature by 0.1 and retry the same prompt*. Why is this design weak?",
     "options": [
       "Temperature changes always invalidate JSON Schema compliance.",
       "Tool use forbids any temperature changes mid-loop.",
@@ -660,7 +660,7 @@
     "qid": "85ef0779-3f12-445d-a902-1c86b61604f2"
   },
   {
-    "question": "Tier 3. A 'robust' extraction service retries every validation failure 3 times with no error context, and then surfaces the failure. A failure-mode review finds that a third of the 'fixed' retries silently produced *plausible but fabricated* values for fields that weren't in the source. What was the root cause?",
+    "question": "A 'robust' extraction service retries every validation failure 3 times with no error context, and then surfaces the failure. A failure-mode review finds that a third of the 'fixed' retries silently produced *plausible but fabricated* values for fields that weren't in the source. What was the root cause?",
     "options": [
       "Model temperature was too low.",
       "The retry cap was too aggressive at 3.",
@@ -682,7 +682,7 @@
     "qid": "90d4cad1-a018-44ed-8256-2374393ce1b7"
   },
   {
-    "question": "Tier 3. A team reports: 'We added retry-with-error-feedback and accuracy *dropped*.' On inspection, every retry payload contains the validator error and the failed JSON, but *not* the original document. What's the most likely cause of the regression?",
+    "question": "A team reports: 'We added retry-with-error-feedback and accuracy *dropped*.' On inspection, every retry payload contains the validator error and the failed JSON, but *not* the original document. What's the most likely cause of the regression?",
     "options": [
       "The schema is too strict; loosening it would help.",
       "Without the original document the model can't verify against the source, so it tends to mutate its prior (wrong) answer rather than re-read; some mutations introduce *new* errors that pass schema but are factually worse.",
@@ -704,7 +704,7 @@
     "qid": "30c8f03e-8667-43d9-bc35-3933f805e63e"
   },
   {
-    "question": "Tier 3. An invoice extractor passes schema validation (every field is the right type) and semantic validation (`calculated_total === stated_total`, `conflict_detected === false`). A spot-check finds that the *line items* themselves are subtly hallucinated — descriptions that don't match the source. Which of the following is the BEST next move?",
+    "question": "An invoice extractor passes schema validation (every field is the right type) and semantic validation (`calculated_total === stated_total`, `conflict_detected === false`). A spot-check finds that the *line items* themselves are subtly hallucinated — descriptions that don't match the source. Which of the following is the BEST next move?",
     "options": [
       "Add a `line_item_text_verbatim` boolean per item plus a sample-level human-review queue; semantic validators can't catch every fabrication, but structured review on a sampled tail can.",
       "Lower the model temperature on every call so hallucinations stop.",
@@ -726,7 +726,7 @@
     "qid": "20203167-448e-4633-8ed3-7b734e907978"
   },
   {
-    "question": "Tier 3. Two competing PRs land on your retry harness. PR-A bumps the cap from 3 to 10. PR-B keeps the cap at 3 but adds failure classification (format vs missing-info). Which PR has the larger expected quality gain, and why?",
+    "question": "Two competing PRs land on your retry harness. PR-A bumps the cap from 3 to 10. PR-B keeps the cap at 3 but adds failure classification (format vs missing-info). Which PR has the larger expected quality gain, and why?",
     "options": [
       "PR-A — more retries always means more chances to land a correct extraction.",
       "Both are equivalent; the choice is purely about token budget.",
@@ -748,7 +748,7 @@
     "qid": "cb659e6c-46ab-435c-b105-99d8f42d3cf0"
   },
   {
-    "question": "Tier 3. Your team proposes replacing `detected_pattern` with a hashed string of the offending source snippet (`source_hash`) for FP grouping. What's the subtle problem with this design?",
+    "question": "Your team proposes replacing `detected_pattern` with a hashed string of the offending source snippet (`source_hash`) for FP grouping. What's the subtle problem with this design?",
     "options": [
       "Hashes don't fit in JSON Schema string fields.",
       "Hashing is deterministic so it would over-group.",
@@ -770,7 +770,7 @@
     "qid": "f8a81440-ac25-45ee-adeb-52622c242d7d"
   },
   {
-    "question": "Tier 3. A senior engineer claims: 'We don't need `calculated_total` — modern models do arithmetic well, so just trust the `total` they emit.' The strongest counter-argument is:",
+    "question": "A senior engineer claims: 'We don't need `calculated_total` — modern models do arithmetic well, so just trust the `total` they emit.' The strongest counter-argument is:",
     "options": [
       "Models still produce occasional arithmetic errors AND, more importantly, dual extraction surfaces *document-level* inconsistencies (the source itself disagreeing with its own line items) that a single-field extraction can never expose.",
       "Schema validation catches arithmetic errors automatically.",
@@ -792,7 +792,7 @@
     "qid": "50ef8f47-c6d0-474a-a15b-6273d1ba8f09"
   },
   {
-    "question": "Tier 3. A self-correction loop is producing extractions where `conflict_detected: true` but `conflict_description` is empty. Which design change addresses the root cause?",
+    "question": "A self-correction loop is producing extractions where `conflict_detected: true` but `conflict_description` is empty. Which design change addresses the root cause?",
     "options": [
       "Mark `conflict_description` as required *whenever* `conflict_detected: true` (a conditional schema constraint) AND include an example in the prompt showing the description shape; that turns the validator into a hard gate against incomplete conflict reports.",
       "Disable `conflict_detected` entirely.",
@@ -814,7 +814,7 @@
     "qid": "c0a58cec-105c-4188-8c84-a0504ad7ff8d"
   },
   {
-    "question": "Tier 3. After deploying retry-with-error-feedback, your token usage *triples* but extraction accuracy improves by only 2%. Where would you look first?",
+    "question": "After deploying retry-with-error-feedback, your token usage *triples* but extraction accuracy improves by only 2%. Where would you look first?",
     "options": [
       "Lower the model's max output tokens.",
       "The classification step — most likely you're retrying missing-info failures (which can't improve) and burning the extra tokens on un-recoverable cases. Adding a presence-check before retry should restore the cost/quality ratio.",
@@ -836,7 +836,7 @@
     "qid": "be782ac5-bacf-4aca-aec9-233cb5615c20"
   },
   {
-    "question": "Tier 3. Which statement about schema validation vs semantic validation is MOST accurate?",
+    "question": "Which statement about schema validation vs semantic validation is MOST accurate?",
     "options": [
       "Schema validation catches semantic errors as a side-effect; explicit semantic checks are redundant.",
       "Semantic checks subsume schema validation; tool use's schema layer is therefore unnecessary.",
@@ -858,7 +858,7 @@
     "qid": "b3b4edd7-6e90-4f89-87e3-d30253f0257f"
   },
   {
-    "question": "Tier 3. The retry payload contains the document, the failed extraction, and the validator error — but the failure is `total: expected number, got string \"$1,234.56\"`. After 3 retries the model still emits `\"$1,234.56\"`. Most likely root cause and fix?",
+    "question": "The retry payload contains the document, the failed extraction, and the validator error — but the failure is `total: expected number, got string \"$1,234.56\"`. After 3 retries the model still emits `\"$1,234.56\"`. Most likely root cause and fix?",
     "options": [
       "The model is broken; switch vendors.",
       "Lower the temperature to zero; that always fixes string/number coercion.",

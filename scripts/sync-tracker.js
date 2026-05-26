@@ -97,7 +97,7 @@ function main(argv) {
       process.exit(1);
     }
   } else {
-    tracker = { topics: {}, lastTopicId: null, lastUpdated: null };
+    tracker = { topics: {}, lastUpdated: null };
   }
   if (!tracker.topics || typeof tracker.topics !== 'object') tracker.topics = {};
 

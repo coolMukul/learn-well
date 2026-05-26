@@ -262,8 +262,6 @@ function renderSidebar() {
   if (chapters.length === 0) {
     tree.innerHTML = '<p class="empty-hint">No topics yet.</p>';
     document.getElementById('progressSummary').innerHTML = '<div class="empty-hint">Course is empty.</div>';
-    const resumeBtn = document.getElementById('resumeBtn');
-    if (resumeBtn) { resumeBtn.disabled = true; resumeBtn.textContent = 'No topics yet'; }
     const starredBtn = document.getElementById('starredBtn');
     if (starredBtn) starredBtn.disabled = true;
     return;
@@ -407,13 +405,6 @@ function renderDashboard() {
     attempts += state.tracker?.topics?.[t.id]?.quizPasses?.length || 0;
   }
 
-  const lastId = state.tracker?.lastTopicId;
-  const lastTopic = lastId ? findTopic(lastId) : null;
-  const dashLead = document.getElementById('dashLead');
-  if (lastTopic) {
-    dashLead.innerHTML = `Last studied: <strong>${lastTopic.topic.id} — ${lastTopic.topic.title}</strong> on ${fmtDate(state.tracker.topics[lastId].finished)}.`;
-  }
-
   document.getElementById('dashStats').innerHTML = `
     <div class="stat"><div class="stat-label">Mastered</div><div class="stat-value">${mastered}</div><div class="stat-sub">of ${total} topics</div></div>
     <div class="stat"><div class="stat-label">In progress</div><div class="stat-value">${started - mastered}</div><div class="stat-sub">started, not yet mastered</div></div>
@@ -472,13 +463,6 @@ function renderDashboard() {
     grid.appendChild(card);
   }
 
-  const resumeBtn = document.getElementById('dashResume');
-  if (lastId) {
-    resumeBtn.onclick = () => openTopic(lastId);
-  } else {
-    resumeBtn.disabled = true;
-    resumeBtn.textContent = 'No prior topic';
-  }
   document.getElementById('dashOverview').onclick = () => {
     document.querySelector('.sidebar').scrollIntoView({ behavior: 'smooth' });
   };
@@ -726,7 +710,6 @@ async function openLesson(topicId) {
     try {
       const res = await patchTracker({ topicId: topicId, action: 'study-finish' });
       state.tracker.topics[topicId] = res.topic;
-      state.tracker.lastTopicId = topicId;
     } catch (e) { /* non-fatal */ }
     openTopic(topicId);
   };
@@ -1551,15 +1534,19 @@ const todo = {
 };
 
 function renderTodo() {
+  updateReviseBtn();
   const list = document.getElementById('todoList');
   const count = document.getElementById('todoCount');
+  if (!list) return;
   list.innerHTML = '';
   const openCount = todo.items.filter(i => !i.done).length;
-  if (openCount > 0) {
-    count.textContent = openCount;
-    count.hidden = false;
-  } else {
-    count.hidden = true;
+  if (count) {
+    if (openCount > 0) {
+      count.textContent = openCount;
+      count.hidden = false;
+    } else {
+      count.hidden = true;
+    }
   }
   // Open items first, then done items.
   const sorted = todo.items.slice().sort((a, b) => {
@@ -1627,23 +1614,30 @@ async function removeTodo(id) {
   }
 }
 
-function setTodoCollapsed(collapsed) {
-  const widget = document.getElementById('todoWidget');
-  const body = document.getElementById('todoBody');
-  const head = document.getElementById('todoHead');
-  widget.classList.toggle('collapsed', collapsed);
-  body.hidden = collapsed;
-  head.setAttribute('aria-expanded', String(!collapsed));
-  try { localStorage.setItem('todo-collapsed', collapsed ? '1' : '0'); } catch {}
+function updateReviseBtn() {
+  const btn = document.getElementById('reviseBtn');
+  if (!btn) return;
+  const n = todo.items.filter(i => !i.done).length;
+  btn.textContent = n === 0 ? '📝 Revise later' : `📝 Revise later (${n})`;
+}
+
+function openTodoModal() {
+  const modal = document.getElementById('todoModal');
+  if (!modal) return;
+  modal.hidden = false;
+  renderTodo();
+  const input = document.getElementById('todoInput');
+  if (input) setTimeout(() => input.focus(), 0);
+}
+
+function closeTodoModal() {
+  const modal = document.getElementById('todoModal');
+  if (modal) modal.hidden = true;
 }
 
 async function mountTodoWidget() {
-  const widget = document.getElementById('todoWidget');
-  widget.hidden = false;
-  const collapsed = (() => {
-    try { return localStorage.getItem('todo-collapsed') === '1'; } catch { return false; }
-  })();
-  setTodoCollapsed(collapsed);
+  const btn = document.getElementById('reviseBtn');
+  if (btn) btn.hidden = false;
   try {
     const items = await loadTodos();
     todo.items = Array.isArray(items) ? items : [];
@@ -1651,25 +1645,34 @@ async function mountTodoWidget() {
     todo.items = [];
   }
   todo.loaded = true;
-  renderTodo();
+  updateReviseBtn();
+  // If the modal is currently open, re-render its list with the loaded items.
+  const modal = document.getElementById('todoModal');
+  if (modal && !modal.hidden) renderTodo();
 }
 
 function hideTodoWidget() {
-  const widget = document.getElementById('todoWidget');
-  if (widget) widget.hidden = true;
+  const btn = document.getElementById('reviseBtn');
+  if (btn) btn.hidden = true;
+  closeTodoModal();
   todo.items = [];
   todo.loaded = false;
+  updateReviseBtn();
 }
 
 function wireTodoWidget() {
-  const head = document.getElementById('todoHead');
+  const btn = document.getElementById('reviseBtn');
+  const modal = document.getElementById('todoModal');
   const form = document.getElementById('todoForm');
   const input = document.getElementById('todoInput');
-  if (!head || !form || !input) return;
-  head.onclick = () => {
-    const widget = document.getElementById('todoWidget');
-    setTodoCollapsed(!widget.classList.contains('collapsed'));
-  };
+  if (!btn || !modal || !form || !input) return;
+  btn.onclick = () => openTodoModal();
+  modal.querySelectorAll('[data-modal-close]').forEach(el => {
+    el.onclick = () => closeTodoModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal.hidden) closeTodoModal();
+  });
   form.onsubmit = (e) => {
     e.preventDefault();
     const v = input.value;
@@ -1682,10 +1685,6 @@ function wireTodoWidget() {
 function boot() {
   const brand = document.getElementById('brand');
   if (brand) brand.onclick = () => navigate('/');
-  document.getElementById('resumeBtn').onclick = () => {
-    const id = state.tracker?.lastTopicId || state.tracker?.currentTopicId;
-    if (id) openTopic(id);
-  };
   const starredBtn = document.getElementById('starredBtn');
   if (starredBtn) starredBtn.onclick = () => startStarredQuiz();
   wireTodoWidget();

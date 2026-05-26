@@ -31,7 +31,7 @@ Follow every step in [prompts/STUDY_SESSION.md](../../prompts/STUDY_SESSION.md) 
 3. Write the detailed lesson to `courses/<courseId>/topics/topic-<id>.md`.
 4. Generate 10 pre-check questions (only on first study, never on revisits).
 5. Generate post-test questions (fresh on every revisit). Append `min(10, 30 - existing post count for this topic)` — the post-test bank is **capped at 30 per topic**. If already at 30, append 0 and note it in the report.
-6. Update `courses/<courseId>/data/tracker.json` (`started`, `finished`, `lastTopicId`, `lastUpdated` only — never write to `preCheckResults`/`quizPasses`/`mastered`).
+6. Update `courses/<courseId>/data/tracker.json` (`started`, `finished`, `lastUpdated` only — never write to `preCheckResults`/`quizPasses`/`mastered`).
 7. **Independent review** — launch the `study-reviewer` subagent via the Agent tool (`subagent_type: study-reviewer`, defined at [.claude/agents/study-reviewer.md](../agents/study-reviewer.md)). Pass it **only** the course id and topic id — do **not** include the lesson text, generated questions, or any reasoning from this session. A fresh context is the point: the model that generated the materials retains its generation reasoning and is biased toward confirming its own choices, so an in-session self-check defeats the purpose of review. If the subagent reports any FAILs, fix them in this session and re-spawn a fresh `study-reviewer` until it passes.
 8. Report concisely: course id, topic ID + title, first study or revisit, lesson path, question counts appended, independent-review result (PASS / FAILs fixed), next action.
 

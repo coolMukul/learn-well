@@ -248,7 +248,6 @@ Edit [data/tracker.json](data/tracker.json):
 - `topics["<id>"].preCheckResults` — **do not write.** The UI appends to this when the user takes the pre-check.
 - `topics["<id>"].quizPasses` — **do not write.** The UI appends to this when the user takes the test.
 - `topics["<id>"].mastered` — leave as-is. The UI manages mastery.
-- `lastTopicId` — set to this topic's ID.
 - `currentTopicId` — leave as-is. Advance only when the user confirms.
 - `lastUpdated` — current ISO 8601 datetime.
 

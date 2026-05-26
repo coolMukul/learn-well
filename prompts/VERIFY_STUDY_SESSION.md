@@ -4,7 +4,7 @@
 >
 > **Inputs the assistant needs:**
 > - **`<courseId>`** — the course slug (folder under `courses/`). If not given, ask.
-> - **`<topicId>`** — e.g. `1.3`. If not given, default to `tracker.lastTopicId` for the course.
+> - **`<topicId>`** — e.g. `1.3`. If not given, default to `tracker.currentTopicId` for the course.
 >
 > **Working directory convention:** Every path in this document is relative to the course root, i.e. `courses/<courseId>/`. Resolve `<courseId>` once and apply it everywhere.
 >
@@ -14,7 +14,7 @@
 
 You need **one** topic ID to verify. Get it from:
 - The user's prompt, or
-- `data/tracker.json` → `lastTopicId`.
+- `data/tracker.json` → `currentTopicId`.
 
 Set it as `TOPIC_ID` in your head — every command below references it.
 
@@ -63,17 +63,16 @@ console.log('mastered:', t.mastered);
 
 **Pass criteria:** these fields reflect only UI activity. If you ran STUDY_SESSION.md and the user has not yet taken any quiz, lengths must equal whatever they were *before* the session. Easiest spot-check: lengths are 0 on a brand-new topic.
 
-### A3 — `lastTopicId` and `lastUpdated` were updated
+### A3 — `lastUpdated` was updated
 
 ```bash
 node -e "
 const j = require('./data/tracker.json');
-console.log('lastTopicId:', j.lastTopicId, '  expected:', '$TOPIC_ID');
 console.log('lastUpdated:', j.lastUpdated);
 "
 ```
 
-**Pass criteria:** `lastTopicId === TOPIC_ID`. `lastUpdated` is within the last few minutes (current ISO timestamp).
+**Pass criteria:** `lastUpdated` is within the last few minutes (current ISO timestamp).
 
 ---
 

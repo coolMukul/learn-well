@@ -66,7 +66,7 @@ courses/<id>/
 ├── course.json
 ├── data/
 │   ├── topics.json          → {"chapters": []}
-│   ├── tracker.json         → {"topics": {}, "lastTopicId": null, "lastUpdated": null}
+│   ├── tracker.json         → {"topics": {}, "lastUpdated": null}
 │   ├── progress.json        → []
 │   └── questions/           (empty directory)
 ├── topics/                  (empty directory)

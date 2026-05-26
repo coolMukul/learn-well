@@ -220,7 +220,7 @@
     "qid": "8bf1498f-ce7d-412a-aa4b-d5f31aa9556a"
   },
   {
-    "question": "Scenario 1: a customer requests a $750 refund. Policy: refunds over $500 require manager approval. The agent currently has no `PreToolUse` hook on `process_refund`. Which is the production-ready fix?",
+    "question": "A customer requests a $750 refund. Policy: refunds over $500 require manager approval. The agent currently has no `PreToolUse` hook on `process_refund`. Which is the production-ready fix?",
     "options": [
       "Add a few-shot example of refusing a $700 refund and lower the model temperature to 0.0.",
       "Add a `PreToolUse` hook on `process_refund` that denies when amount > $500, with a deny reason like: 'Refunds over $500 require manager approval. Use escalate_to_human with a structured handoff (customer_id, root_cause, refund_amount=750.00, recommended_action).'",

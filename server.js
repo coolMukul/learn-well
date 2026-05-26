@@ -150,7 +150,7 @@ app.post('/api/courses', (req, res) => {
   };
   writeJson(path.join(root, 'course.json'), meta);
   writeJson(path.join(root, 'data', 'topics.json'), { chapters: [] });
-  writeJson(path.join(root, 'data', 'tracker.json'), { topics: {}, lastTopicId: null, lastUpdated: null });
+  writeJson(path.join(root, 'data', 'tracker.json'), { topics: {}, lastUpdated: null });
   writeJson(path.join(root, 'data', 'progress.json'), []);
   writeJson(path.join(root, 'data', 'starred.json'), []);
   writeJson(path.join(root, 'data', 'flagged.json'), []);
@@ -456,7 +456,6 @@ app.patch('/api/courses/:courseId/tracker', withCourse, (req, res) => {
     return res.status(400).json({ error: `unknown action: ${action}` });
   }
 
-  tracker.lastTopicId = topicId;
   tracker.lastUpdated = now;
 
   try {

@@ -220,7 +220,7 @@
     "qid": "6bf2567c-452c-492f-ac51-ea5becd9710a"
   },
   {
-    "question": "Scenario 1: a customer support agent regularly issues small refunds (under $50) without first calling get_customer. The product team has tightened the system prompt twice and added few-shot examples; the failure rate dropped from 4% to 0.5% but never reaches zero. Compliance requires zero. What change to the architecture closes the gap?",
+    "question": "A customer support agent regularly issues small refunds (under $50) without first calling get_customer. The product team has tightened the system prompt twice and added few-shot examples; the failure rate dropped from 4% to 0.5% but never reaches zero. Compliance requires zero. What change to the architecture closes the gap?",
     "options": [
       "Add an additional few-shot example to the system prompt; the rate is approaching zero asymptotically and one more example will get it there.",
       "Add a PreToolUse hook on process_refund that denies the call when session.verified_customer_id is null. Pair with a PostToolUse hook on get_customer that sets the verified_customer_id on success.",
